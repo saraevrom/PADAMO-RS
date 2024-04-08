@@ -1,0 +1,22 @@
+[package]
+name = "padamo-trackgen"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "padamotrackgen"
+crate-type = ["dylib"]
+
+[dependencies]
+# For things to work
+abi_stable = "0.11.3"
+
+# Main padamo api
+padamo-api = { path = "../padamo-api" }
+
+
+padamo-detectors = { path = "../padamo-detectors" }
+serde_json = "1.0.115"
+statrs = "0.16.0"

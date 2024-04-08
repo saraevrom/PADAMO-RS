@@ -1,0 +1,5 @@
+Cargo.lock
+/target
+padamo-*/target
+padamo-base-processing/fast_mm/target/
+padamo-api/padamo-api-macros-internal/target
