@@ -150,8 +150,8 @@ impl AnyLCLinearTrackGeneratorNode{
         let x0 = constants.request_float("x0")?;
         let y0 = constants.request_float("y0")?;
         let phi0 = constants.request_float("phi0")?;
-        let e_min = constants.request_float("e_min")?;
-        let e_max = constants.request_float("e_max")?;
+        //let e_min = constants.request_float("e_min")?;
+        //let e_max = constants.request_float("e_max")?;
         let sigma_x = constants.request_float("sigma_x")?;
         let sigma_y = constants.request_float("sigma_y")?;
         let motion_blur_steps = request_usize("motion_blur_steps", &constants)?;
@@ -161,7 +161,7 @@ impl AnyLCLinearTrackGeneratorNode{
         signal.0 = padamo_api::lazy_array_operations::make_lao_box(crate::ops::LazyAnyLCTrack{
             data: signal.0,
             lc,
-            detector,pivot_frame,v0,a0,phi0,x0,y0,e_min,e_max,sigma_x,sigma_y,motion_blur_steps
+            detector,pivot_frame,v0,a0,phi0,x0,y0,sigma_x,sigma_y,motion_blur_steps
         });
         signal.2 = ROption::RNone;
 
@@ -212,8 +212,8 @@ impl CalculationNode for AnyLCLinearTrackGeneratorNode{
             ("phi0",0.0),
             ("x0",0.0),
             ("y0",0.0),
-            ("e_min",0.0),
-            ("e_max",1.0),
+            //("e_min",0.0),
+            //("e_max",1.0),
             ("sigma_x",1.2),
             ("sigma_y",1.2),
             ("motion_blur_steps",5),

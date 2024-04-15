@@ -28,8 +28,6 @@ pub struct LazyAnyLCTrack{
     pub x0:f64,
     pub y0:f64,
 
-    pub e_min:f64,
-    pub e_max:f64,
 
     pub sigma_x:f64,
     pub sigma_y:f64,
