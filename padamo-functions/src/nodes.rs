@@ -190,6 +190,10 @@ impl NegNode{
 
 
 fn category() -> RVec<RString>where {
+    rvec!["Functions".into(), "Generic".into()]
+}
+
+fn category0() -> RVec<RString>where {
     rvec!["Functions".into()]
 }
 
@@ -199,7 +203,7 @@ impl CalculationNode for ConstantNode{
     }
 
     fn category(&self,) -> RVec<RString>where {
-        category()
+        category0()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
@@ -229,7 +233,7 @@ impl CalculationNode for FCalculateNode{
     }
 
     fn category(&self,) -> RVec<RString>where {
-        category()
+        category0()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
