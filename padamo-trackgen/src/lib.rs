@@ -8,6 +8,7 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 pub mod ops;
 pub mod ensquared_energy;
 pub mod nodes;
+pub mod lc_nodes;
 
 //mod datetime_parser;
 mod shape_parser;
@@ -23,6 +24,9 @@ pub fn nodes()->RVec<CalculationNodeBox>{
         nodes::BasicLinearTrackGeneratorNode,
         nodes::AnyLCLinearTrackGeneratorNode,
         nodes::BlankDataNode,
-        nodes::AdditiveNormalNoiseNode
+        nodes::AdditiveNormalNoiseNode,
+        lc_nodes::LCSwitchNode,
+        lc_nodes::LinearLCNode,
+        lc_nodes::ExponentLCNode
     )
 }
