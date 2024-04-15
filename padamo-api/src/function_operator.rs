@@ -16,6 +16,12 @@ pub struct MapOperator<T:Fn(f64)->f64+Send+Sync+Clone>{
 }
 
 #[derive(Clone)]
+pub struct InvMapOperator<T:Fn(f64)->f64+Send+Sync+Clone>{
+    pub func:T,
+    pub parameter:DoubleFunctionOperatorBox
+}
+
+#[derive(Clone)]
 pub struct Map2Operator<T:Fn(f64,f64)->f64+Send+Sync+Clone>{
     pub func:T,
     pub parameter1:DoubleFunctionOperatorBox,
@@ -31,6 +37,12 @@ pub struct WrappedDoubleFunction<T:Fn(f64)->f64+Send+Sync+Clone>{
 impl<T:Fn(f64)->f64+Send+Sync+Clone> Debug for MapOperator<T>{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,"MapOperator{{parameter: {:?}, func: <nondisplayable>}}",self.parameter)
+    }
+}
+
+impl<T:Fn(f64)->f64+Send+Sync+Clone> Debug for InvMapOperator<T>{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"InvMapOperator{{parameter: {:?}, func: <nondisplayable>}}",self.parameter)
     }
 }
 
@@ -50,6 +62,13 @@ impl<T:Fn(f64)->f64+Send+Sync+Clone> DoubleFunctionOperator for MapOperator<T>{
     fn calculate(&self,x:f64)->f64{
         let x1 = self.parameter.calculate(x);
         (self.func)(x1)
+    }
+}
+
+impl<T:Fn(f64)->f64+Send+Sync+Clone> DoubleFunctionOperator for InvMapOperator<T>{
+    fn calculate(&self,x:f64)->f64{
+        let x1 = (self.func)(x);
+        self.parameter.calculate(x1)
     }
 }
 
@@ -73,6 +92,10 @@ pub type DoubleFunctionOperatorBox = DoubleFunctionOperator_TO<'static,RBox<()>>
 impl DoubleFunctionOperatorBox{
     pub fn map<T:Fn(f64)->f64+Send+Sync+Clone+'static>(self, f:T)->DoubleFunctionOperatorBox{
         make_function_box(MapOperator{func:f, parameter:self})
+    }
+
+    pub fn invmap<T:Fn(f64)->f64+Send+Sync+Clone+'static>(self, f:T)->DoubleFunctionOperatorBox{
+        make_function_box(InvMapOperator{func:f, parameter:self})
     }
 
     pub fn map2<T:Fn(f64, f64)->f64+Send+Sync+Clone+'static>(self, other:Self, f:T)->DoubleFunctionOperatorBox{
