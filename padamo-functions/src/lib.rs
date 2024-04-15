@@ -5,6 +5,9 @@ use abi_stable::sabi_extern_fn;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub mod nodes;
+pub mod macros;
+
+//pub use macros::*;
 
 use nodes::*;
 
@@ -23,6 +26,8 @@ pub fn nodes()->RVec<CalculationNodeBox>{
         MultiplyNode,
         ExponentNode,
         LogNode,
-        FCalculateNode
+        FCalculateNode,
+        MinNode,
+        MaxNode
     )
 }

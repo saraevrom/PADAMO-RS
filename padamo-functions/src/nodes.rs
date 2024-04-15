@@ -1,7 +1,7 @@
 use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 use padamo_api::function_operator::DoubleFunctionOperatorBox;
-
+use crate::{implement_binary_combinator, implement_onearg_function, implement_unary_combinator};
 
 
 #[derive(Clone,Debug)]
@@ -87,6 +87,37 @@ impl MultiplyNode{
     }
 }
 
+
+#[derive(Clone,Debug)]
+pub struct MinNode;
+
+impl MinNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        //let v = inputs.request_float("Value")?;
+        let f1 = inputs.request_function("F1")?;
+        let f2 = inputs.request_function("F2")?;
+        //let f = make_function_box(crate::ops::Multiply(f1,f2));
+        let f = f1.map2(f2, |x, y| x.min(y));
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct MaxNode;
+
+impl MaxNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        //let v = inputs.request_float("Value")?;
+        let f1 = inputs.request_function("F1")?;
+        let f2 = inputs.request_function("F2")?;
+        //let f = make_function_box(crate::ops::Multiply(f1,f2));
+        let f = f1.map2(f2, |x, y| x.max(y));
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
 #[derive(Clone,Debug)]
 pub struct ExponentNode;
 
@@ -151,191 +182,6 @@ impl CalculationNode for ConstantNode{
     }
 }
 
-
-impl CalculationNode for LinearNode{
-    fn name(&self,) -> RString where {
-        "Linear".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-
-        ]
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
-    }
-}
-
-impl CalculationNode for SquareNode{
-    fn name(&self,) -> RString where {
-        "Square".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-
-        ]
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
-    }
-}
-
-impl CalculationNode for SumNode{
-    fn name(&self,) -> RString where {
-        "Sum".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F1", ContentType::Function),
-            ("F2", ContentType::Function)
-        ]
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
-    }
-}
-
-impl CalculationNode for MultiplyNode{
-    fn name(&self,) -> RString where {
-        "Multiply".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F1", ContentType::Function),
-            ("F2", ContentType::Function)
-        ]
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
-    }
-}
-
-impl CalculationNode for ExponentNode{
-    fn name(&self,) -> RString where {
-        "Exponent".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            //("Value", ContentType::Float),
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
-    }
-}
-
-impl CalculationNode for LogNode{
-    fn name(&self,) -> RString where {
-        "Log".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            //("Value", ContentType::Float),
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports![
-            ("F", ContentType::Function)
-        ]
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
-    }
-}
-
 impl CalculationNode for FCalculateNode{
     fn name(&self,) -> RString where {
         "Calculate value".into()
@@ -366,3 +212,16 @@ impl CalculationNode for FCalculateNode{
         self.calculate(inputs, outputs, constants, environment).into()
     }
 }
+
+
+implement_onearg_function!(LinearNode, "Linear", category);
+implement_onearg_function!(SquareNode, "Square", category);
+
+implement_binary_combinator!(SumNode, "Sum", category);
+implement_binary_combinator!(MultiplyNode, "Multiply", category);
+implement_binary_combinator!(MinNode,"Min",category);
+implement_binary_combinator!(MaxNode,"Max",category);
+
+implement_unary_combinator!(ExponentNode, "Exponent", category);
+implement_unary_combinator!(LogNode, "Log", category);
+
