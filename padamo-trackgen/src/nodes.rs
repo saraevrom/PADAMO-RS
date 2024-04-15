@@ -143,7 +143,7 @@ impl AnyLCLinearTrackGeneratorNode{
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
         let pivot_frame = request_nonnegative("pivot_frame", &constants)?;
-        let lc = inputs.request_function("lightcurve")?;
+        let lc = inputs.request_function("Lightcurve")?;
         let lc = lc.map(|x| if x>0.0 {x} else {0.0});
         let v0 = request_nonnegative("v0", &constants)?;
         let a0 = constants.request_float("a0")?;
