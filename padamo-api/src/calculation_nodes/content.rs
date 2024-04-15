@@ -1,5 +1,6 @@
 use abi_stable::{StableAbi, std_types::{RString, RStr, RVec, Tuple3}};
 use std::array::IntoIter;
+use crate::function_operator::DoubleFunctionOperatorBox;
 use serde::{Serialize,Deserialize};
 
 use super::errors::ExecutionError;
@@ -16,6 +17,7 @@ pub enum Content{
     Float(f64),
     Boolean(bool),
     String(RString),
+    Function(DoubleFunctionOperatorBox),
     DetectorSignal(LazyDetectorSignal),
     DetectorFullData(LazyTriSignal),
 }
@@ -68,6 +70,7 @@ impl ContentType{
             ContentType::String => Color { r: 1.0, g: 0., b: 0.0, a: 1.0 },
             ContentType::Integer => Color { r: 0.0, g: 2./3., b: 0.733333, a: 1.0 },
             ContentType::Float => Color { r: 0.0, g: 0.0, b: 1.0, a: 1.0 },
+            ContentType::Function => Color { r: 1.0, g: 1.0, b: 0.0, a: 1.0 },
             ContentType::DetectorSignal => Color { r: 1.0, g: 0.33333, b: 0.0, a: 1.0 },
             ContentType::DetectorFullData => Color { r: 0.3333333, g: 0.5, b: 0.0, a: 1.0 }
             //ContentType::Array => iced::Color { r: 1.0, g: 1./3., b: 0.0, a: 1.0 },

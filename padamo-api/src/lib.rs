@@ -2,6 +2,7 @@ pub mod calculation_nodes;
 pub mod prelude;
 pub mod lazy_array_operations;
 //pub mod parsers;
+pub mod function_operator;
 
 use abi_stable::sabi_trait::TD_Opaque;
 use abi_stable::std_types::RVec;
