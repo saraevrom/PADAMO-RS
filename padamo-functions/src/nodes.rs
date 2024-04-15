@@ -255,8 +255,8 @@ impl CalculationNode for FCalculateNode{
 }
 
 
-implement_onearg_function!(LinearNode, "Linear", category);
-implement_onearg_function!(SquareNode, "Square", category);
+implement_onearg_function!(LinearNode, "X", category);
+implement_onearg_function!(SquareNode, "X^2", category);
 implement_onearg_function!(LowerStepNode, "Lower step function", category);
 
 implement_binary_combinator!(SumNode, "Sum", category);
