@@ -161,6 +161,19 @@ impl AbsNode{
     }
 }
 
+#[derive(Clone,Debug)]
+pub struct NegNode;
+
+impl NegNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let f0 = inputs.request_function("F")?;
+        let f = f0.map(|x| -x);
+        //let f = make_function_box(crate::ops::Log(f0));
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
 
 fn category() -> RVec<RString>where {
     rvec!["Functions".into()]
@@ -239,4 +252,5 @@ implement_binary_combinator!(MaxNode,"Max",category);
 implement_unary_combinator!(ExponentNode, "Exponent", category);
 implement_unary_combinator!(LogNode, "Log", category);
 implement_unary_combinator!(AbsNode, "Abs", category);
+implement_unary_combinator!(NegNode, "Negate", category);
 

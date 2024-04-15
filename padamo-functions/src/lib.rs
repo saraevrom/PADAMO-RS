@@ -29,6 +29,7 @@ pub fn nodes()->RVec<CalculationNodeBox>{
         FCalculateNode,
         MinNode,
         MaxNode,
-        AbsNode
+        AbsNode,
+        NegNode
     )
 }
