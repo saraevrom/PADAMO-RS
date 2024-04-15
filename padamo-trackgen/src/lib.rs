@@ -21,6 +21,7 @@ pub fn plugin_root()->PadamoModule_Ref{
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec!(
         nodes::BasicLinearTrackGeneratorNode,
+        nodes::AnyLCLinearTrackGeneratorNode,
         nodes::BlankDataNode,
         nodes::AdditiveNormalNoiseNode
     )
