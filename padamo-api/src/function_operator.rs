@@ -11,6 +11,6 @@ pub trait DoubleFunctionOperator: Clone+Debug+Sync+Send{
 pub type DoubleFunctionOperatorBox = DoubleFunctionOperator_TO<'static,RBox<()>>;
 
 
-pub fn make_function_box<T,U:DoubleFunctionOperator+'static>(data:U)->DoubleFunctionOperatorBox{
+pub fn make_function_box<T:DoubleFunctionOperator+'static>(data:T)->DoubleFunctionOperatorBox{
     DoubleFunctionOperatorBox::from_value(data, TD_Opaque)
 }
