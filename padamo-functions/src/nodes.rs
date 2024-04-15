@@ -58,6 +58,20 @@ impl SquareNode{
 }
 
 #[derive(Clone,Debug)]
+pub struct LowerStepNode;
+
+impl LowerStepNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        //let v = inputs.request_float("Value")?;
+        //let f = make_function_box(crate::ops::Square);
+        let f:DoubleFunctionOperatorBox = (|x| if x>0.0 {1.0} else {0.0}).into();
+
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
+#[derive(Clone,Debug)]
 pub struct SumNode;
 
 impl SumNode{
@@ -243,6 +257,7 @@ impl CalculationNode for FCalculateNode{
 
 implement_onearg_function!(LinearNode, "Linear", category);
 implement_onearg_function!(SquareNode, "Square", category);
+implement_onearg_function!(LowerStepNode, "Lower step function", category);
 
 implement_binary_combinator!(SumNode, "Sum", category);
 implement_binary_combinator!(MultiplyNode, "Multiply", category);

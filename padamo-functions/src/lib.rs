@@ -30,6 +30,7 @@ pub fn nodes()->RVec<CalculationNodeBox>{
         MinNode,
         MaxNode,
         AbsNode,
-        NegNode
+        NegNode,
+        LowerStepNode
     )
 }
