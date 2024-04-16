@@ -1,9 +1,9 @@
 pub mod constants;
 pub mod errors;
 
-use std::{rc::{Rc, Weak}, cell::RefCell};
+use std::{cell::RefCell, error::Error, fmt::{write, Display}, rc::{Rc, Weak}};
 
-use iced::widget::canvas::{Frame, Path, self,Text};
+use iced::widget::{canvas::{Frame, Path, self,Text}, shader::wgpu::core::identity};
 use serde_json::Map;
 
 use crate::nodes_interconnect::NodesRegistry;
@@ -364,6 +364,31 @@ pub struct GraphNodeStorage{
     selected_node: Weak<RefCell<GraphNode>>,
 }
 
+#[derive(Debug)]
+pub enum GraphDeserializationError{
+    NodeNotFound(String),
+    JsonError(serde_json::Error),
+    NotArray,
+    NotFound(String),
+    WrongFormat(String),
+}
+
+impl Display for GraphDeserializationError{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self{
+            GraphDeserializationError::NodeNotFound(v) => write!(f,"Node {} is not found", v),
+            GraphDeserializationError::JsonError(e)=>write!(f, "JSON deserialization error: {}", e),
+            GraphDeserializationError::NotArray=>write!(f, "JSON data is not array"),
+            GraphDeserializationError::WrongFormat(v)=>write!(f, "Identifier {} has wrong format", v),
+            GraphDeserializationError::NotFound(v)=>write!(f, "Identifier {} is not found", v),
+        }
+    }
+}
+
+impl Error for GraphDeserializationError{
+
+}
+
 impl GraphNodeStorage{
     pub fn new()->Self{
         Self { nodes: Vec::new(), selected_node:Weak::new()}
@@ -622,29 +647,40 @@ impl GraphNodeStorage{
     }
 
 
-    pub fn deserialize(&mut self, registry:&NodesRegistry, value:serde_json::Value){
+    pub fn deserialize(&mut self, registry:&NodesRegistry, value:serde_json::Value)->Result<(),GraphDeserializationError>{
         if let serde_json::Value::Array(arr) = value{
             self.clear();
             for value in arr.iter(){
                 if let serde_json::Value::Object(obj) = value{
                     'stop: {
-                        let identifier = if let Some(serde_json::Value::String(identifier) )= obj.get("identifier"){identifier}
-                        else { break 'stop; };
+                        //let identifier = if let Some(serde_json::Value::String(identifier) )= obj.get("identifier"){identifier}
+                        //else { break 'stop; };
+                        let identifier = obj.get("identifier").ok_or(GraphDeserializationError::NotFound("identifier".into()))?;
+                        let identifier = if let serde_json::Value::String(v) = identifier {v} else {return Err(GraphDeserializationError::WrongFormat("identifier".into()));};
 
-                        let position = if let Some(position ) = obj.get("position"){
-                            position
-                        }
-                        else { break 'stop; };
-
-
-                        let pos:SerdePoint = if let Ok(pos) = serde_json::from_value(position.clone()) {pos}
-                        else { break 'stop; };
-
-                        let consts = if let Some(serde_json::Value::Object(c)) = obj.get("constants") {c}
-                        else { break 'stop; };
+                        // let position = if let Some(position ) = obj.get("position"){
+                        //     position
+                        // }
+                        // else { break 'stop; };
+                        let position = obj.get("position").ok_or(GraphDeserializationError::NodeNotFound("position".into()))?;
 
 
-                        let mut node = registry.create_calculation_node(identifier.clone());
+                        //let pos:SerdePoint = if let Ok(pos) = serde_json::from_value(position.clone()) {pos}
+                        //else { break 'stop; };
+                        let pos:SerdePoint = serde_json::from_value(position.clone()).map_err(GraphDeserializationError::JsonError)?;
+
+                        // let consts = if let Some(serde_json::Value::Object(c)) = obj.get("constants") {c}
+                        // else { break 'stop; };
+
+                        let consts = obj.get("constants").ok_or(GraphDeserializationError::NodeNotFound("constants".into()))?;
+                        let consts = if let serde_json::Value::Object(c) = consts {c} else {return Err(GraphDeserializationError::WrongFormat("constants".into()));};
+
+
+                        let mut node = if let Some(v) = registry.create_calculation_node(identifier.clone()) {v}
+                        else{
+                            return Err(GraphDeserializationError::NodeNotFound(identifier.clone()));
+                        };
+
                         for (key,con) in consts.iter(){
                             let deserialized_con = serde_json::from_value(con.clone());
                             if let Ok(con_val) = &deserialized_con {
@@ -679,6 +715,10 @@ impl GraphNodeStorage{
                     }
                 }
             }
+            Ok(())
+        }
+        else{
+            Err(GraphDeserializationError::NotArray)
         }
     }
 }

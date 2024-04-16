@@ -69,7 +69,9 @@ impl PadamoTool for PadamoEditor{
                     messages::EditorMessage::NodeListClicked(p)=>{
                         let path = p.join("/");
                         let node = padamo.nodes.create_calculation_node(path);
-                        self.state.nodes.insert_node(node);
+                        if let Some(n) = node{
+                            self.state.nodes.insert_node(n);
+                        }
                         //println!("Clicked node {:?}", p);
                     },
                     messages::EditorMessage::EditorScroll(view) => {self.current_scroll_offset = view.relative_offset()},
@@ -107,7 +109,10 @@ impl PadamoTool for PadamoEditor{
                     let mut buf:String = String::new();
                     if let Ok(_) = f.read_to_string(&mut buf){
                         if let Ok(jsd) = serde_json::Value::from_str(&buf){
-                            self.state.nodes.deserialize(&padamo.nodes, jsd);
+                            if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
+                                padamo.show_error(format!("{}",e));
+                                self.state.nodes.clear();
+                            }
                         }
                     }
                 }

@@ -9,7 +9,7 @@ use iced::{widget::{self, scrollable}, Length};
 use padamo_detectors::Detector;
 use plotters::coord::{cartesian::Cartesian2d, types::RangedCoordf64};
 use plotters_iced::Chart;
-use crate::messages::PadamoAppMessage;
+use crate::{application::PadamoState, messages::PadamoAppMessage};
 use ndarray_stats::QuantileExt;
 //use super::viewer::ViewerMessage;
 pub mod messages;
@@ -22,6 +22,8 @@ use super::viewer::make_player_pad;
 use padamo_workspace::PadamoWorkspace;
 use iced_aw::{modal,card};
 use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
+
+use crate::double_entry_state::{EntryState,errored_text};
 
 //static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
@@ -88,16 +90,17 @@ pub struct Plotter{
     pixels_show:Vec<bool>,
     channelmap_show:bool,
 
-    safeguard:usize,
-    safeguard_str:String,
+    safeguard:EntryState<usize>,
+    //safeguard_str:String,
 
-    last_indices:(usize,usize),
+    last_indices:Option<(usize,usize)>,
     last_y_limits:(f64,f64),
     last_x_limits:(f64,f64),
     last_y_limits_live:(f64,f64),
     last_x_limits_live:(f64,f64),
-    select_threshold:f64,
-    select_threshold_string:String,
+    select_threshold:EntryState<f64>,
+    lazy_data_load:Option<(usize,usize)>,
+    //select_threshold_string:String,
 
     cache:Cache,
     view_index:usize,
@@ -107,13 +110,14 @@ pub struct Plotter{
     lc_mode:LCMode,
     lc_only:bool,
     lc_mean:bool,
+    //suppress_warning:bool,
 
     min_x_string:String,
     max_x_string:String,
     min_y_string:String,
     max_y_string:String,
-    out_shape:(u32,u32),
-    out_shape_str:(String,String),
+    out_shape:(EntryState<u32>,EntryState<u32>),
+    //out_shape_str:(String,String),
     axis_formatter:TimeAxisFormat,
     detector_pixels:usize,
     loader:Option<thread::JoinHandle<DataCache>>
@@ -180,16 +184,16 @@ impl Plotter{
                 plot_spec: RefCell::new(None),
                 detector:Detector::default_vtl(),
                 pixels:Vec::new(),
-                safeguard:30000,
-                safeguard_str:"30000".into(),
-                last_indices:(0,0),
+                safeguard:EntryState::new(30000) ,
+                //safeguard_str:"30000".into(),
+                last_indices:None,
                 pixels_show: Vec::new(),
                 last_y_limits:(0.0,0.0),
                 last_x_limits:(0.0,0.0),
                 last_y_limits_live:(0.0,0.0),
                 last_x_limits_live:(0.0,0.0),
-                select_threshold:5.0,
-                select_threshold_string:"".into(),
+                select_threshold:EntryState::new(5.0),
+                //select_threshold_string:"".into(),
                 cache:Cache::new(),
                 view_index:0,
                 view_pivot:0,
@@ -202,11 +206,12 @@ impl Plotter{
                 max_x_string:"".into(),
                 min_y_string:"".into(),
                 max_y_string:"".into(),
-                out_shape:(1024,768),
-                out_shape_str:("".into(),"".into()),
+                out_shape:(EntryState::new(1024),EntryState::new(768)),
+                //out_shape_str:("".into(),"".into()),
                 axis_formatter: TimeAxisFormat::AsIs,
                 detector_pixels:1,
-                loader:None
+                loader:None,
+                lazy_data_load:None,
         };
         res.sync_entries();
         res
@@ -214,6 +219,7 @@ impl Plotter{
 
     pub fn clear(&mut self){
         self.data = None;
+        self.last_indices = None;
         self.pixels.clear();
         self.pixels_show.clear();
         self.cache.clear();
@@ -263,9 +269,48 @@ impl Plotter{
         self.min_y_string = ymin.to_string();
         self.max_y_string = ymax.to_string();
 
-        self.out_shape_str = (self.out_shape.0.to_string(), self.out_shape.1.to_string());
-        self.select_threshold_string = self.select_threshold.to_string();
+        //self.out_shape_str = (self.out_shape.0.to_string(), self.out_shape.1.to_string());
+        //self.select_threshold_string = self.select_threshold.to_string();
         // self.safeguard_str = self.safeguard.to_string();
+    }
+
+    fn ensure_data_async(&mut self,start:usize, end:usize, padamo:&mut PadamoState){
+        let indices = (start,end);
+        if let Some(ind) = self.last_indices{
+            if indices != ind{
+                self.clear();
+            }
+        }
+        if let None = self.data{
+            if end-start>self.safeguard.parsed_value{
+                padamo.show_warning(format!("Cannot show signal of length {} (Safeguard is {})",end-start,self.safeguard.parsed_value));
+                return;
+            }
+            if self.loader.is_some(){
+                //padamo.show_info("Loading signal");
+                return;
+            }
+            if let Some(padamo_api::prelude::Content::DetectorFullData(signal_in)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
+                //let signal = (*signal_in).clone();
+                let lazy_spatial = signal_in.0.clone();
+                let lazy_temporal = signal_in.1.clone();
+
+                println!("Getting data");
+                let length = lazy_spatial.length();
+                // No need to compare with zero.
+                if !(start<end && end<=length){
+                    return;
+                }
+
+                //let start = start;
+                //let end = end;
+
+                let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end);
+
+                self.loader = Some(loader);
+                self.last_indices = Some(indices);
+            }
+        }
     }
 
 }
@@ -335,17 +380,21 @@ impl PadamoTool for Plotter{
                 widget::rule::Rule::horizontal(10),
                 widget::text("Image export settings"),
                 widget::row![
-                    widget::text("Image size").vertical_alignment(iced::alignment::Vertical::Bottom),
-                    widget::text_input("width",&self.out_shape_str.0).on_input(PlotterMessage::SetSizeX).on_submit(PlotterMessage::SubmitSize),
-                    widget::text_input("height",&self.out_shape_str.1).on_input(PlotterMessage::SetSizeY).on_submit(PlotterMessage::SubmitSize),
+                    errored_text("Image size",self.out_shape.0.is_valid && self.out_shape.1.is_valid),
+                    //widget::text("Image size").vertical_alignment(iced::alignment::Vertical::Bottom),
+                    //widget::text_input("width",&self.out_shape_str.0).on_input(PlotterMessage::SetSizeX).on_submit(PlotterMessage::SubmitSize),
+                    //widget::text_input("height",&self.out_shape_str.1).on_input(PlotterMessage::SetSizeY).on_submit(PlotterMessage::SubmitSize),
+                    self.out_shape.0.view("width",PlotterMessage::SetSizeX),
+                    self.out_shape.1.view("height", PlotterMessage::SetSizeY)
                 ],
                 widget::rule::Rule::horizontal(10),
                 widget::checkbox("Display pointer", self.display_pointer).on_toggle(PlotterMessage::SetPointerDisplay),
                 widget::checkbox("Display channel map", self.channelmap_show).on_toggle(PlotterMessage::SetPixelmapOn),
-                widget::row![
-                    widget::text("Safeguard").vertical_alignment(iced::alignment::Vertical::Bottom),
-                    widget::text_input("value",&self.safeguard_str).on_input(PlotterMessage::SetSafeguardString).on_submit(PlotterMessage::SafeguardCommit)
-                ],
+                // widget::row![
+                //     widget::text("Safeguard").vertical_alignment(iced::alignment::Vertical::Bottom),
+                //     widget::text_input("value",&self.safeguard_str).on_input(PlotterMessage::SetSafeguardString).on_submit(PlotterMessage::SafeguardCommit)
+                // ],
+                self.safeguard.view_row("Safeguard","value",PlotterMessage::SetSafeguardString),
                 widget::rule::Rule::horizontal(10),
                 widget::Container::new(widget::column![
                     widget::text("Time format"),
@@ -364,10 +413,11 @@ impl PadamoTool for Plotter{
                 ]),
                 widget::rule::Rule::horizontal(10),
                 widget::text("Pixels autoselection"),
-                widget::row![
-                    widget::text("Selection threshold"),
-                    widget::text_input("value", &self.select_threshold_string).on_input(PlotterMessage::SetThreshold).on_submit(PlotterMessage::SubmitThreshold),
-                ],
+                // widget::row![
+                //     widget::text("Selection threshold"),
+                //     widget::text_input("value", &self.select_threshold_string).on_input(PlotterMessage::SetThreshold).on_submit(PlotterMessage::SubmitThreshold),
+                // ],
+                self.select_threshold.view_row("Selection threshold", "value", PlotterMessage::SetThreshold),
                 widget::button("Select pixels").on_press(PlotterMessage::SelectByThreshold),
                 widget::rule::Rule::horizontal(10),
                 //Pixel list
@@ -431,42 +481,9 @@ impl PadamoTool for Plotter{
                     }
                     PlotterMessage::PlotPixel(start, end, index) => {
                         println!("Engaged plot {}..{} ({}) for {:?}", start,end, end-start, index);
-                        let indices = (*start,*end);
-                        if indices != self.last_indices{
-                            self.clear();
-                            self.last_indices = indices;
-                        }
 
-                        if let None = self.data{
-                            if end-start>self.safeguard{
-                                padamo.show_warning(format!("Cannot show signal of length {} (Safeguard is {})",end-start,self.safeguard));
-                                return;
-                            }
-                            if self.loader.is_some(){
-                                //padamo.show_info("Loading signal");
-                                return;
-                            }
-                            if let Some(padamo_api::prelude::Content::DetectorFullData(signal_in)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
-                                //let signal = (*signal_in).clone();
-                                let lazy_spatial = signal_in.0.clone();
-                                let lazy_temporal = signal_in.1.clone();
+                        self.ensure_data_async(*start, *end, padamo);
 
-                                println!("Getting data");
-                                let length = lazy_spatial.length();
-                                // No need to compare with zero.
-                                if !(*start<=*end && *end<length){
-                                    return;
-                                }
-
-                                let start = *start;
-                                let end = *end;
-
-                                let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end);
-
-                                self.loader = Some(loader);
-
-                            }
-                        }
                         self.select_pixel(index);
                     },
                     PlotterMessage::TogglePixel(index, value)=>{
@@ -475,20 +492,18 @@ impl PadamoTool for Plotter{
                     PlotterMessage::SetPointerDisplay(value)=>{
                         self.display_pointer = *value;
                     }
-                    PlotterMessage::SyncPointer(ptr)=>{
-                        self.view_index = *ptr;
-                        will_replot = self.display_pointer;
+                    PlotterMessage::SyncData { start, end, pointer }=>{
+                        self.view_index = *pointer;
+                        //will_replot = self.display_pointer;
+                        self.lazy_data_load = Some((*start,*end));
                     }
+                    // PlotterMessage::SyncPointer(ptr)=>{
+                    //     self.view_index = *ptr;
+                    //     will_replot = self.display_pointer;
+                    // }
                     PlotterMessage::SetSafeguardString(s)=>{
-                        self.safeguard_str = s.clone();
-                    }
-                    PlotterMessage::SafeguardCommit=>{
-                        if let Ok(v) = self.safeguard_str.parse(){
-                            self.safeguard=v;
-                        }
-                        else{
-                            self.safeguard_str = self.safeguard.to_string();
-                        }
+                        self.safeguard.set_string(s.clone());
+                        will_replot=false;
                     }
                     PlotterMessage::SetLCMode(mode)=>{
                         self.lc_mode = *mode;
@@ -539,21 +554,14 @@ impl PadamoTool for Plotter{
                         self.sync_entries();
                     }
                     PlotterMessage::SetSizeX(v)=>{
-                        self.out_shape_str.0 = v.clone();
+                        self.out_shape.0.set_string(v.clone());
+                        //self.out_shape_str.0 = v.clone();
                         will_replot = false;
                     }
                     PlotterMessage::SetSizeY(v)=>{
-                        self.out_shape_str.1 = v.clone();
+                        self.out_shape.1.set_string(v.clone());
+                        //self.out_shape_str.1 = v.clone();
                         will_replot = false;
-                    }
-                    PlotterMessage::SubmitSize=>{
-                        if let Ok(w) = self.out_shape_str.0.parse(){
-                            if let Ok(h) = self.out_shape_str.1.parse(){
-                                self.out_shape = (w,h);
-                            }
-                            self.sync_entries();
-                            will_replot = false;
-                        }
                     }
                     PlotterMessage::SavePlot=>{
                         //diagram::PlotterChart::new(&self).
@@ -562,14 +570,15 @@ impl PadamoTool for Plotter{
                         if let Some(v) = result{
                             use plotters::prelude::*;
                             let charter = diagram::PlotterChart::new(&self);
+                            let out_shape = (self.out_shape.0.parsed_value, self.out_shape.1.parsed_value);
                             if v.ends_with(".svg"){
-                                let root_area = SVGBackend::new(&v, self.out_shape).into_drawing_area();
+                                let root_area = SVGBackend::new(&v, out_shape).into_drawing_area();
                                 root_area.fill(&WHITE).unwrap();
                                 let cc = ChartBuilder::on(&root_area);
                                 charter.build_chart(&(), cc);
                             }
                             else if v.ends_with(".png"){
-                                let root_area = BitMapBackend::new(&v, self.out_shape).into_drawing_area();
+                                let root_area = BitMapBackend::new(&v, out_shape).into_drawing_area();
                                 root_area.fill(&WHITE).unwrap();
                                 let cc = ChartBuilder::on(&root_area);
                                 charter.build_chart(&(), cc);
@@ -581,15 +590,13 @@ impl PadamoTool for Plotter{
                         will_replot=false;
                     }
                     PlotterMessage::SetThreshold(v)=>{
-                        self.select_threshold_string = v.clone();
-                    },
-                    PlotterMessage::SubmitThreshold=>{
-                        if let Ok(v) = self.select_threshold_string.parse(){
-                            self.select_threshold = v;
-                        }
-                        self.sync_entries();
+                        // self.select_threshold_string = v.clone();
+                        // if let Ok(v) = self.select_threshold_string.parse(){
+                        //     self.select_threshold = v;
+                        // }
+                        self.select_threshold.set_string(v.clone());
                         will_replot=false;
-                    }
+                    },
                     PlotterMessage::ClearPixels=>{
                         self.clear_pixels();
                     }
@@ -598,12 +605,15 @@ impl PadamoTool for Plotter{
                             let pix_data = data.signal.clone();
                             let maxes = get_maxes(&pix_data);
                             for i in maxes.enumerate(){
-                                if maxes[&i]>self.select_threshold{
+                                if maxes[&i]>self.select_threshold.parsed_value{
                                     self.select_pixel(&i);
                                 }
                             }
                         }
                     }
+                    // PlotterMessage::LazySelectData(start, end)=>{
+                    //     self.lazy_data_load = Some((*start,*end));
+                    // }
                     PlotterMessage::PlotXClicked(_)=>(),
                 }
                 if will_replot{
@@ -620,5 +630,12 @@ impl PadamoTool for Plotter{
             return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPositionUnixTime(*f)));
         }
         None
+    }
+
+    fn context_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
+        if let Some((start,end)) = self.lazy_data_load.take(){
+            println!("Eager load {},{}",start,end);
+            self.ensure_data_async(start, end, padamo);
+        }
     }
 }

@@ -317,7 +317,7 @@ impl PadamoTool for PadamoViewer{
                 iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
             ],
             iced::widget::Container::new(
-                iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
+                iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end+1,Some(ViewerMessage::SetViewPosition))),
             ).center_x().center_y().width(iced::Length::Fill).height(100),
 
             iced::widget::container(
@@ -890,7 +890,12 @@ impl PadamoTool for PadamoViewer{
                 self.clamp();
                 self.update_buffer(Some(padamo));
                 self.fill_strings();
-                return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::Clear));
+                return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
+                    start: self.start,
+                    end: self.end+1,
+                    pointer: self.pointer
+
+                }));
             }
         }
 
@@ -928,16 +933,20 @@ impl PadamoTool for PadamoViewer{
                 None
             }
             else{
-                Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
+                Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer }))
+                //Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
             }
         }
+
         else if let PadamoAppMessage::ViewerMessage(_) = msg.as_ref(){
-            if self.plotter_needs_reset{
-                Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::Clear))
-            }
-            else{
-                Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
-            }
+            // if self.plotter_needs_reset{
+            //     self.plotter_needs_reset = false;
+            //     Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::LazySelectData(self.start, self.end+1)))
+            // }
+            // else{
+                //Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
+            //}
+            Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer }))
         }
         else {
             None

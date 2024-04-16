@@ -109,7 +109,10 @@ impl NodesRegistry{
         //println!("{:?}",compute_graph.nodes);
     }
 
-    pub fn create_calculation_node(&self, path:String)->GraphNode{
+    pub fn create_calculation_node(&self, path:String)->Option<GraphNode>{
+        if !self.nodes.contains_key(&path){
+            return None;
+        }
         let entry = &self.nodes[&path];
         let display_name = entry.name();
         let mut res = GraphNode::new(display_name.into(), path);
@@ -125,7 +128,7 @@ impl NodesRegistry{
         for con in constants.iter(){
             res.add_constant(&con.name.to_string(), con.default_value.clone().into());
         }
-        res
+        Some(res)
     }
 }
 
