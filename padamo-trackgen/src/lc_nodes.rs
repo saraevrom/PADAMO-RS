@@ -11,13 +11,14 @@ fn category() -> RVec<RString>where {
 #[derive(Clone,Debug)]
 pub struct LCSwitch{
     pub left:DoubleFunctionOperatorBox,
-    pub right:DoubleFunctionOperatorBox
+    pub right:DoubleFunctionOperatorBox,
+    pub pivot:f64,
 }
 
 impl DoubleFunctionOperator for LCSwitch{
     #[allow(clippy::let_and_return)]
     fn calculate(&self,x:f64,) -> f64 where {
-       if x<0.0{
+       if x<self.pivot{
             self.left.calculate(x)
         }
         else{
@@ -43,7 +44,7 @@ impl LCSwitchNode{
             f_right = f_right.invmap(|x| -x);
         }
 
-        let combined = make_function_box(LCSwitch{left:f_left, right:f_right});
+        let combined = make_function_box(LCSwitch{left:f_left, right:f_right, pivot:0.0});
         let combined = combined.map(move |x| x*ampl);
 
         outputs.set_value("LC", combined.into())?;
@@ -86,6 +87,88 @@ impl CalculationNode for LCSwitchNode{
             ("amplitude", 1.0),
             ("left_ascending", true),
             ("right_descending", true)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub struct LCPivotNode;
+
+impl LCPivotNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let f_left = inputs.request_function("Left")?;
+        let mut f_right = inputs.request_function("Right")?;
+        //let ampl = constants.request_float("amplitude")?;
+
+        let pivot = constants.request_float("pivot")?;
+
+        let k_left = f_left.calculate(pivot);
+        let k_right = f_right.calculate(pivot);
+
+        let combined = make_function_box(
+            match (k_left==0.0, k_right==0.0) {
+                    (true,true)=>{
+                        LCSwitch{left:f_left, right:f_right, pivot}
+                    }
+                    (false,false)=>{
+                        let merging_coeff = k_left/k_right;
+                        f_right = f_right.map(move |x| x*merging_coeff);
+                        LCSwitch{left:f_left, right:f_right, pivot}
+                    }
+                    _=>{
+                        return Err(ExecutionError::OtherError("Cannot make LC pivot point".into()));
+                    }
+            }
+        );
+        //let combined = make_function_box(LCSwitch{left:f_left, right:f_right, pivot:0.0});
+        //let combined = combined.map(move |x| x*ampl);
+
+        outputs.set_value("LC", combined.into())?;
+        Ok(())
+    }
+}
+
+
+impl CalculationNode for LCPivotNode{
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString {
+        "LC pivot switch".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports![
+            ("Left", ContentType::Function),
+            ("Right", ContentType::Function)
+        ]
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("LC", ContentType::Function)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![
+            ("pivot", 0.0)
         ]
     }
 
@@ -202,6 +285,107 @@ impl CalculationNode for ExponentLCNode{
         constants![
             ("tau", 1.0)
         ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct TerminationLCNode;
+
+impl TerminationLCNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let output:DoubleFunctionOperatorBox = (|x:f64| if x==0.0 {1.0} else {0.0}).into();
+        outputs.set_value("LC", output.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for TerminationLCNode{
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString {
+        "Terminate LC".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports![]
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("LC", ContentType::Function)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+
+
+
+#[derive(Clone,Debug)]
+pub struct ConstantLCNode;
+
+impl ConstantLCNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let output:DoubleFunctionOperatorBox = (|_:f64| 1.0).into();
+        outputs.set_value("LC", output.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for ConstantLCNode{
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString {
+        "Constant LC".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports![]
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("LC", ContentType::Function)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![]
     }
 
     #[allow(clippy::let_and_return)]
