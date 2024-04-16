@@ -11,7 +11,7 @@ pub enum PlotterMessage{
     SetPointerDisplay(bool),
     SetPixelmapOn(bool),
     //SyncPointer(usize),
-    SyncData{start:usize, end:usize, pointer:usize},
+    SyncData{start:usize, end:usize, pointer:usize, force_clear:bool},
     SetSafeguardString(String),
     //SafeguardCommit,
     SetLCMode(super::LCMode),

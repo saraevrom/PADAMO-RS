@@ -1,4 +1,4 @@
-use self::messages::PlotterMessage;
+use self::{data_state::DataState, messages::PlotterMessage};
 use std::{cell::RefCell, thread};
 
 use super::PadamoTool;
@@ -26,7 +26,7 @@ use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
 use crate::double_entry_state::{EntryState,errored_text};
 
 //static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
-
+pub mod data_state;
 
 #[derive(Clone,Debug,Copy,Eq,PartialEq)]
 pub enum LCMode{
@@ -68,24 +68,14 @@ impl TimeAxisFormat{
 
 //type DataCache = (Vec<f64>,ArrayND<f64>, Vec<f64>, usize);
 
-#[derive(Clone,Debug)]
-pub struct DataCache{
-    pub time:Vec<f64>,
-    pub signal:ArrayND<f64>,
-    pub lc: Vec<f64>,
-    pub pixel_count:usize,
-    pub start:usize,
-    pub end:usize,
-    pub minv:f64,
-    pub maxv:f64,
-}
+
 
 pub struct Plotter{
     detector:padamo_detectors::Detector<PlotterMessage>,
 
     plot_spec:RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
 
-    data:Option<DataCache>,
+    data: data_state::DataState,
     pixels:Vec<Vec<usize>>,
     pixels_show:Vec<bool>,
     channelmap_show:bool,
@@ -93,13 +83,13 @@ pub struct Plotter{
     safeguard:EntryState<usize>,
     //safeguard_str:String,
 
-    last_indices:Option<(usize,usize)>,
+    //last_indices:Option<(usize,usize)>,
     last_y_limits:(f64,f64),
     last_x_limits:(f64,f64),
     last_y_limits_live:(f64,f64),
     last_x_limits_live:(f64,f64),
     select_threshold:EntryState<f64>,
-    lazy_data_load:Option<(usize,usize)>,
+    //lazy_data_load:Option<(usize,usize)>,
     //select_threshold_string:String,
 
     cache:Cache,
@@ -110,7 +100,6 @@ pub struct Plotter{
     lc_mode:LCMode,
     lc_only:bool,
     lc_mean:bool,
-    //suppress_warning:bool,
 
     min_x_string:String,
     max_x_string:String,
@@ -120,11 +109,11 @@ pub struct Plotter{
     //out_shape_str:(String,String),
     axis_formatter:TimeAxisFormat,
     detector_pixels:usize,
-    loader:Option<thread::JoinHandle<DataCache>>
+    //loader:Option<thread::JoinHandle<DataCache>>
 }
 
 
-pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal,start:usize,end:usize)->thread::JoinHandle<DataCache>{
+pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal,start:usize,end:usize)->thread::JoinHandle<data_state::DataCache>{
     thread::spawn( move || {
         let spatial = lazy_spatial.request_range(start,end);
         let temporal:Vec<f64> = lazy_temporal.request_range(start,end).into();
@@ -150,7 +139,7 @@ pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal
         }
 
         //self.data = Some((temporal,spatial_out,lc, pixel_count_u64));
-        DataCache {
+        data_state::DataCache {
             time:temporal,
             signal:spatial_out,
             lc,
@@ -158,7 +147,8 @@ pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal
             start,
             end,
             minv,
-            maxv
+            maxv,
+            last_indices:(start,end)
         }
     })
 }
@@ -180,13 +170,13 @@ pub fn get_maxes(pix_data:&ArrayND<f64>)->ArrayND<f64>{
 
 impl Plotter{
     pub fn new()->Self{
-        let mut res = Self {  data:None,
+        let mut res = Self {  data:DataState::NoData,
                 plot_spec: RefCell::new(None),
                 detector:Detector::default_vtl(),
                 pixels:Vec::new(),
                 safeguard:EntryState::new(30000) ,
                 //safeguard_str:"30000".into(),
-                last_indices:None,
+                //last_indices:None,
                 pixels_show: Vec::new(),
                 last_y_limits:(0.0,0.0),
                 last_x_limits:(0.0,0.0),
@@ -210,16 +200,16 @@ impl Plotter{
                 //out_shape_str:("".into(),"".into()),
                 axis_formatter: TimeAxisFormat::AsIs,
                 detector_pixels:1,
-                loader:None,
-                lazy_data_load:None,
+                //loader:None,
+                //lazy_data_load:None,
         };
         res.sync_entries();
         res
     }
 
     pub fn clear(&mut self){
-        self.data = None;
-        self.last_indices = None;
+        self.data = DataState::NoData;
+        //self.last_indices = None;
         self.pixels.clear();
         self.pixels_show.clear();
         self.cache.clear();
@@ -274,22 +264,20 @@ impl Plotter{
         // self.safeguard_str = self.safeguard.to_string();
     }
 
-    fn ensure_data_async(&mut self,start:usize, end:usize, padamo:&mut PadamoState){
-        let indices = (start,end);
-        if let Some(ind) = self.last_indices{
-            if indices != ind{
-                self.clear();
-            }
-        }
-        if let None = self.data{
+    fn ensure_data_async(&mut self, padamo:&mut PadamoState){
+        // let indices = (start,end);
+        // if let Some(ind) = self.last_indices{
+        //     if indices != ind{
+        //         self.clear();
+        //     }
+        // }
+        if let DataState::PendingLoad(start, end) = self.data{
             if end-start>self.safeguard.parsed_value{
                 padamo.show_warning(format!("Cannot show signal of length {} (Safeguard is {})",end-start,self.safeguard.parsed_value));
+                self.data = DataState::NoData;
                 return;
             }
-            if self.loader.is_some(){
-                //padamo.show_info("Loading signal");
-                return;
-            }
+
             if let Some(padamo_api::prelude::Content::DetectorFullData(signal_in)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
                 //let signal = (*signal_in).clone();
                 let lazy_spatial = signal_in.0.clone();
@@ -307,10 +295,12 @@ impl Plotter{
 
                 let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end);
 
-                self.loader = Some(loader);
-                self.last_indices = Some(indices);
+                //self.loader = Some(loader);
+                //self.last_indices = Some(indices);
+                self.data = DataState::Loading(loader);
             }
         }
+
     }
 
 }
@@ -330,15 +320,23 @@ impl PadamoTool for Plotter{
 
         //let diag = chart.view();
 
-        let chart_view:iced::Element<'a, PlotterMessage> = if self.loader.is_some(){
-            widget::text("Loading...").into()
-        }
-        else if self.data.is_none(){
-            widget::text("No data").into()
-        }
-        else{
-            diagram::PlotterChart::new(&self).view().into()
+
+        let chart_view:iced::Element<'a, PlotterMessage> = match self.data{
+            DataState::NoData => widget::text("No data").into(),
+            DataState::PendingLoad(_, _) => widget::text("Pending load").into(),
+            DataState::Loading(_) => widget::text("Loading...").into(),
+            DataState::Loaded(_) => diagram::PlotterChart::new(&self).view().into(),
         };
+
+        // let chart_view:iced::Element<'a, PlotterMessage> = if self.loader.is_some(){
+        //     widget::text("Loading...").into()
+        // }
+        // else if self.data.is_none(){
+        //     widget::text("No data").into()
+        // }
+        // else{
+        //     diagram::PlotterChart::new(&self).view().into()
+        // };
 
         let main_row:iced::Element<'a, PlotterMessage> = iced::widget::container(widget::row![
             widget::column![
@@ -445,7 +443,7 @@ impl PadamoTool for Plotter{
     fn update(&mut self, msg: std::rc::Rc<PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
         match msg.as_ref() {
             PadamoAppMessage::Tick => {
-                if let Some(worker) = self.loader.take(){
+                if let Some(worker) = self.data.take_worker(){
                     if worker.is_finished(){
                         if let Ok(v) = worker.join(){
                             self.detector_pixels = v.pixel_count;
@@ -455,15 +453,15 @@ impl PadamoTool for Plotter{
 
                             self.last_y_limits = (v.minv,v.maxv);
                             self.last_y_limits_live = self.last_y_limits;
-
-                            self.data = Some(v);
+                            self.data = DataState::Loaded(v);
                             self.sync_entries();
                             println!("Loaded interval");
                             self.cache.clear();
+                            self.clear_pixels();
                         }
                     }
                     else{
-                        self.loader = Some(worker);
+                        self.data = DataState::Loading(worker);
                     }
                 }
             }
@@ -482,7 +480,11 @@ impl PadamoTool for Plotter{
                     PlotterMessage::PlotPixel(start, end, index) => {
                         println!("Engaged plot {}..{} ({}) for {:?}", start,end, end-start, index);
 
-                        self.ensure_data_async(*start, *end, padamo);
+                        if let DataState::NoData = self.data{
+                            self.data.apply_start_end(*start, *end);
+                        }
+
+                        self.ensure_data_async(padamo);
 
                         self.select_pixel(index);
                     },
@@ -492,10 +494,14 @@ impl PadamoTool for Plotter{
                     PlotterMessage::SetPointerDisplay(value)=>{
                         self.display_pointer = *value;
                     }
-                    PlotterMessage::SyncData { start, end, pointer }=>{
+                    PlotterMessage::SyncData { start, end, pointer, force_clear }=>{
                         self.view_index = *pointer;
+                        if *force_clear{
+                            self.clear();
+                        }
+                        self.data.apply_start_end(*start, *end);
                         //will_replot = self.display_pointer;
-                        self.lazy_data_load = Some((*start,*end));
+                        //self.lazy_data_load = Some((*start,*end));
                     }
                     // PlotterMessage::SyncPointer(ptr)=>{
                     //     self.view_index = *ptr;
@@ -601,7 +607,7 @@ impl PadamoTool for Plotter{
                         self.clear_pixels();
                     }
                     PlotterMessage::SelectByThreshold=>{
-                        if let Some(data) = &self.data{
+                        if let DataState::Loaded(data) = &self.data{
                             let pix_data = data.signal.clone();
                             let maxes = get_maxes(&pix_data);
                             for i in maxes.enumerate(){
@@ -633,9 +639,13 @@ impl PadamoTool for Plotter{
     }
 
     fn context_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
-        if let Some((start,end)) = self.lazy_data_load.take(){
-            println!("Eager load {},{}",start,end);
-            self.ensure_data_async(start, end, padamo);
+        // if let Some((start,end)) = self.lazy_data_load.take(){
+        //     println!("Eager load {},{}",start,end);
+        //     self.data.apply_start_end(start, end);
+        //     self.ensure_data_async(padamo);
+        // }
+        if let DataState::PendingLoad(start, end) = self.data{
+            self.ensure_data_async(padamo);
         }
     }
 }

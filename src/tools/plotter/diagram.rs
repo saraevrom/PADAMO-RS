@@ -102,7 +102,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
 
     fn build_chart<DB:DrawingBackend>(&self, state: &Self::State,  mut builder:ChartBuilder<DB>) {
         //build your chart here, please refer to plotters for more details
-        if let Some(data) = &self.plotter_data.data{
+        if let super::DataState::Loaded(data) = &self.plotter_data.data{
             let tim = &data.time;
             let signal = &data.signal;
             let lc_total = &data.lc;
