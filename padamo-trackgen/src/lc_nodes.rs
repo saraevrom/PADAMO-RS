@@ -106,7 +106,7 @@ impl LinearLCNode{
         if tau==0.0{
             return Err(ExecutionError::OtherError("Linear LC tau must be nonzero".into()));
         }
-        let output:DoubleFunctionOperatorBox = (move |x| x/tau).into();
+        let output:DoubleFunctionOperatorBox = (move |x| x/tau+1.0).into();
         outputs.set_value("LC", output.into())?;
         Ok(())
     }
