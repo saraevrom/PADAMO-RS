@@ -5,15 +5,16 @@ use super::PadamoTool;
 //use iced::advanced::Widget;
 use once_cell::sync::Lazy;
 //use padamo_api::lazy_array_operations::ndim_array::ArrayND;
-use iced::{widget::{self, scrollable}, Length};
+use iced::{advanced::overlay, widget::{self, row, scrollable}, Length};
 use padamo_detectors::Detector;
 use plotters::coord::{cartesian::Cartesian2d, types::RangedCoordf64};
 use plotters_iced::Chart;
 use crate::{application::PadamoState, messages::PadamoAppMessage};
-use ndarray_stats::QuantileExt;
+//use ndarray_stats::QuantileExt;
 //use super::viewer::ViewerMessage;
 pub mod messages;
 pub mod diagram;
+//pub mod selection_diagram;
 mod colors;
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use iced::widget::canvas::Cache;
@@ -109,6 +110,8 @@ pub struct Plotter{
     //out_shape_str:(String,String),
     axis_formatter:TimeAxisFormat,
     detector_pixels:usize,
+
+    is_selecting_pixels:bool,
     //loader:Option<thread::JoinHandle<DataCache>>
 }
 
@@ -121,15 +124,6 @@ pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal
         let spatial_out = spatial;
         let minv = spatial_out.flat_data.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let maxv = spatial_out.flat_data.iter().fold(-f64::INFINITY, |a, &b| a.max(b));
-        //self.last_y_limits = (minv,maxv);
-        //self.last_y_limits_live = self.last_y_limits;
-
-        //let mint = temporal[0];
-        //let maxt = temporal[temporal.len()-1];
-        // self.last_x_limits = (mint,maxt);
-        // self.last_x_limits_live = self.last_x_limits;
-
-        //let pixel_count = (spatial_out.flat_data.len()/temporal.len()) as f64;
         let pixel_count_u64 = spatial_out.flat_data.len()/temporal.len();
         let mut lc:Vec<f64> = Vec::with_capacity(temporal.len());
         lc.resize(temporal.len(), 0.0);
@@ -200,6 +194,7 @@ impl Plotter{
                 //out_shape_str:("".into(),"".into()),
                 axis_formatter: TimeAxisFormat::AsIs,
                 detector_pixels:1,
+                is_selecting_pixels:false,
                 //loader:None,
                 //lazy_data_load:None,
         };
@@ -215,14 +210,41 @@ impl Plotter{
         self.cache.clear();
     }
 
-    pub fn select_pixel(&mut self, pix:&Vec<usize>){
-        if !self.pixels.contains(pix){
+    pub fn add_pixel_with_visibility(&mut self, pix:&Vec<usize>, visible:bool){
+        if let Some(i) = self.pixels.iter().position(|r| r==pix){
+            self.pixels_show[i] = visible;
+        }
+        else{
+            self.pixels.push(pix.clone());
+            self.pixels_show.push(visible);
+            println!("Selected pixel {:?}", pix);
+            self.place_last_pixel();
+        }
+    }
+
+    pub fn toggle_pixel(&mut self, pix:&Vec<usize>){
+        if let Some(i) = self.pixels.iter().position(|r| r==pix){
+            self.pixels_show[i] = !self.pixels_show[i];
+        }
+        else{
             self.pixels.push(pix.clone());
             self.pixels_show.push(true);
             println!("Selected pixel {:?}", pix);
             self.place_last_pixel();
         }
     }
+
+
+    pub fn select_pixel(&mut self, pix:&Vec<usize>){
+        // if !self.pixels.contains(pix){
+        //     self.pixels.push(pix.clone());
+        //     self.pixels_show.push(true);
+        //     println!("Selected pixel {:?}", pix);
+        //     self.place_last_pixel();
+        // }
+        self.add_pixel_with_visibility(pix, true);
+    }
+
 
     fn place_last_pixel(&mut self){
         let mut i = self.pixels.len()-1;
@@ -294,6 +316,7 @@ impl Plotter{
                 //let end = end;
 
                 let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end);
+                self.clear_pixels();
 
                 //self.loader = Some(loader);
                 //self.last_indices = Some(indices);
@@ -321,22 +344,28 @@ impl PadamoTool for Plotter{
         //let diag = chart.view();
 
 
-        let chart_view:iced::Element<'a, PlotterMessage> = match self.data{
-            DataState::NoData => widget::text("No data").into(),
-            DataState::PendingLoad(_, _) => widget::text("Pending load").into(),
-            DataState::Loading(_) => widget::text("Loading...").into(),
-            DataState::Loaded(_) => diagram::PlotterChart::new(&self).view().into(),
-        };
+        let chart_view:iced::Element<'a, PlotterMessage> = if self.is_selecting_pixels{
+            let action:Option<fn(Vec<usize>)->PlotterMessage> = None;
+            let body = self.detector.view_map(&self.pixels, &self.pixels_show, Some(PlotterMessage::TogglePixelByName), action);
+            let body:iced::Element<'_,PlotterMessage> = iced::widget::container(body).width(Length::Fixed(500.0)).height(Length::Fixed(500.0)).into();
+            iced::widget::column![
+                widget::container(
+                    body,
+                ).width(iced::Length::Fill).align_x(iced::alignment::Horizontal::Center),
+                widget::container(
+                    widget::button("Done").on_press(PlotterMessage::HidePixelSelector).width(100)
+                ).width(iced::Length::Fill).align_x(iced::alignment::Horizontal::Center)
 
-        // let chart_view:iced::Element<'a, PlotterMessage> = if self.loader.is_some(){
-        //     widget::text("Loading...").into()
-        // }
-        // else if self.data.is_none(){
-        //     widget::text("No data").into()
-        // }
-        // else{
-        //     diagram::PlotterChart::new(&self).view().into()
-        // };
+            ].width(iced::Length::Fill).height(iced::Length::Fill).into()
+        }
+        else{
+            match self.data{
+                DataState::NoData => widget::text("No data").into(),
+                DataState::PendingLoad(_, _) => widget::text("Pending load").into(),
+                DataState::Loading(_) => widget::text("Loading...").into(),
+                DataState::Loaded(_) => diagram::PlotterChart::new(&self).view().into(),
+            }
+        };
 
         let main_row:iced::Element<'a, PlotterMessage> = iced::widget::container(widget::row![
             widget::column![
@@ -416,7 +445,8 @@ impl PadamoTool for Plotter{
                 //     widget::text_input("value", &self.select_threshold_string).on_input(PlotterMessage::SetThreshold).on_submit(PlotterMessage::SubmitThreshold),
                 // ],
                 self.select_threshold.view_row("Selection threshold", "value", PlotterMessage::SetThreshold),
-                widget::button("Select pixels").on_press(PlotterMessage::SelectByThreshold),
+                widget::button("Threshold selection").on_press(PlotterMessage::SelectByThreshold),
+                widget::button("Manual selection").on_press(PlotterMessage::TogglePixelSelector),
                 widget::rule::Rule::horizontal(10),
                 //Pixel list
                 widget::container::Container::new(
@@ -436,8 +466,8 @@ impl PadamoTool for Plotter{
             pad.map(PadamoAppMessage::ViewerMessage)
         ].into();
 
-        underlay
 
+        underlay
     }
 
     fn update(&mut self, msg: std::rc::Rc<PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
@@ -457,7 +487,6 @@ impl PadamoTool for Plotter{
                             self.sync_entries();
                             println!("Loaded interval");
                             self.cache.clear();
-                            self.clear_pixels();
                         }
                     }
                     else{
@@ -621,6 +650,19 @@ impl PadamoTool for Plotter{
                     //     self.lazy_data_load = Some((*start,*end));
                     // }
                     PlotterMessage::PlotXClicked(_)=>(),
+                    PlotterMessage::ShowPixelSelector=>{
+                        self.is_selecting_pixels = true;
+                    }
+                    PlotterMessage::HidePixelSelector=>{
+                        self.is_selecting_pixels = false;
+                    }
+                    PlotterMessage::TogglePixelSelector=>{
+                        self.is_selecting_pixels = !self.is_selecting_pixels;
+                    }
+                    PlotterMessage::TogglePixelByName(v)=>{
+                        println!("Toggled pixel {:?}",v);
+                        self.toggle_pixel(v);
+                    }
                 }
                 if will_replot{
                     self.cache.clear();

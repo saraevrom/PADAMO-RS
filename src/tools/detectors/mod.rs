@@ -38,7 +38,7 @@ impl PadamoTool for PadamoDetectorManager{
         let action:Option<fn(Vec<usize>)->DetectorManagerMessage> = None;
         let frame:iced::Element<DetectorManagerMessage> = widget::row![
                 Split::new(
-                    widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action)).width(iced::Length::Fill),
+                    widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill),
                     widget::container(widget::text_editor(&self.source).on_action(DetectorManagerMessage::EditorActionPerformed)).width(iced::Length::Fill),
                     self.split_pos,
                     iced_aw::split::Axis::Vertical,

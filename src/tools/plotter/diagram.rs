@@ -112,6 +112,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
             let mut chart = builder
                 .x_label_area_size(50)
                 .y_label_area_size(100)
+                .margin(10)
 
                 .build_cartesian_2d(xmin..xmax, ymin..ymax)
                 .unwrap();

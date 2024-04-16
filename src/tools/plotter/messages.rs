@@ -5,6 +5,7 @@ pub enum PlotterMessage{
     Clear,
     ClearPixels,
     PlotPixel(usize,usize,Vec<usize>),
+    TogglePixelByName(Vec<usize>),
     //LazySelectData(usize,usize),
     PlotXClicked(f64),
     TogglePixel(usize, bool),
@@ -29,6 +30,10 @@ pub enum PlotterMessage{
     SelectByThreshold,
     //SubmitSize,
     SubmitLimits,
+    ShowPixelSelector,
+    HidePixelSelector,
+    TogglePixelSelector,
+
     SavePlot
 }
 

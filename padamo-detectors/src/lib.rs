@@ -13,6 +13,9 @@ use chrono::prelude::*;
 pub mod polygon;
 pub mod parser;
 pub mod colors;
+pub mod selector_chart;
+
+pub use selector_chart::DetectorChartMap;
 
 //use polygon::StableColorMatrix;
 
@@ -107,6 +110,7 @@ impl<Message> Detector<Message>{
         chart.draw_series::<BackendCoordOnly,PathElement<(f64,f64)>,_,_>(
               outlines.iter()
         ).unwrap();
+        *self.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
 
     }
 
@@ -213,35 +217,43 @@ impl<Message> Detector<Message>{
 
     }
 
-    pub fn view<'a,F:'static+Fn(Vec<usize>)->Message>(&'a self, source:Option<(&'a ArrayND<f64>,f64)>, scale:Scaling, rclick_event:Option<F>)->iced::Element<'a,Message>{
-        ChartWidget::new(DetectorChart::new(self,source,scale, rclick_event)).into()
+    pub fn view<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, source:Option<(&'a ArrayND<f64>,f64)>, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
+        ChartWidget::new(DetectorChart::new(self,source,scale, lclick_event, rclick_event)).into()
+    }
+
+    pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
+        ChartWidget::new(DetectorChartMap::new(self,pixels,pixels_show,lclick_event,rclick_event)).into()
     }
 }
 
 
-pub struct DetectorChart<'a,Msg,F>
+pub struct DetectorChart<'a,Msg,F1,F2>
 where
-    F:'static + Fn(Vec<usize>)->Msg
+    F1:'static + Fn(Vec<usize>)->Msg,
+    F2:'static + Fn(Vec<usize>)->Msg,
 {
     detector:&'a Detector<Msg>,
     source:Option<(&'a ArrayND<f64>,f64)>,
     scale:Scaling,
-    rclick_event:Option<F>
+    lclick_event:Option<F1>,
+    rclick_event:Option<F2>,
 }
 
-impl<'a,Msg,F> DetectorChart<'a,Msg,F>
+impl<'a,Msg,F1,F2> DetectorChart<'a,Msg,F1,F2>
 where
-    F:'static + Fn(Vec<usize>)->Msg
+    F1:'static + Fn(Vec<usize>)->Msg,
+    F2:'static + Fn(Vec<usize>)->Msg,
 {
-    pub fn new(detector:&'a Detector<Msg>, source:Option<(&'a ArrayND<f64>,f64)>, scale:Scaling, rclick_event:Option<F>)->Self{
-        Self { detector ,source, scale, rclick_event}
+    pub fn new(detector:&'a Detector<Msg>, source:Option<(&'a ArrayND<f64>,f64)>, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->Self{
+        Self { detector ,source, scale, lclick_event, rclick_event}
     }
 }
 
 
-impl<'a,Msg,F> Chart<Msg> for DetectorChart<'a,Msg,F>
+impl<'a,Msg,F1,F2> Chart<Msg> for DetectorChart<'a,Msg,F1,F2>
 where
-    F:'static + Fn(Vec<usize>)->Msg
+    F1:'static + Fn(Vec<usize>)->Msg,
+    F2:'static + Fn(Vec<usize>)->Msg,
 {
     type State = Option<((f64,f64),(i32,i32))>;
 
@@ -271,6 +283,13 @@ where
                             let mut msg = None;
                             if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right) = evt{
                                 if let Some(caller) = &self.rclick_event{
+                                    if let Some(index) = self.detector.cells.position_index(inpoint){
+                                        msg = Some(caller(index.clone()));
+                                    }
+                                }
+                            }
+                            else if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left) = evt{
+                                if let Some(caller) = &self.lclick_event{
                                     if let Some(index) = self.detector.cells.position_index(inpoint){
                                         msg = Some(caller(index.clone()));
                                     }

@@ -20,7 +20,7 @@ use padamo_iced_forms::IcedForm;
 use crate::tools::viewer::Worker;
 use sparse_intervals::split_intervals;
 use iced_aw::selection_list;
-use super::plotter::{spawn_loader,DataCache, get_maxes};
+use super::plotter::{spawn_loader,data_state::DataCache, get_maxes};
 
 use std::fs;
 
@@ -224,7 +224,7 @@ impl PadamoTool for PadamoTrigger{
             ].width(250),
 
             //widget::container(
-            self.chart.view(view_content,padamo_detectors::Scaling::Autoscale,action),
+            self.chart.view(view_content,padamo_detectors::Scaling::Autoscale,action,action),
             //).width(iced::Length::Fill),
 
             widget::scrollable(widget::column![

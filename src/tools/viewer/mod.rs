@@ -317,7 +317,7 @@ impl PadamoTool for PadamoViewer{
                 iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
             ],
             iced::widget::Container::new(
-                iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end+1,Some(ViewerMessage::SetViewPosition))),
+                iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
             ).center_x().center_y().width(iced::Length::Fill).height(100),
 
             iced::widget::container(
@@ -393,8 +393,9 @@ impl PadamoTool for PadamoViewer{
             self.animation_fields.view().map(ViewerMessage::EditAnimationSettings),
         ].width(200).into();
 
+        let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
         let top_row = row![
-            self.chart.view(frame,self.plot_scale, Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
+            self.chart.view(frame,self.plot_scale,action, Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
             iced::widget::rule::Rule::vertical(10),
             iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(200),
         ];
@@ -893,8 +894,8 @@ impl PadamoTool for PadamoViewer{
                 return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
                     start: self.start,
                     end: self.end+1,
-                    pointer: self.pointer
-
+                    pointer: self.pointer,
+                    force_clear:true,
                 }));
             }
         }
@@ -933,7 +934,7 @@ impl PadamoTool for PadamoViewer{
                 None
             }
             else{
-                Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer }))
+                Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer, force_clear:false }))
                 //Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
             }
         }
@@ -946,7 +947,7 @@ impl PadamoTool for PadamoViewer{
             // else{
                 //Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
             //}
-            Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer }))
+            Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer, force_clear:false }))
         }
         else {
             None
