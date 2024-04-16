@@ -273,3 +273,62 @@ implement_unary_combinator!(LogNode, "Log", category);
 implement_unary_combinator!(AbsNode, "Abs", category);
 implement_unary_combinator!(NegNode, "Negate", category);
 
+#[derive(Clone,Debug)]
+pub struct LinearModificationNode;
+
+
+impl LinearModificationNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let f0 = inputs.request_function("F")?;
+        let k = constants.request_float("coefficient")?;
+        let b = constants.request_float("offset")?;
+
+        let f = f0.map(move |x| x*k+b);
+        //let f = make_function_box(crate::ops::Exponent(f0));
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for LinearModificationNode{
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString where {
+        "Linear modification".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category0()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("F", ContentType::Function)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("F", ContentType::Function)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![
+            ("coefficient", 1.0),
+            ("offset", 0.0)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}

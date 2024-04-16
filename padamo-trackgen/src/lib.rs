@@ -27,6 +27,9 @@ pub fn nodes()->RVec<CalculationNodeBox>{
         nodes::AdditiveNormalNoiseNode,
         lc_nodes::LCSwitchNode,
         lc_nodes::LinearLCNode,
-        lc_nodes::ExponentLCNode
+        lc_nodes::ExponentLCNode,
+        lc_nodes::LCPivotNode,
+        lc_nodes::TerminationLCNode,
+        lc_nodes::ConstantLCNode
     )
 }
