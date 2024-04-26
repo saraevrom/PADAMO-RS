@@ -5,7 +5,7 @@ pub mod lazy_array_operations;
 pub mod function_operator;
 
 use abi_stable::sabi_trait::TD_Opaque;
-use abi_stable::std_types::RVec;
+use abi_stable::std_types::{RString, RVec};
 use abi_stable::{StableAbi, library::RootModule, package_version_strings, sabi_types::VersionStrings, declare_root_module_statics};
 use crate::prelude::*;
 
@@ -71,7 +71,7 @@ pub struct PadamoModule{
     //pub new: extern "C" fn() -> PadamoModuleStateBox,
 
     #[sabi(last_prefix_field)]
-    pub nodes: extern "C" fn() -> RVec<CalculationNodeBox>,
+    pub nodes: extern "C" fn(RString) -> RVec<CalculationNodeBox>,
     //
     //pub indicate: extern "C" fn(&mut State),
 }

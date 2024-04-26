@@ -53,7 +53,9 @@ impl NodesRegistry{
         /*if let Some(name_os) = path.file_name(){
             if let Some(name) = name_os.to_str(){
                 */
-        println!("Loading {}",path.to_str().unwrap());
+        let path_str = path.to_str().ok_or(NodeRegistryError::PathError)?;
+        let parent_dir = path.parent().ok_or(NodeRegistryError::PathError)?.to_str().ok_or(NodeRegistryError::PathError)?;
+        println!("Loading {}",path_str);
         //let plugin = PadamoModule_Ref::load_from_file(path).map_err(NodeRegistryError::LibraryError)?;
 
         let plugin = (|| {
@@ -62,7 +64,7 @@ impl NodesRegistry{
         })().map_err(NodeRegistryError::LibraryError)?;
 
         let nodes_fn = plugin.nodes();
-        let mut nodes = nodes_fn();
+        let mut nodes = nodes_fn(parent_dir.into());
         for node in nodes.iter(){
             println!("Detected node {}",node.name());
         }

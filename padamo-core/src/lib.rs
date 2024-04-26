@@ -1,3 +1,4 @@
+use abi_stable::std_types::RString;
 use padamo_api::prelude::*;
 use abi_stable::{std_types::RVec, export_root_module, prefix_type::PrefixTypeTrait};
 use padamo_api::nodes_vec;
@@ -18,7 +19,7 @@ pub fn plugin_root()->PadamoModule_Ref{
 }
 
 #[sabi_extern_fn]
-pub fn nodes()->RVec<CalculationNodeBox>{
+pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     let mut node_list: RVec<CalculationNodeBox> = RVec::new();
     node_list.extend(output::nodes());
     node_list.extend(constants::nodes());

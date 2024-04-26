@@ -5,6 +5,7 @@ use std::{fmt::Display, error::Error};
 pub enum NodeRegistryError{
     NodeDuplicate(String),
     LibraryError(abi_stable::library::LibraryError),
+    PathError,
     NoName,
 }
 
@@ -14,6 +15,7 @@ impl Display for NodeRegistryError{
             Self::NodeDuplicate(x)=>write!(f,"Node {} is defined twice", x),
             Self::LibraryError(x)=>write!(f,"Library error: {}", x),
             Self::NoName=>write!(f,"No file name"),
+            Self::PathError=>write!(f,"Path error ocurred"),
         }
     }
 }
