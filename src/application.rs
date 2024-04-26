@@ -6,6 +6,7 @@ use std::rc::Rc;
 use iced::{ Application, Theme, Command};
 use iced::widget::{row, button};
 use crate::messages::PadamoAppMessage;
+use crate::nodes_interconnect::NodesRegistry;
 use crate::tools::{self as ctools, PadamoTool};
 use crate::builtin_nodes;
 
@@ -17,6 +18,7 @@ use crate::popup_message::PadamoPopupMessageType;
 // use iced_aw::{menu_bar, menu_items};
 
 use iced_aw::style::MenuBarStyle;
+use std::path::Path;
 
 
 fn menu_button(action:&str, msg:PadamoAppMessage)->iced::widget::Button<'_,PadamoAppMessage>{
@@ -133,6 +135,31 @@ impl Padamo{
     }
 }
 
+
+fn register_nodes(nodes:&mut NodesRegistry, seekdir:&Path, look_in_directories:bool){
+    println!("Seeking for plugins in {}", seekdir.to_str().unwrap());
+    let paths = fs::read_dir(seekdir).unwrap();
+    for path in paths{
+        if let Ok(p_res) = path{
+            let p = p_res.path();
+            if p.is_dir() && look_in_directories{
+                println!("Looking into dir: {:?}",p);
+
+                //NO FULL RECURSIVE SEARCH. Only first layer.
+                register_nodes(nodes, &p, false);
+            }
+            else if p.is_file(){
+                if let Err(e) = nodes.load_lib(p.as_path()){
+                    println!("Error reading library: {}",e);
+                }
+            }
+            else {
+                println!("Skipped: {:?}",p);
+            }
+        }
+    }
+}
+
 impl Application for Padamo{
     type Executor = iced::executor::Default;
     type Message = PadamoAppMessage;
@@ -148,16 +175,26 @@ impl Application for Padamo{
         let current_exe = std::env::current_exe().unwrap();
         let current_dir = current_exe.parent().unwrap();
         let plugins_dir = current_dir.join("plugins");
-        println!("Seeking for plugins in {}", plugins_dir.to_str().unwrap());
-        let paths = fs::read_dir(plugins_dir).unwrap();
-        for path in paths{
-            if let Ok(p_res) = path{
-                let p = p_res.path();
-                if let Err(e) = nodes.load_lib(p.as_path()){
-                    println!("Error reading library: {}",e);
-                }
-            }
-        }
+        register_nodes(&mut nodes, &plugins_dir, true);
+        // println!("Seeking for plugins in {}", plugins_dir.to_str().unwrap());
+        // let paths = fs::read_dir(plugins_dir).unwrap();
+        // for path in paths{
+        //     if let Ok(p_res) = path{
+        //         let p = p_res.path();
+        //         if p.is_dir(){
+        //             println!("Looking into dir: {:?}",p);
+        //
+        //         }
+        //         else if p.is_file(){
+        //             if let Err(e) = nodes.load_lib(p.as_path()){
+        //                 println!("Error reading library: {}",e);
+        //             }
+        //         }
+        //         else {
+        //             println!("Skipped: {:?}",p);
+        //         }
+        //     }
+        // }
 
         let tools: Vec<Box<dyn crate::tools::PadamoTool>> = vec![
             Box::new(ctools::PadamoViewer::new()),
