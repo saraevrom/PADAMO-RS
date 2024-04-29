@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
-use chrono::{Datelike, Timelike};
+use chrono::{offset::LocalResult, Datelike, TimeZone, Timelike};
 use once_cell::sync::Lazy;
 use regex::Regex;
+
+use chrono::prelude::*;
 
 static DATETIME_REGEXES:Lazy<Vec<Regex>> = Lazy::new(||{
     let mut regexes = Vec::new();
@@ -57,30 +59,45 @@ pub fn parse_datetimes(input:&str,init_datetime:chrono::DateTime<chrono::Utc>)->
     let second = res.get("S").map(|x| x.clone()).unwrap_or(init_datetime.second().to_string());
     let millisecond = res.get("ms").map(|x| x.clone()).unwrap_or("0".into());
 
-    let end_date = chrono::Utc::now().with_year(year.parse().unwrap());
-    let end_date = if let Some(d) = end_date {d} else{return None;};
+    let year:i32 = if let Ok(v) = year.parse() {v} else {println!("Cannot parse year"); return None;};
+    let month:u32 = if let Ok(v) = month.parse() {v} else {println!("Cannot parse month"); return None;};
+    let day:u32 = if let Ok(v) = day.parse() {v} else {println!("Cannot parse day"); return None;};
 
-    let end_date = end_date.with_month(month.parse().unwrap());
-    let end_date = if let Some(d) = end_date {d} else{return None;};
+    let hour:u32 = if let Ok(v) = hour.parse() {v} else {println!("Cannot parse hour"); return None;};
+    let minute:u32 = if let Ok(v) = minute.parse() {v} else {println!("Cannot parse minute"); return None;};
+    let second:u32 = if let Ok(v) = second.parse() {v} else {println!("Cannot parse second"); return None;};
+    let millisecond:u32 = if let Ok(v) = millisecond.parse() {v} else {println!("Cannot parse millisecond"); return None;};
 
-    let end_date = end_date.with_day(day.parse().unwrap());
-    let end_date = if let Some(d) = end_date {d} else{return None;};
 
-
-    let end_date = end_date.with_hour(hour.parse().unwrap());
-    let end_date = if let Some(d) = end_date {d} else{return None;};
-
-    let end_date = end_date.with_minute(minute.parse().unwrap());
-    let end_date = if let Some(d) = end_date {d} else{return None;};
-
-    let end_date = end_date.with_second(second.parse().unwrap());
-    let end_date = if let Some(d) = end_date {d} else{return None;};
-
-    let nanosec:u32 = millisecond.parse::<u32>().unwrap()*1000_000;
-
-    let end_date = end_date.with_nanosecond(nanosec);
-    let end_date = if let Some(d) = end_date {d} else{return None;};
-
-    Some(end_date)
+    //let end_date = Utc.ymd_opt(year, month, day).and_hms_milli_opt(hour, minute, second, millisecond);
+    let end_date = Utc.with_ymd_and_hms(year, month, day, hour, minute, second);
+    let end_date = if let LocalResult::Single(v) = end_date {v} else{println!("Cannot make UTC time"); return None;};
+    let end_date = end_date.with_nanosecond(millisecond*1000_000);
+    //    .map(|x| x.with_nanosecond(millisecond*1000_000));
+    // let end_date = chrono::Utc::now().with_year(year.parse().unwrap());
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    //
+    // let end_date = end_date.with_month(month.parse().unwrap());
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    //
+    // let end_date = end_date.with_day(day.parse().unwrap());
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    //
+    //
+    // let end_date = end_date.with_hour(hour.parse().unwrap());
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    //
+    // let end_date = end_date.with_minute(minute.parse().unwrap());
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    //
+    // let end_date = end_date.with_second(second.parse().unwrap());
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    //
+    // let nanosec:u32 = millisecond.parse::<u32>().unwrap()*1000_000;
+    //
+    // let end_date = end_date.with_nanosecond(nanosec);
+    // let end_date = if let Some(d) = end_date {d} else{return None;};
+    println!("DATETIME SET {:?}", end_date);
+    end_date
 
 }
