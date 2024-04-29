@@ -1,6 +1,7 @@
 use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 
+use crate::ops::PhysicalFFConstants;
 
 #[derive(Clone,Debug)]
 pub struct PhysicalFFNode;
@@ -24,7 +25,8 @@ impl PhysicalFFNode{
             return Err(ExecutionError::OtherError("flat fielding eff_2d is not compatible with signal".into()));
         }
         //if test_data.shape.le
-        signal.0 = make_lao_box(crate::ops::PhysicalFF::new(signal.0, eff_2d, tau));
+        let consts = PhysicalFFConstants::from_constlist(&constants)?;
+        signal.0 = make_lao_box(crate::ops::PhysicalFF::new(signal.0, eff_2d, tau, consts));
         outputs.set_value("Signal", signal.into())?;
         Ok(())
     }
@@ -63,7 +65,7 @@ impl CalculationNode for PhysicalFFNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
+        PhysicalFFConstants::constlist()
     }
 
     #[allow(clippy::let_and_return)]
