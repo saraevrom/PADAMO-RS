@@ -58,7 +58,7 @@ impl LazyArrayOperation<ArrayND<f64>> for PhysicalFF{
             let tau = tau_calib[&pixel_index];
             let b = tau*eff/DT;
             let v = if eff>0.0 && tau>0.0{
-                -CR_TO_INT*NTS*lambertw0(-b*x/NTS/eff)
+                -CR_TO_INT*NTS*lambertw0(-b*x/NTS/eff)/b
             }
             else{0.0};
 
