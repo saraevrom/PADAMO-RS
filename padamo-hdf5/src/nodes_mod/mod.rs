@@ -3,6 +3,10 @@ pub use singular::LazyHDF5SignalNode;
 
 pub mod joined;
 pub use joined::LazyHDF5DirSignalNode;
+
+pub mod array;
+pub use array::LazyHDF5ArrayNode;
+
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 use padamo_api::prelude::*;
 
@@ -10,6 +14,7 @@ use padamo_api::prelude::*;
 use crate::ops::{LazyHDF5Reader3D,LazyTimeHDF5Reader,Caster,ArrayCaster,UnsignedToFloatArrayCaster};
 use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyArrayOperationBox,LazyDetectorSignal};
 use padamo_api::lazy_array_operations::ndim_array;
+
 
 pub fn make_spatial(filename:String, spatial:String)->Result<LazyDetectorSignal,hdf5::Error>{
     let first_reader = LazyHDF5Reader3D::<f64>::new(filename.clone().into(), spatial.clone())?;
