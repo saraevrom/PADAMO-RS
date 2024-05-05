@@ -15,6 +15,7 @@ pub struct PhysicalFFConstants{
     pub pix_fov: f64, //Поле зрения пикселя в стеррадианах
     pub s:f64, //Площадь входного окна в см^2
     pub t:f64, //Time sample в секундах
+    pub e0: f64 //Энергия одного фотона
 }
 
 impl Default for PhysicalFFConstants{
@@ -25,7 +26,8 @@ impl Default for PhysicalFFConstants{
             lt: 0.93,
             pix_fov: (2.88/160.0)*(2.88/160.0),
             s: PI*25.0/4.0,
-            t: 0.001
+            t: 0.001,
+            e0: 1.0,
         }
     }
 }
@@ -35,7 +37,7 @@ impl PhysicalFFConstants{
         self.t/self.dt*1e9
     }
     pub fn get_cr_to_int(&self)->f64{
-        1.0/(self.wt*self.lt*self.pix_fov*self.s*self.t)
+        1.0/(self.wt*self.lt*self.pix_fov*self.s*self.t*self.e0)
     }
 
     pub fn constlist()->RVec<CalculationConstant>{
@@ -46,7 +48,8 @@ impl PhysicalFFConstants{
             ("lt",x.lt),
             ("pix_fov",x.pix_fov),
             ("s",x.s),
-            ("t",x.t)
+            ("t",x.t),
+            ("e0",x.e0)
         ]
     }
 
@@ -58,6 +61,7 @@ impl PhysicalFFConstants{
             pix_fov: constlist.request_float("pix_fov")?,
             s: constlist.request_float("s")?,
             t: constlist.request_float("t")?,
+            e0: constlist.request_float("e0")?,
         })
     }
 }
