@@ -4,9 +4,18 @@ use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
 use abi_stable::std_types::RVec;
+use hdf5::{Selection, SliceOrIndex};
+use hdf5::Hyperslab;
 use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyArrayOperationBox};
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use std::ops::RangeFull;
+
+fn make_slab(shapelen:usize,indexes:std::ops::Range<usize>)->hdf5::Selection{
+    let slab:Vec<SliceOrIndex> = (0..shapelen).map(|i| if i==0 {indexes.clone().into()} else {(..).into()}).collect();
+    //Selection::Hyperslab()
+    let slab:Hyperslab = slab.into();
+    slab.into()
+}
 
 #[derive(Clone,Debug)]
 pub struct LazyHDF5Reader3D<T>
@@ -35,7 +44,8 @@ where
     }
 
     pub fn check_read(&self)->bool{
-        if let Ok(_) = self.dataset.read_slice::<T, (std::ops::Range<usize>, RangeFull, RangeFull), ndarray::IxDyn>((0..1,..,..)){
+        let l = self.dataset.shape().len();
+        if let Ok(_) = self.dataset.read_slice::<T, Selection, ndarray::IxDyn>(make_slab(l, 0..1)){
             true
         }
         else{
@@ -73,7 +83,8 @@ where
         //         return old_data.clone();
         //     }
         // }
-        let sliced:ndarray::Array3<T> = self.dataset.read_slice((start..end,..,..)).unwrap();
+        //let sliced:ndarray::Array3<T> = self.dataset.read_slice((start..end,..,..)).unwrap();
+        let sliced = self.dataset.read_slice::<T, Selection, ndarray::IxDyn>(make_slab(self.dataset.shape().len(), start..end)).unwrap();
 
         let mut shape = vec![end-start];
         let shape_add:Vec<_> = self.dataset.shape().iter().skip(1).map(|x| *x).collect();
