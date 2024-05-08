@@ -18,7 +18,8 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         node_reg_mm::SlidingMedianNodeNormalizer,
         node_reg::SlidingQuantileNode,
         node_reg::SlidingQuantileNodeNormalizer,
-        node_reg::LazyFlashSuppression
+        node_reg::LazyFlashSuppression,
+        node_reg::LazyThresholdNode
     )
 }
 

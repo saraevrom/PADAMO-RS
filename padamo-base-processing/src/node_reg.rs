@@ -208,3 +208,69 @@ impl CalculationNode for LazyFlashSuppression{
         self.calculate(inputs, outputs, constants, environment).into()
     }
 }
+
+
+#[derive(Clone,Debug)]
+pub struct LazyThresholdNode;
+
+impl LazyThresholdNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
+        let mut src = inputs.request_detectorfulldata("Signal")?;
+        let threshold_value = constants.request_float("threshold_value")?;
+        let blank_value = constants.request_float("blank_value")?;
+        let invert = constants.request_boolean("invert")?;
+        src.0 = make_lao_box(LazyThreshold{
+            source: src.0,
+            threshold_value,
+            blank_value,
+            invert,
+        });
+        outputs.set_value("Signal", Content::DetectorFullData(src))
+    }
+}
+
+impl CalculationNode for LazyThresholdNode{
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString where {
+        "Threshold replace".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn category(&self,) -> RVec<RString>where {
+        rvec!["Data Processing".into()]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("Signal", ContentType::DetectorFullData)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("Signal", ContentType::DetectorFullData)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!(
+            ("threshold_value",0.0),
+            ("blank_value",0.0),
+            ("invert",false)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}

@@ -260,3 +260,38 @@ impl LazyArrayOperation<ArrayND<f64>> for LazyFlashSuppress{
         src.into()
     }
 }
+
+
+#[derive(Clone,Debug)]
+pub struct LazyThreshold{
+    pub source:LazyDetectorSignal,
+    pub threshold_value:f64,
+    pub blank_value:f64,
+    pub invert:bool,
+}
+
+impl LazyArrayOperation<ArrayND<f64>> for LazyThreshold{
+    #[allow(clippy::let_and_return)]
+    fn length(&self,) -> usize where {
+        self.source.length()
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn request_range(&self,start:usize,end:usize,) -> ArrayND<f64> where {
+        let mut workon:ArrayND<f64> = self.source.request_range(start,end);
+        let thresh = self.threshold_value;
+        let inv = self.invert;
+        let blank = self.blank_value;
+        workon.flat_data.par_iter_mut().for_each(|x| {
+            if (*x>thresh) == inv{
+                *x = blank;
+            }
+        });
+        workon
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
+        self.source.calculate_overhead(start,end)
+    }
+}
