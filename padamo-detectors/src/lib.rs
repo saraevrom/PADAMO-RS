@@ -335,7 +335,7 @@ impl Scaling{
                 }
             }
             Self::Fixed(min, max)=>{
-                if max<min{
+                if max<=min{
                     (*min,*min+0.001)
                 }
                 else{
