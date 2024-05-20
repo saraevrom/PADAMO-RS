@@ -31,3 +31,9 @@ impl Display for ExecutionError{
 
 impl Error for ExecutionError{}
 
+impl ExecutionError{
+    pub fn from_dyn_error(err:Box<dyn Error>)->Self{
+        let v = format!("{}",err);
+        Self::OtherError(v.into())
+    }
+}
