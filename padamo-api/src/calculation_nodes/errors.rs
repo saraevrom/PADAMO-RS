@@ -36,4 +36,9 @@ impl ExecutionError{
         let v = format!("{}",err);
         Self::OtherError(v.into())
     }
+
+    pub fn from_error<T:Error>(err:T)->Self{
+        let v = format!("{}",err);
+        Self::OtherError(v.into())
+    }
 }
