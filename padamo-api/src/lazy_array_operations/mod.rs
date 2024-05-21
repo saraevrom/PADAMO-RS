@@ -5,6 +5,7 @@ pub mod ndim_array;
 pub mod operators;
 pub mod merge;
 pub mod cache;
+pub mod cutter;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub use ndim_array::ArrayND;
@@ -53,6 +54,18 @@ pub type LazyTriSignal = Tuple3<LazyDetectorSignal,LazyTimeSignal,ROption<LazyTr
 //     }
 // }
 
+
+impl<T> LazyArrayOperationBox<T>
+where
+    T:Clone+Debug+'static
+{
+    pub fn cut(self,start:usize,end:usize)->Result<Self,cutter::CutError>{
+        let cutdata = cutter::LazyArrayOperationCutter::new(self, start, end)?;
+        Ok(make_lao_box(cutdata))
+    }
+
+
+}
 
 
 impl<T> LazyArrayOperationBox<T>
