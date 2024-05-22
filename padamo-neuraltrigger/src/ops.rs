@@ -145,6 +145,7 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyANNTrigger3D{
         let blocks_w = src_width/self.size_hint.1;
         let blocks_h = src_height/self.size_hint.2;
         let source_data = source_data.to_ndarray();
+        let source_data = source_data.map(|x| *x as f32);
 
         //assert_eq!((src_time-self.size_hint.0)/self.stride,0);
 
@@ -163,8 +164,10 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyANNTrigger3D{
                 for k in 0..windows_amount{
                     let base = k*self.stride;
                     let src = block.slice(ndarray::s![base..base+self.size_hint.0,..,..]);
-                    slided.slice_mut(ndarray::s![k,..,..,..]).zip_mut_with(&src, |a,b|{*a = *b as f32});
+                    slided.slice_mut(ndarray::s![k,..,..,..]).zip_mut_with(&src, |a,b|{*a = *b});
                 }
+
+
                 println!("Slice 2 OK");
 
 
