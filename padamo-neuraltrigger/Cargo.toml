@@ -17,4 +17,4 @@ ndarray = "0.15.6"
 thiserror = "1.0.61"
 #openblas-src = { version = "0.10.9", features = ["static"] }
 
-ort = { version = "2.0.0-rc.2", features = ["cuda", "copy-dylibs"] }
+ort = { version = "2.0.0-rc.2", features = ["cuda", "copy-dylibs", "load-dynamic"] }

@@ -40,16 +40,37 @@ rm libpadamo_iced_forms.so           #  Padamo iced forms. Also not a plugin
 mkdir -pv plugins
 rm -r plugins/*
 
+# Replacing symlinks with actual libraries
+for x in libonnx*.so*
+do
+    SRC="$(readlink ${x})"
+    echo "Copying library $SRC -> $x"
+    if  [ ! -z "$SRC" ]
+    then
+        cp -v --remove-destination "${SRC}" "${x}"
+    else
+        echo "SKIP"
+    fi
+done
+
+
 # ANN trigger subdir
 rm -rf padamo-neuraltrigger
 mkdir -pv padamo-neuraltrigger
 mv libpadamoneuraltrigger.so padamo-neuraltrigger/
 cp -fv ../../padamo-neuraltrigger/*.onnx padamo-neuraltrigger/
-mv libonnx*.so padamo-neuraltrigger/
+
+mv padamo-neuraltrigger/ plugins/
 
 
-mv -v *.so plugins/
-mv -v padamo-neuraltrigger/ plugins/
-
-cd plugins
+# Base modules
+mv -v libpadamobasesignalprocessing.so  plugins/
+mv -v libpadamoflatfielding.so          plugins/
+mv -v libpadamomat.so                   plugins/
+mv -v libpadamobasictriggers.so         plugins/
+mv -v libpadamofunctions.so             plugins/
+mv -v libpadamosignalmanipulation.so    plugins/
+mv -v libpadamocore.so                  plugins/
+mv -v libpadamohdf5.so                  plugins/
+mv -v libpadamotrackgen.so              plugins/
 
