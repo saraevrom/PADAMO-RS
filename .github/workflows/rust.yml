@@ -1,0 +1,32 @@
+name: Rust with post
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: bash universal_build.sh release
+    - name: Prepare release
+      run: |
+       mkdir -pv release-linux
+       cp target/release/padamo-rs release-linux/
+       cp -r target/release/plugins release-linux/
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: 'release-linux.zip'
+        path: './release-linux'
+        
