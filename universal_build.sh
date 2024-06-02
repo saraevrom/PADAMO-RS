@@ -38,19 +38,6 @@ cd "./target/${BUILD_TARGET}/"
 mkdir -pv plugins
 rm -rvf plugins/*
 
-# Replacing symlinks with actual libraries
-# for x in libonnx*.so*
-# do
-#     SRC="$(readlink ${x})"
-#     echo "Copying library $SRC -> $x"
-#     if  [ ! -z "$SRC" ]
-#     then
-#         cp -v --remove-destination "${SRC}" "${x}"
-#     else
-#         echo "SKIP"
-#     fi
-# done
-
 
 # ANN trigger subdir
 rm -rf padamo-neuraltrigger
