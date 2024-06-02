@@ -35,23 +35,21 @@ esac
 cargo build --release --workspace || exit 1
 
 cd "./target/${BUILD_TARGET}/"
-rm libpadamo_api_macros_internal.so  #  Padamo API internal library: not a plugin
-rm libpadamo_iced_forms.so           #  Padamo iced forms. Also not a plugin
 mkdir -pv plugins
-rm -r plugins/*
+rm -rvf plugins/*
 
 # Replacing symlinks with actual libraries
-for x in libonnx*.so*
-do
-    SRC="$(readlink ${x})"
-    echo "Copying library $SRC -> $x"
-    if  [ ! -z "$SRC" ]
-    then
-        cp -v --remove-destination "${SRC}" "${x}"
-    else
-        echo "SKIP"
-    fi
-done
+# for x in libonnx*.so*
+# do
+#     SRC="$(readlink ${x})"
+#     echo "Copying library $SRC -> $x"
+#     if  [ ! -z "$SRC" ]
+#     then
+#         cp -v --remove-destination "${SRC}" "${x}"
+#     else
+#         echo "SKIP"
+#     fi
+# done
 
 
 # ANN trigger subdir
