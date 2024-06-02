@@ -21,11 +21,17 @@ jobs:
        mkdir -pv release-linux
        cp target/release/padamo-rs release-linux/
        cp -r target/release/plugins release-linux/
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: 'release-linux.zip'
+        path: './release-linux'
     - name: Upload build
       uses: actions/upload-artifact@master
       with: 
         name: release-linux 
-        path: release-linux
+        path: release-linux.zip
 
   build-windows:
     runs-on: windows-latest
@@ -40,11 +46,17 @@ jobs:
        mkdir -pv release-windows
        cp target/release/padamo-rs.exe release-windows/
        cp -r target/release/plugins release-windows/
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: 'release-windows.zip'
+        path: './release-windows'
     - name: Upload build
       uses: actions/upload-artifact@master
       with: 
         name: release-windows
-        path: release-windows
+        path: release-windows.zip
   
   upload: 
     runs-on: ubuntu-latest 
