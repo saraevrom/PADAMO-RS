@@ -576,7 +576,7 @@ impl PadamoTool for PadamoViewer{
                             let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
                             let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
                             let start = self.start;
-                            let end = self.end;
+                            let end = self.end+1;
                             let testframe = spatial.request_range(0,1).squeeze();
                             let frame_shape = testframe.shape;
                             let settings = self.export_parameters.clone();
@@ -728,7 +728,7 @@ impl PadamoTool for PadamoViewer{
                             let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
                             let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
                             let start = self.start;
-                            let end = self.end;
+                            let end = self.end+1;
 
                             let (tx,rx) = mpsc::channel::<bool>();
 
