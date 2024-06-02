@@ -10,7 +10,6 @@ mod builtin_nodes;
 mod datetime_parser;
 mod time_search;
 mod popup_message;
-mod double_entry_state;
 
 fn main() -> iced::Result{
     application::Padamo::run(Settings {

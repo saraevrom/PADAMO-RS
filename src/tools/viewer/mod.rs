@@ -8,7 +8,8 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::widget::{column,row};
 use crate::messages::PadamoAppMessage;
 use std::time::Instant;
-use padamo_iced_forms::IcedForm;
+use padamo_iced_forms_derive::IcedForm;
+use padamo_iced_forms::IcedFormInterface;
 
 use std::thread;
 use std::sync::{mpsc, Arc, Mutex};

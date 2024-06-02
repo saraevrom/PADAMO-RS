@@ -24,7 +24,7 @@ use padamo_workspace::PadamoWorkspace;
 use iced_aw::{modal,card};
 use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
 
-use crate::double_entry_state::{EntryState,errored_text};
+use padamo_iced_forms::double_entry_state::{EntryState,errored_text};
 
 //static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 pub mod data_state;

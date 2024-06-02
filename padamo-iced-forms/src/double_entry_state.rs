@@ -54,3 +54,8 @@ impl<T:ToString+FromStr> EntryState<T>{
     }
 }
 
+impl<T:ToString+FromStr+Default> Default for EntryState<T>{
+    fn default()->Self{
+        Self::new(T::default())
+    }
+}

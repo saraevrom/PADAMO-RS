@@ -1,0 +1,15 @@
+[package]
+name = "padamo-iced-forms-derive"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.76"
+quote = "1.0.35"
+syn = { version = "2.0.48", features = ["extra-traits"] }
+casey = "0.4.0"
+padamo-iced-forms = {path = "../padamo-iced-forms"}
