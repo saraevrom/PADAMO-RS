@@ -61,5 +61,4 @@ jobs:
       - name: Upload Release
         uses: ncipollo/release-action@v1.12.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           tag: '1.0.0'
