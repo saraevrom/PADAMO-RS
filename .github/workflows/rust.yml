@@ -11,9 +11,7 @@ env:
 
 jobs:
   build-linux:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: Build
@@ -29,4 +27,33 @@ jobs:
         type: 'zip'
         filename: 'release-linux.zip'
         path: './release-linux'
-        
+    - name: Upload build
+      uses: actions/upload-artifact@master
+      with: 
+        name: release-linux 
+        path: release-linux.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      shell: cmd
+      run: builder-release.bat
+    - name: Prepare release
+      shell: bash
+      run: |
+       mkdir -pv release-windows
+       cp target/release/padamo-rs.exe release-windows/
+       cp -r target/release/plugins release-windows/
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: 'release-windows.zip'
+        path: './release-windows'
+    - name: Upload build
+      uses: actions/upload-artifact@master
+      with: 
+        name: release-windows
+        path: release-windows.zip
