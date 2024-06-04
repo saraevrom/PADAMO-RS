@@ -11,7 +11,8 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         node_reg::PixelThresholdTriggerNode,
-        node_reg::LCThresholdTriggerNode
+        node_reg::LCThresholdTriggerNode,
+        node_reg::MedianThresholdTriggerNode
     )
 }
 

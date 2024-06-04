@@ -4,9 +4,12 @@ use padamo_api::{ports,constants};
 use abi_stable::std_types::{RVec,RString};
 use abi_stable::rvec;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
-use padamo_api::lazy_array_operations::{LazyArrayOperationBox, LazyTriSignal, LazyTrigger, LazyDetectorSignal, LazyArrayOperation};
+use padamo_api::lazy_array_operations::{ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTriSignal, LazyTrigger};
 use padamo_api::lazy_array_operations::ndim_array;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
+use ndarray::{SliceInfo,SliceInfoElem};
+use medians::Medianf64;
+use std::sync::{Arc,Mutex};
 
 #[derive(Clone,Debug)]
 pub struct LazyPixelThresholdTrigger{
@@ -70,5 +73,60 @@ impl LazyArrayOperation<ndim_array::ArrayND<bool>> for LazyLCThresholdTrigger{
         let shape = vec![end-start];
         //let flat_data:RVec<bool> = base.flat_data.iter().map(|x| *x>self.threshold).collect();
         ndim_array::ArrayND{flat_data,shape:shape.into()}
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub struct LazyMedianTrigger{
+    src: LazyDetectorSignal,
+    threshold:f64,
+}
+
+
+impl LazyMedianTrigger{
+    pub fn new(src: LazyDetectorSignal, threshold:f64)->Self{
+        Self{src,threshold}
+    }
+}
+
+
+impl LazyArrayOperation<ndim_array::ArrayND<bool>> for LazyMedianTrigger{
+    fn length(&self,) -> usize where {
+        self.src.length()
+    }
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
+        self.src.calculate_overhead(start,end)
+    }
+    fn request_range(&self,start:usize,end:usize,) -> ndim_array::ArrayND<bool>where {
+        let workon = self.src.request_range(start,end);
+        let sublen = end-start;
+        let indices=  workon.shape.len();
+        let workon = workon.to_ndarray();
+        let thresh = self.threshold;
+
+        let res = Arc::new(Mutex::new(ArrayND::new(vec![sublen],false)));
+        let passed = res.clone();
+        (0..sublen).par_bridge().for_each(move |i|{
+            let slices:Vec<SliceInfoElem> = (0..indices).map(
+                |j| if j==0{
+                    SliceInfoElem::Index(i as isize)
+                }
+                else{
+                    SliceInfoElem::Slice { start: 0, end: None, step: 1 }
+                }).collect();
+
+            let slicing = SliceInfo::<&[SliceInfoElem],ndarray::Dim<ndarray::IxDynImpl>,ndarray::Dim<ndarray::IxDynImpl>>::try_from(slices.as_slice()).expect("Slicing error");
+
+            let part = workon.slice(slicing);
+            let vector = part.to_owned().into_raw_vec();
+            if let Ok(v) = vector.medf_checked(){
+                passed.lock().unwrap().flat_data[i] = v>thresh;
+                //res.flat_data[i] = v>thresh;
+            }
+        });
+
+        let lock = Arc::try_unwrap(res).expect("Lock still has multiple owners");
+        lock.into_inner().expect("Mutex cannot be locked")
     }
 }
