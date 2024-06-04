@@ -15,9 +15,10 @@ use crate::polygon::{DetectorPixel,DetectorContent};
 
 pub mod base_parsers;
 pub mod shape_constructors;
+pub mod detector_building_data;
 
 enum DetectorDataMod{
-    Pixel(DetectorPixel),
+    PixelData(Box<dyn detector_building_data::PixelMaker>),
     Name(String),
     CompatShape(Vec<usize>)
 }
@@ -32,8 +33,9 @@ fn parse_string<'a>(i:&'a str)-> IResult<&'a str, &'a str, nom::error::Error<&'a
 }
 
 fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::error::Error<&'a str>>{
-    shape_constructors::parse_pixel.map(|x| DetectorDataMod::Pixel(x)).parse(i)
+    shape_constructors::parse_pixel.map(|x| DetectorDataMod::PixelData(Box::new(x))).parse(i)
 }
+
 
 fn parse_name<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::error::Error<&'a str>>{
     let name_parser = separated_pair(tag_no_case("name"), sp_sep, parse_string).map(|x|x.1);
@@ -59,7 +61,10 @@ pub fn parse_detector<'a>(i:&'a str)-> IResult<&'a str, DetectorContent, nom::er
         let mut x = x;
         for item in x.drain(..){
             match item {
-                DetectorDataMod::Pixel(p)=>{pixels.push(p)},
+                //DetectorDataMod::Pixel(p)=>{pixels.push(p)},
+                DetectorDataMod::PixelData(data)=>{
+                    pixels.extend(data.get_pixels());
+                }
                 DetectorDataMod::Name(s)=>{name = s},
                 DetectorDataMod::CompatShape(s)=>{compat_shape = s},
             }

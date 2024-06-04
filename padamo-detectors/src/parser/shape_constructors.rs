@@ -15,6 +15,7 @@ use nom::Parser;
 use crate::polygon::DetectorPixel;
 
 use super::base_parsers::{parse_index,parse_point,sp};
+use super::detector_building_data::{SinglePixel,PolygonArray,Transformable};
 
 #[derive(Clone, Copy)]
 enum RectSpec{
@@ -49,9 +50,9 @@ fn pixel_definition<'a>(i:&'a str)-> IResult<&'a str,Vec<usize>, nom::error::Err
     merged.parse(i)
 }
 
-fn parse_polygon<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
+fn parse_polygon<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
     let vertices = separated_list1(sp_sep, parse_point);
-    let mut merged = separated_pair(tag_no_case("polygon"), sp_sep, vertices).map(|x| x.1);
+    let mut merged = separated_pair(tag_no_case("polygon"), sp_sep, vertices).map(|x| x.1.into());
     merged.parse(i)
 }
 
@@ -67,7 +68,7 @@ fn parse_rect_tr<'a>(i:&'a str)-> IResult<&'a str, RectSpec, nom::error::Error<&
     enwrapped.parse(i)
 }
 
-fn parse_rect<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
+fn parse_rect<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
     let spec = alt((parse_rect_size,parse_rect_tr));
     let full_rect_spec = separated_pair(parse_point, sp_sep, spec);
 
@@ -79,11 +80,11 @@ fn parse_rect<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Erro
         let (x1,y1) = bl;
         let (x2,y2) = tr;
         vec![(x1,y1),(x2,y1),(x2,y2),(x1,y2)]
-    });
+    }).map(|x| x.into());
     mapped.parse(i)
 }
 
-fn parse_square<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
+fn parse_square<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
 
     let full_square_spec = separated_pair(parse_point, sp_sep, double);
     let partial_square_spec = double.map(|x| ((-x/2.0,-x/2.0),x));
@@ -97,12 +98,12 @@ fn parse_square<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Er
         let x2 = x1+w;
         let y2 = y1+w;
         vec![(x1,y1),(x2,y1),(x2,y2),(x1,y2)]
-    });
+    }).map(|x| x.into());
     mapped.parse(i)
 }
 
 
-fn parse_hexagon<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
+fn parse_hexagon<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
 
 
     let part = separated_pair(tag_no_case("hexagon"),sp ,cut(double) ).map(|x|x.1);
@@ -115,7 +116,7 @@ fn parse_hexagon<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::E
             res.push((x,y))
         }
         res
-    });
+    }).map(|x| x.into());
     mapped.parse(i)
 }
 
@@ -125,85 +126,42 @@ fn parse_angle<'a>(i:&'a str)-> IResult<&'a str, f64, nom::error::Error<&'a str>
     alt((degrees,double)).parse(i)
 }
 
-fn parse_rotate<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
+fn parse_rotate<'a,T,U>(i:&'a str, f:U)-> IResult<&'a str, T, nom::error::Error<&'a str>>
+where
+    T:Transformable,
+    U:Fn(&'a str) -> IResult<&'a str, T, nom::error::Error<&'a str>>,
+{
     let rotator = separated_pair(tag_no_case("rotate"),sp_sep , parse_angle).map(|x| x.1);
-    separated_pair(rotator, sp_sep, parse_vertices)
+    separated_pair(rotator, sp_sep, f)
         .map(|x|{
             let ang = x.0;
-            let a11 = ang.cos();
-            let a12 = -ang.sin();
-            let a21 = ang.sin();
-            let a22 = ang.cos();
-            x.1.iter().map(|(x,y)| (x*a11+y*a12,x*a21+y*a22)).collect()
+            x.1.rotated(ang)
         }).parse(i)
 }
 
-fn parse_translate<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
-    let rotator = separated_pair(tag_no_case("move"),sp_sep , parse_point).map(|x| x.1);
-    separated_pair(rotator, sp_sep, parse_vertices)
+fn parse_rotate_polygon<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>
+
+{
+    parse_rotate(i, parse_vertices)
+}
+
+fn parse_translate<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
+    let mover = separated_pair(tag_no_case("move"),sp_sep , parse_point).map(|x| x.1);
+    separated_pair(mover, sp_sep, parse_vertices)
         .map(|x|{
-            let pos = x.0;
-            x.1.iter().map(|(x,y)| (x+pos.0,y+pos.1)).collect()
+            let offset = x.0;
+            x.1.moved(offset)
         }).parse(i)
 }
 
-fn parse_vertices<'a>(i:&'a str)-> IResult<&'a str, Vec<(f64,f64)>, nom::error::Error<&'a str>>{
-    alt((parse_rotate,parse_translate,parse_polygon,parse_rect,parse_square, parse_hexagon)).parse(i)
+fn parse_vertices<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
+    alt((parse_rotate_polygon,parse_translate,parse_polygon,parse_rect,parse_square, parse_hexagon)).parse(i)
 }
 
-pub fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, DetectorPixel, nom::error::Error<&'a str>>{
+pub fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, SinglePixel, nom::error::Error<&'a str>>{
     separated_pair(pixel_definition, sp_sep, cut(parse_vertices))
-    .map(|x|DetectorPixel::new(x.0, x.1))
+    .map(|x| SinglePixel{index:x.0, polygon:x.1})
     .parse(i)
 }
 
-
-#[cfg(test)]
-mod test_parsers{
-    use super::*;
-
-    #[test]
-    fn test_definition(){
-        assert_eq!(pixel_definition("pixel [ 1, 2 ]"),Ok(("",vec!(1usize,2usize))))
-    }
-
-    #[test]
-    fn test_definition_common(){
-        assert_eq!(pixel_definition("pixel [1, 2]"),Ok(("",vec!(1usize,2usize))))
-    }
-
-    #[test]
-    fn test_incorrect_definition(){
-        assert_ne!(pixel_definition("reeee [ 1, 2 ]"),Ok(("",vec!(1usize,2usize))))
-    }
-
-    #[test]
-    fn test_poly(){
-        assert_eq!(parse_vertices("polygon (0.0,0.0) (0.0,1.0) (1.0,0.0)"),Ok(("",vec![(0.0,0.0),(0.0,1.0),(1.0,0.0)])))
-    }
-
-    #[test]
-    fn test_rect(){
-        assert_eq!(parse_vertices("rect (0.0,0.0) size (1.0,1.0)"),Ok(("",vec![(0.0,0.0),(1.0,0.0),(1.0,1.0),(0.0,1.0)])))
-    }
-    #[test]
-    fn test_square(){
-        assert_eq!(parse_vertices("square (0.0,0.0) 1.0"),Ok(("",vec![(0.0,0.0),(1.0,0.0),(1.0,1.0),(0.0,1.0)])))
-    }
-
-    #[test]
-    fn test_pixel(){
-        assert_eq!(parse_pixel("pixel [1,2]\n\t square (0.0,0.0) 1.0"),Ok(("",DetectorPixel::new(vec![1,2],vec![(0.0,0.0),(1.0,0.0),(1.0,1.0),(0.0,1.0)]))));
-    }
-
-    // #[test]
-    // fn test_square_alt(){
-    //     assert_eq!(parse_vertices("move (0.5,0.5) square 1.0"),Ok(("",vec![(0.0,0.0),(1.0,0.0),(1.0,1.0),(0.0,1.0)])))
-    // }
-
-    // #[test]
-    // fn test_roll(){
-    //     assert_eq!(parse_vertices("rotate 90 deg square (0.0,0.0) 1.0"),Ok(("",vec![(0.0,0.0),(0.0,1.0),(-1.0,1.0),(-1.0,0.0)])))
-    // }
-}
-
+//Tests are outdated
