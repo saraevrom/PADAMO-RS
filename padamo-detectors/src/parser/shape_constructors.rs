@@ -147,9 +147,13 @@ fn parse_rotate_polygon<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::err
     parse_rotate(i, parse_vertices)
 }
 
-fn parse_translate<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
+fn parse_translate<'a,T,U>(i:&'a str, f:U)-> IResult<&'a str, T, nom::error::Error<&'a str>>
+where
+    T:Transformable,
+    U:Fn(&'a str) -> IResult<&'a str, T, nom::error::Error<&'a str>>,
+{
     let mover = separated_pair(tag_no_case("move"),sp_sep , parse_point).map(|x| x.1);
-    separated_pair(mover, sp_sep, parse_vertices)
+    separated_pair(mover, sp_sep, f)
         .map(|x|{
             let offset = x.0;
             let mut res = x.1;
@@ -158,8 +162,12 @@ fn parse_translate<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::E
         }).parse(i)
 }
 
+fn parse_translate_polygon<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
+    parse_translate(i, parse_vertices)
+}
+
 fn parse_vertices<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Error<&'a str>>{
-    alt((parse_rotate_polygon,parse_translate,parse_polygon,parse_rect,parse_square, parse_hexagon)).parse(i)
+    alt((parse_rotate_polygon,parse_translate_polygon,parse_polygon,parse_rect,parse_square, parse_hexagon)).parse(i)
 }
 
 pub struct BoxedPixelMaker(pub Box<dyn TransformablePixelMaker>);
@@ -169,14 +177,35 @@ impl BoxedPixelMaker{
     }
 }
 
+impl Transformable for BoxedPixelMaker {
+    fn offset(&mut self,offset:(f64,f64)) {
+        self.0.offset(offset)
+    }
+    fn rotate(&mut self,angle:f64) {
+        self.0.rotate(angle)
+    }
+}
+
 pub fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
     separated_pair(pixel_definition, sp_sep, cut(parse_vertices))
     .map(|x| BoxedPixelMaker::new(SinglePixel{index:x.0, polygon:x.1}))
     .parse(i)
 }
 
+pub fn parse_rotate_pixelable<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    parse_rotate(i, parse_pixelable_pre)
+}
+
+pub fn parse_offset_pixelable<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    parse_translate(i, parse_pixelable_pre)
+}
+
+pub fn parse_pixelable_pre<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    alt((parse_pixel,parse_grid,parse_rotate_pixelable,parse_offset_pixelable)).parse(i)
+}
+
 pub fn parse_pixelable<'a>(i:&'a str)-> IResult<&'a str, Box<dyn TransformablePixelMaker>, nom::error::Error<&'a str>>{
-    alt((parse_pixel,parse_grid)).map(|x| {x.0}).parse(i)
+    parse_pixelable_pre.map(|x| x.0).parse(i)
 }
 
 pub fn parse_grid<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{

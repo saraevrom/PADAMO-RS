@@ -6,6 +6,7 @@ use crate::polygon::DetectorPixel;
 pub trait Transformable{
     fn offset(&mut self,offset:(f64,f64));
     fn rotate(&mut self,angle:f64);
+
 }
 
 pub trait Indexed{
@@ -86,8 +87,7 @@ impl Indexed for SinglePixel{
 pub trait TransformablePixelMaker: PixelMaker+Transformable+Debug+DynClone+Indexed{}
 dyn_clone::clone_trait_object!(TransformablePixelMaker);
 
-impl TransformablePixelMaker for SinglePixel{}
-impl TransformablePixelMaker for PixelGrid{}
+impl<T: ?Sized> TransformablePixelMaker for T where T: PixelMaker+Transformable+Debug+DynClone+Indexed {}
 
 
 #[derive(thiserror::Error,Debug)]
