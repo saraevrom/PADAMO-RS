@@ -35,6 +35,17 @@ pub fn parse_point<'a>(i:&'a str)-> IResult<&'a str, (f64,f64), nom::error::Erro
 
 }
 
+pub fn parse_grid_point<'a>(i:&'a str)-> IResult<&'a str, (usize,usize), nom::error::Error<&'a str>>{
+    let pair = separated_pair(
+        preceded(sp, parse_usize),
+        cut(preceded(sp, char_t(','))),
+        preceded(sp, parse_usize)
+    );
+    let mut inbracket_pair = terminated(preceded(char_t('['),pair),preceded(sp,char_t(']')));
+    inbracket_pair.parse(i)
+
+}
+
 pub fn parse_index<'a>(i:&'a str)-> IResult<&'a str, Vec<usize>, nom::error::Error<&'a str>>{
     // let pair = separated_pair(
     //     preceded(sp, parse_usize),

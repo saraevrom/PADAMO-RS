@@ -4,7 +4,7 @@ use nom::multi::separated_list1;
 use nom::number::complete::{double, };
 //use nom::number::streaming::double;
 use nom::IResult;
-use nom::error::ParseError;
+use nom::error::{ErrorKind, ParseError};
 use nom::bytes::complete::{escaped, tag, tag_no_case, take_while};
 use nom::character::complete::{alphanumeric1 as alphanumeric, char as char_t, digit1, multispace1, one_of};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated};
@@ -14,8 +14,8 @@ use nom::Parser;
 
 use crate::polygon::DetectorPixel;
 
-use super::base_parsers::{parse_index,parse_point,sp};
-use super::detector_building_data::{SinglePixel,PolygonArray,Transformable};
+use super::base_parsers::{parse_index,parse_point,sp, parse_grid_point};
+use super::detector_building_data::{PixelGrid, PixelGridError, PixelMaker, PolygonArray, SinglePixel, Transformable, TransformablePixelMaker};
 
 #[derive(Clone, Copy)]
 enum RectSpec{
@@ -135,7 +135,9 @@ where
     separated_pair(rotator, sp_sep, f)
         .map(|x|{
             let ang = x.0;
-            x.1.rotated(ang)
+            let mut res = x.1;
+            res.rotate(ang);
+            res
         }).parse(i)
 }
 
@@ -150,7 +152,9 @@ fn parse_translate<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::E
     separated_pair(mover, sp_sep, parse_vertices)
         .map(|x|{
             let offset = x.0;
-            x.1.moved(offset)
+            let mut res = x.1;
+            res.offset(offset);
+            res
         }).parse(i)
 }
 
@@ -158,10 +162,42 @@ fn parse_vertices<'a>(i:&'a str)-> IResult<&'a str, PolygonArray, nom::error::Er
     alt((parse_rotate_polygon,parse_translate,parse_polygon,parse_rect,parse_square, parse_hexagon)).parse(i)
 }
 
-pub fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, SinglePixel, nom::error::Error<&'a str>>{
+pub struct BoxedPixelMaker(pub Box<dyn TransformablePixelMaker>);
+impl BoxedPixelMaker{
+    pub fn new<T:TransformablePixelMaker+'static>(x:T)->Self{
+        Self(Box::new(x))
+    }
+}
+
+pub fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
     separated_pair(pixel_definition, sp_sep, cut(parse_vertices))
-    .map(|x| SinglePixel{index:x.0, polygon:x.1})
+    .map(|x| BoxedPixelMaker::new(SinglePixel{index:x.0, polygon:x.1}))
     .parse(i)
+}
+
+pub fn parse_pixelable<'a>(i:&'a str)-> IResult<&'a str, Box<dyn TransformablePixelMaker>, nom::error::Error<&'a str>>{
+    alt((parse_pixel,parse_grid)).map(|x| {x.0}).parse(i)
+}
+
+pub fn parse_grid<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    let parser = separated_pair(preceded(sp, tag_no_case("grid")), sp_sep, parse_grid_point).map(|x| x.1); //lowers
+    let parser = separated_pair(parser, sp_sep, parse_grid_point); //uppers
+    let parser = separated_pair(parser, sp_sep, parse_grid_point); //steps
+    let parser = separated_pair(parser, sp_sep, parse_point); //AX
+    let parser = separated_pair(parser, sp_sep, parse_point); //AY
+    let parser = separated_pair(parser, sp_sep, parse_pixelable); //AY
+    let mut parser = parser.map(|x|{
+        let (((((lowers,uppers),steps),ax),ay),obj) = x;
+        PixelGrid::new(lowers, uppers, steps, ax, ay, obj)
+    });
+
+    let res:(&str, Result<PixelGrid,PixelGridError>) = parser.parse(i)?;
+    match res.1{
+        Ok(v)=> IResult::Ok((res.0,BoxedPixelMaker::new(v))),
+        Err(_)=>{
+            IResult::Err(nom::Err::Failure(nom::error::Error { input: i, code: ErrorKind::Fail }))
+        },
+    }
 }
 
 //Tests are outdated

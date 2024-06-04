@@ -18,7 +18,7 @@ pub mod shape_constructors;
 pub mod detector_building_data;
 
 enum DetectorDataMod{
-    PixelData(Box<dyn detector_building_data::PixelMaker>),
+    PixelData(Box<dyn detector_building_data::TransformablePixelMaker>),
     Name(String),
     CompatShape(Vec<usize>)
 }
@@ -32,8 +32,8 @@ fn parse_string<'a>(i:&'a str)-> IResult<&'a str, &'a str, nom::error::Error<&'a
     preceded(char_t('\"'), cut(terminated(parse_str, char_t('\"')))).parse(i)
 }
 
-fn parse_pixel<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::error::Error<&'a str>>{
-    shape_constructors::parse_pixel.map(|x| DetectorDataMod::PixelData(Box::new(x))).parse(i)
+fn parse_pixelable<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::error::Error<&'a str>>{
+    shape_constructors::parse_pixelable.map(|x| DetectorDataMod::PixelData(x)).parse(i)
 }
 
 
@@ -48,7 +48,7 @@ fn parse_compat_shape<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::er
 }
 
 fn parse_instruction<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::error::Error<&'a str>>{
-    alt((parse_pixel,parse_name,parse_compat_shape)).parse(i)
+    alt((parse_pixelable,parse_name,parse_compat_shape)).parse(i)
 }
 
 pub fn parse_detector<'a>(i:&'a str)-> IResult<&'a str, DetectorContent, nom::error::Error<&'a str>>{
