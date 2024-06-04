@@ -19,7 +19,8 @@ pub struct PadamoDetectorManager{
 
 impl PadamoDetectorManager {
     pub fn new()->Self{
-        let source = widget::text_editor::Content::with_text(&DetectorContent::default_vtl().into_src(Some(1)));
+        //let source = widget::text_editor::Content::with_text(&DetectorContent::default_vtl().into_src(Some(1)));
+        let source = widget::text_editor::Content::with_text(include_str!("tuloma_source.dsrc"));
         Self {
             source,
             chart:Detector::default_vtl(),

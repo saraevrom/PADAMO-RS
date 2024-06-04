@@ -117,8 +117,11 @@ impl PixelMaker for PixelGrid{
         for i in (self.lowers.0..self.uppers.0).step_by(self.steps.0){
             for j in (self.lowers.1..self.uppers.1).step_by(self.steps.1){
                 let mut pix = self.subpixel.clone();
-                let x = self.base.0+self.ax_x.0*(i as f64)+self.ax_y.0*(j as f64);
-                let y = self.base.1+self.ax_x.1*(i as f64)+self.ax_y.1*(j as f64);
+                let i_delta:f64 = (i-self.lowers.0) as f64 / self.steps.0 as f64;
+                let j_delta:f64 = (j-self.lowers.1) as f64 / self.steps.1 as f64;
+
+                let x = self.base.0+self.ax_x.0*(i_delta as f64)+self.ax_y.0*(j_delta as f64);
+                let y = self.base.1+self.ax_x.1*(i_delta as f64)+self.ax_y.1*(j_delta as f64);
                 let mut index = self.base_index.clone();
                 if let Some(v) = index.get_mut(0){
                     *v+=i;
