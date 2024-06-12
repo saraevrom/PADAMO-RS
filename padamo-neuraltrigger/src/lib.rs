@@ -8,6 +8,7 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub mod nodes;
 pub mod ops;
+mod ort_check;
 
 #[export_root_module]
 pub fn plugin_root()->PadamoModule_Ref{
@@ -17,6 +18,9 @@ pub fn plugin_root()->PadamoModule_Ref{
 #[sabi_extern_fn]
 pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
     let mut res = nodes_vec!();
+    if !ort_check::check_dylib(){
+        return res;
+    }
     match ort::init()
         .with_execution_providers([CUDAExecutionProvider::default().build(),CPUExecutionProvider::default().build()])
         .commit()

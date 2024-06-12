@@ -31,6 +31,10 @@ impl<'a> PlotterChart<'a>{
         //println!("View DEBUG");
         ChartWidget::new(self).into()
     }
+
+
+
+
 }
 
 
@@ -87,14 +91,6 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
             let height:u32 =((width as f32) *(h/w)) as u32;
 
             let margins = Margins{left:120, bottom:fullsize.1-20-height, right:fullsize.0-120-width, top:20};
-            // let chart = ChartBuilder::on(&root)
-            //     .margin_left(120)
-            //     .margin_bottom(fullsize.1-20-height)
-            //     .margin_right(fullsize.0-120-width)
-            //     .margin_top(20);
-                // .build_cartesian_2d(low.0..high.0, low.1..high.1)
-                // .unwrap();
-            //chart.configure_mesh().disable_mesh();
             self.plotter_data.detector.build_chart_aux(&root, &self.plotter_data.pixels, &self.plotter_data.pixels_show, margins);
 
         }
@@ -145,20 +141,6 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                 }
 
                 let color:(f32,f32,f32) = get_color_indexed(&index);
-                // if index.len()==0
-                // {
-                //     color = get_color(0, 0);
-                // }
-                // else if index.len()<2{
-                //     let i = index[0];
-                //     color = get_color(i, i);
-                // }
-                // else {
-                //     let i = index[0];
-                //     let j = index[1];
-                //     color = get_color(i, j);
-                // }
-                //println!("RGB {:?}",color);
                 let r = (color.0*256.0) as u8;
                 let g = (color.1*256.0) as u8;
                 let b = (color.2*256.0) as u8;
