@@ -28,6 +28,6 @@ pub fn find_unixtime(op:&LazyTimeSignal,unixtime:f64)->usize{
 }
 
 pub fn find_time(op:&LazyTimeSignal,dt:DateTime<Utc>)->usize{
-    let unixtime:f64 = (dt.naive_utc().timestamp_millis() as f64)*1e-3;
+    let unixtime:f64 = (dt.naive_utc().and_utc().timestamp_micros() as f64)*1e-6;
     find_unixtime(op, unixtime)
 }
