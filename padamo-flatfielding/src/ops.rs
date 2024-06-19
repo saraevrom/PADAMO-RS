@@ -154,6 +154,12 @@ pub struct MultiplyByMap{
     coeffs:ArrayND<f64>,
 }
 
+impl MultiplyByMap{
+    pub fn new(source:LazyDetectorSignal, coeffs:ArrayND<f64>)->Self{
+        Self { source, coeffs }
+    }
+}
+
 
 impl LazyArrayOperation<ArrayND<f64>> for MultiplyByMap{
     fn length(&self,) -> usize where {
