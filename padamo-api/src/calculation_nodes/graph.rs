@@ -3,6 +3,8 @@ use abi_stable::StableAbi;
 use abi_stable::std_types::{RString, Tuple2};
 use topo_sort::{TopoSort,SortResults};
 
+use crate::rng::RandomState;
+
 use super::content::{Content, ContentContainer, ConstantContentContainer};
 use super::errors::ExecutionError;
 use super::node::CalculationNodeObject;
@@ -43,7 +45,7 @@ impl CalculationSequenceStorage{
         }
     }
 
-    pub fn execute_node(&mut self, i:usize)->Result<(),ExecutionError>{
+    pub fn execute_node(&mut self, i:usize,random_state:&mut RandomState)->Result<(),ExecutionError>{
         let node = &self.nodes[i];
         let mut inputs:RHashMap<RString, Content> = RHashMap::new();
         let mut input_mapping:HashMap<_, _> = node.get_connections().into_result()?.into();
@@ -56,7 +58,7 @@ impl CalculationSequenceStorage{
         let consts = node.constants.clone();
         let output_defs = node.calculator.outputs();
         let mut outputs = IOData::new(output_defs);
-        node.calculator.calculate(inputs, &mut outputs, consts,&mut self.environment).into_result()?;
+        node.calculator.calculate(inputs, &mut outputs, consts,&mut self.environment, random_state).into_result()?;
         let mut explicit_outputs:HashMap<RString,Content> = outputs.clarify()?.into();
         for (port,value) in explicit_outputs.drain(){
             let key = PortKey{
@@ -85,7 +87,8 @@ impl CalculationSequenceStorage{
         &mut self.nodes[i].constants
     }
 
-    pub fn execute(&mut self)->Result<(),ExecutionError>{
+    pub fn execute(&mut self,random_seed:u64)->Result<(),ExecutionError>{
+        let mut random_state = RandomState::new(random_seed);
         //println!("EXEC GRAPH {:?}",self.nodes);
         let mut sorter = TopoSort::with_capacity(self.nodes.len());
         let mut nodes_under_processing:VecDeque<usize> = self.nodes.iter()
@@ -110,7 +113,7 @@ impl CalculationSequenceStorage{
         if let SortResults::Full(sorted) = sorter.into_vec_nodes(){
             for i in sorted.iter(){
                 //println!("Executing node {}", i);
-                self.execute_node(*i)?;
+                self.execute_node(*i,&mut random_state)?;
             }
         }
         else{

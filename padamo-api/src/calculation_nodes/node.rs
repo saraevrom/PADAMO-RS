@@ -5,7 +5,7 @@ use abi_stable::{StableAbi, DynTrait, rvec};
 use super::content::{Content, ContentContainer, ContentType, ConstantContent, ConstantContentContainer};
 use super::errors::ExecutionError;
 use super::graph::PortKey;
-
+use crate::rng::RandomState;
 
 
 
@@ -139,7 +139,7 @@ pub trait CalculationNode: Debug+Clone{
     fn constants(&self)->RVec<CalculationConstant>;
 
     /// Main calculation
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer)->RResult<(),ExecutionError>;
+    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError>;
 
 
     fn path(&self)->RVec<RString>{

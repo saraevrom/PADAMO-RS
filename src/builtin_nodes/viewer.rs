@@ -10,7 +10,7 @@ pub const VIEWER_FILENAME_VAR:&'static str = "ViewerOpenedFile";
 pub const VIEWER_SIGNAL_VAR:&'static str = "ViewerSignal";
 
 impl ViewerNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>{
         let signal = inputs.request_detectorfulldata("Signal")?;
         environment.0.insert(VIEWER_SIGNAL_VAR.into(),Content::DetectorFullData(signal));
         Ok(())
@@ -47,7 +47,7 @@ impl CalculationNode for ViewerNode{
         rvec![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut padamo_api::rng::RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment).into()
     }
 }
@@ -89,7 +89,7 @@ impl CalculationNode for LoadedFileNode{
         rvec![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment).into()
     }
 }

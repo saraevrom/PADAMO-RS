@@ -43,6 +43,7 @@ pub struct PadamoState{
     pub workspace:padamo_workspace::PadamoWorkspace,
     pub add_delay_ms:u64,
     pub current_page:usize,
+    pub current_seed:u64,
     popup_messages:MessageList,
 }
 
@@ -209,13 +210,13 @@ impl Application for Padamo{
         let det = serde_json::to_string(&padamo_detectors::polygon::DetectorContent::default_vtl()).unwrap();
         compute_graph.environment.0.insert("detector".into(), padamo_api::calculation_nodes::content::Content::String(det.into()));
 
-
         let state = PadamoState{
             nodes,
             compute_graph,
             workspace: padamo_workspace::PadamoWorkspace::initialize(),
             add_delay_ms: 0,
             current_page: 0,
+            current_seed: 0,
             popup_messages:MessageList::new(),
         };
 
