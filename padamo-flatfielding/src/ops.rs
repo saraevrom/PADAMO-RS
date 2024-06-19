@@ -147,3 +147,39 @@ impl LazyArrayOperation<ArrayND<f64>> for PhysicalFF{
         tgt.into_inner().unwrap()
     }
 }
+
+#[derive(Clone,Debug)]
+pub struct MultiplyByMap{
+    source:LazyDetectorSignal,
+    coeffs:ArrayND<f64>,
+}
+
+
+impl LazyArrayOperation<ArrayND<f64>> for MultiplyByMap{
+    fn length(&self,) -> usize where {
+        self.source.length()
+    }
+
+    fn calculate_overhead(&self,start:usize,end:usize) -> usize {
+        self.source.calculate_overhead(start,end)
+    }
+
+    fn request_range(&self,start:usize,end:usize) -> ArrayND<f64>{
+        let src_data = self.source.request_range(start,end);
+        let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
+
+        let enumerator = src_data.enumerate();
+
+        let coeffs = &self.coeffs;
+        enumerator.par_bridge().for_each(|i|{
+            let mut pixel_index = i.clone();
+            pixel_index.drain(0..1);
+            let x =src_data[&i];
+            let coeff = coeffs[&pixel_index];
+            let v = x*coeff;
+            tgt.lock().unwrap()[&i] = v;
+        });
+        let tgt = Arc::try_unwrap(tgt).unwrap();
+        tgt.into_inner().unwrap()
+    }
+}
