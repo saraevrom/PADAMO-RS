@@ -6,7 +6,7 @@ use padamo_api::{ports, constants, prelude::*};
 pub struct TriggerExpandNode;
 
 impl TriggerExpandNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>where {
         let mut data = inputs.request_detectorfulldata("Signal")?;
         let expansion_signed = constants.request_integer("Expansion")?;
         let expansion:usize = match usize::try_from(expansion_signed) {
@@ -64,7 +64,7 @@ impl CalculationNode for TriggerExpandNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment).into()
     }
 

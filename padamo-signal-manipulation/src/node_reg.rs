@@ -57,7 +57,7 @@ impl CalculationNode for TimeResolutionReduceNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment).into()
     }
 }

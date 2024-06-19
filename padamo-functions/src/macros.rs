@@ -26,7 +26,7 @@ macro_rules! implement_onearg_function{
                 constants![]
             }
 
-            fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+            fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
                 self.calculate(inputs, outputs, constants, environment).into()
             }
         }
@@ -62,7 +62,7 @@ macro_rules! implement_binary_combinator{
                 constants![]
             }
 
-            fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+            fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
                 self.calculate(inputs, outputs, constants, environment).into()
             }
         }
@@ -97,7 +97,7 @@ macro_rules! implement_unary_combinator{
                 constants![]
             }
 
-            fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+            fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
                 self.calculate(inputs, outputs, constants, environment).into()
             }
         }

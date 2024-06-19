@@ -51,7 +51,7 @@ impl CalculationNode for LazyHDF5ArrayNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> abi_stable::std_types::RResult<(),ExecutionError> {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError> {
         self.calculate(inputs, outputs, constants, environment).into()
     }
 
