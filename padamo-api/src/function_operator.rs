@@ -90,10 +90,13 @@ pub type DoubleFunctionOperatorBox = DoubleFunctionOperator_TO<'static,RBox<()>>
 
 
 impl DoubleFunctionOperatorBox{
+
+    /// turns self(x) into f(self(x))
     pub fn map<T:Fn(f64)->f64+Send+Sync+Clone+'static>(self, f:T)->DoubleFunctionOperatorBox{
         make_function_box(MapOperator{func:f, parameter:self})
     }
 
+    /// turns self(x) into self(f(x))
     pub fn invmap<T:Fn(f64)->f64+Send+Sync+Clone+'static>(self, f:T)->DoubleFunctionOperatorBox{
         make_function_box(InvMapOperator{func:f, parameter:self})
     }

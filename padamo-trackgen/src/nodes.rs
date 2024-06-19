@@ -15,7 +15,20 @@ pub struct BasicLinearTrackGeneratorNode;
 #[derive(Debug,Clone)]
 pub struct AnyLCLinearTrackGeneratorNode;
 
+#[derive(Debug,Clone)]
+pub struct AnyLCLinearTrackGeneratorDynamicNode;
+
 fn request_nonnegative(name:&str,constants:&ConstantContentContainer)->Result<f64,ExecutionError>{
+    let value = constants.request_float(name)?;
+    if value>=0.0{
+        Ok(value)
+    }
+    else {
+        Err(ExecutionError::OtherError(format!("Value {} must be nonnegative",name).into()))
+    }
+}
+
+fn request_nonnegative_input(name:&str,constants:&ContentContainer)->Result<f64,ExecutionError>{
     let value = constants.request_float(name)?;
     if value>=0.0{
         Ok(value)
@@ -212,12 +225,108 @@ impl CalculationNode for AnyLCLinearTrackGeneratorNode{
             ("phi0",0.0),
             ("x0",0.0),
             ("y0",0.0),
-            //("e_min",0.0),
-            //("e_max",1.0),
             ("sigma_x",1.2),
             ("sigma_y",1.2),
-            ("motion_blur_steps",5),
-            ("default_length",100)
+            //("e_min",0.0),
+            //("e_max",1.0),
+            ("motion_blur_steps",5)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> RResult<(),ExecutionError> {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+
+
+}
+
+
+
+impl AnyLCLinearTrackGeneratorDynamicNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError> {
+
+        let detector_content = environment.request_string("detector")?.to_string();
+        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector = crate::ensquared_energy::detector::wireframe(detector);
+
+        //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
+        let pivot_frame = request_nonnegative_input("pivot_frame", &inputs)?;
+        let lc = inputs.request_function("Lightcurve")?;
+        let lc = lc.map(|x| if x>0.0 {x} else {0.0});
+        let v0 = request_nonnegative_input("v0", &inputs)?;
+        let a0 = inputs.request_float("a0")?;
+        let x0 = inputs.request_float("x0")?;
+        let y0 = inputs.request_float("y0")?;
+        let phi0 = inputs.request_float("phi0")?;
+        //let e_min = constants.request_float("e_min")?;
+        //let e_max = constants.request_float("e_max")?;
+        let sigma_x = inputs.request_float("sigma_x")?;
+        let sigma_y = inputs.request_float("sigma_y")?;
+        let motion_blur_steps = request_usize("motion_blur_steps", &constants)?;
+
+        let mut signal = inputs.request_detectorfulldata("Background")?;
+        //let signal =
+        signal.0 = padamo_api::lazy_array_operations::make_lao_box(crate::ops::LazyAnyLCTrack{
+            data: signal.0,
+            lc,
+            detector,pivot_frame,v0,a0,phi0,x0,y0,sigma_x,sigma_y,motion_blur_steps
+        });
+        signal.2 = ROption::RNone;
+
+
+        outputs.set_value("Signal", signal.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for AnyLCLinearTrackGeneratorDynamicNode{
+
+    #[doc = r" Category to place node in node list"]
+    fn category(&self,) -> RVec<RString> {
+        rvec!["Artificial data".into()]
+    }
+
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString  {
+        "Dynamic Customizable LC linear track".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self) -> RVec<CalculationIO> {
+        ports!(
+            ("Background", ContentType::DetectorFullData),
+            ("Lightcurve", ContentType::Function),
+            ("pivot_frame", ContentType::Float),
+            ("v0",ContentType::Float),
+            ("a0",ContentType::Float),
+            ("phi0",ContentType::Float),
+            ("x0",ContentType::Float),
+            ("y0",ContentType::Float),
+            ("sigma_x",ContentType::Float),
+            ("sigma_y",ContentType::Float)
+            //("e_min",0.0),
+            //("e_max",1.0),
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self) -> RVec<CalculationIO> {
+        ports!(
+            ("Signal", ContentType::DetectorFullData)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant> {
+        constants![
+            ("motion_blur_steps",5)
         ]
     }
 

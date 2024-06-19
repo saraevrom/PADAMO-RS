@@ -24,6 +24,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         nodes::BasicLinearTrackGeneratorNode,
         nodes::AnyLCLinearTrackGeneratorNode,
+        nodes::AnyLCLinearTrackGeneratorDynamicNode,
         nodes::BlankDataNode,
         nodes::AdditiveNormalNoiseNode,
         lc_nodes::LCSwitchNode,
@@ -31,6 +32,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         lc_nodes::ExponentLCNode,
         lc_nodes::LCPivotNode,
         lc_nodes::TerminationLCNode,
-        lc_nodes::ConstantLCNode
+        lc_nodes::ConstantLCNode,
+        lc_nodes::MultiplyByFloatNode
     )
 }

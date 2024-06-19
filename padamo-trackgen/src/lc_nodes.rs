@@ -185,7 +185,7 @@ pub struct LinearLCNode;
 
 impl LinearLCNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let tau = constants.request_float("tau")?;
+        let tau = inputs.request_float("tau")?;
         if tau==0.0{
             return Err(ExecutionError::OtherError("Linear LC tau must be nonzero".into()));
         }
@@ -206,7 +206,9 @@ impl CalculationNode for LinearLCNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>{
-        ports![]
+        ports![
+            ("tau", ContentType::Float)
+        ]
     }
 
     fn category(&self,) -> RVec<RString>where {
@@ -225,7 +227,7 @@ impl CalculationNode for LinearLCNode{
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
-            ("tau", 1.0)
+            //("tau", 1.0)
         ]
     }
 
@@ -243,7 +245,7 @@ pub struct ExponentLCNode;
 
 impl ExponentLCNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let tau = constants.request_float("tau")?;
+        let tau = inputs.request_float("tau")?;
         if tau==0.0{
             return Err(ExecutionError::OtherError("Exponent LC tau must not be zero".into()));
         }
@@ -264,7 +266,9 @@ impl CalculationNode for ExponentLCNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>{
-        ports![]
+        ports![
+            ("tau", ContentType::Float)
+        ]
     }
 
     fn category(&self,) -> RVec<RString>where {
@@ -283,7 +287,7 @@ impl CalculationNode for ExponentLCNode{
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
-            ("tau", 1.0)
+            //("tau", 1.0)
         ]
     }
 
@@ -368,6 +372,61 @@ impl CalculationNode for ConstantLCNode{
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>{
         ports![]
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("LC", ContentType::Function)
+        ]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![]
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Main calculation"]
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub struct MultiplyByFloatNode;
+
+impl MultiplyByFloatNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let m = inputs.request_float("Multiplier")?;
+        let inner = inputs.request_function("LC")?;
+        let output = inner.map(move |x| x*m);
+        outputs.set_value("LC", output.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for MultiplyByFloatNode{
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Name of node displayed in graph editor or node list"]
+    fn name(&self,) -> RString {
+        "Multiply by value".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = r" Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports![
+            ("LC", ContentType::Function),
+            ("Multiplier", ContentType::Float)
+        ]
     }
 
     fn category(&self,) -> RVec<RString>where {
