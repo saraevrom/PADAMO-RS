@@ -1,0 +1,17 @@
+[package]
+name = "padamo-randoms"
+version = "0.1.0"
+edition = "2021"
+
+# Set crate to dynamic lib.
+[lib]
+name = "padamorandom"
+crate-type = ["dylib"]
+
+
+[dependencies]
+# For things to work
+abi_stable = "0.11.3"
+# Main padamo api
+padamo-api = { path = "../padamo-api" }
+ndarray = "0.15.6"

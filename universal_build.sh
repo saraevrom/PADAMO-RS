@@ -58,4 +58,4 @@ mv -v libpadamosignalmanipulation.so    plugins/
 mv -v libpadamocore.so                  plugins/
 mv -v libpadamohdf5.so                  plugins/
 mv -v libpadamotrackgen.so              plugins/
-
+mv -v libpadamorandom.so                plugins/
