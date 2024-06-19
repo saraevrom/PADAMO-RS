@@ -48,7 +48,7 @@ macro_rules! nodes_vec {
         {
             let mut temp_vec: RVec<CalculationNodeBox> = RVec::new();
             $(
-                temp_vec.push(CalculationNode_TO::from_value($x,TD_Opaque));
+                temp_vec.push(CalculationNode_TO::from_value($x,abi_stable::sabi_trait::TD_Opaque));
             )*
 
             temp_vec
