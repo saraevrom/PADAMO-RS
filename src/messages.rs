@@ -23,6 +23,7 @@ pub enum PadamoAppMessage{
     SetDetector(padamo_detectors::polygon::DetectorContent),
     PopupMessageClick,
     Run,
+    RerollRun,
     SetSeed(String),
     Open,
     Save,

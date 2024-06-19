@@ -3,6 +3,7 @@ pub mod nodes;
 use std::io::Read;
 use std::rc::Rc;
 use std::str::FromStr;
+use crate::application::PadamoState;
 //use crate::custom_widgets::treeview::TreeView;
 use crate::messages::PadamoAppMessage;
 
@@ -29,6 +30,18 @@ impl PadamoEditor{
 
         //println!("{:?}",tree);
         Self{state: editor_program::EditorState::new(), tree, hor_divider_position:200, current_scroll_offset: scrollable::RelativeOffset::START}
+    }
+
+    fn run(&self,padamo:&mut PadamoState){
+        let mut x_mut = &mut padamo.compute_graph;
+        padamo.nodes.make_compute_graph(&mut x_mut, &self.state.nodes);
+        if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value){
+            padamo.show_error(format!("Execution error: {}",err));
+            //println!("Execution error: {}",err);
+        }
+        else{
+            println!("Execution success");
+        }
     }
 }
 
@@ -78,15 +91,11 @@ impl PadamoTool for PadamoEditor{
                 }
             },
             crate::messages::PadamoAppMessage::Run=>{
-                let mut x_mut = &mut padamo.compute_graph;
-                padamo.nodes.make_compute_graph(&mut x_mut, &self.state.nodes);
-                if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value){
-                    padamo.show_error(format!("Execution error: {}",err));
-                    //println!("Execution error: {}",err);
-                }
-                else{
-                    println!("Execution success");
-                }
+                self.run(padamo);
+            }
+            crate::messages::PadamoAppMessage::RerollRun=>{
+                padamo.reroll();
+                self.run(padamo);
             }
             _=>()
         }

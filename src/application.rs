@@ -21,6 +21,8 @@ use iced_aw::style::MenuBarStyle;
 use std::path::Path;
 use padamo_iced_forms::double_entry_state::EntryState;
 
+use rand::prelude::*;
+
 
 fn menu_button(action:&str, msg:PadamoAppMessage)->iced::widget::Button<'_,PadamoAppMessage>{
     button(action).on_press(msg).width(iced::Length::Fill)
@@ -75,6 +77,11 @@ impl PadamoState{
     pub fn show_error<T:Into<String>>(&mut self, msg:T){
         self.popup_messages.add_message(msg.into(), PadamoPopupMessageType::Error);
     }
+
+    pub fn reroll(&mut self){
+        let mut rng = rand::thread_rng();
+        self.current_seed.set_value(rng.next_u64());
+    }
 }
 
 impl Padamo{
@@ -90,9 +97,6 @@ impl Padamo{
         // }
     }
 
-    pub fn reroll(&mut self){
-
-    }
 
     pub fn update_tools(&mut self, msg:Rc<PadamoAppMessage>){
         let state = &mut self.state;
@@ -292,6 +296,7 @@ impl Application for Padamo{
         //let v = self.state.current_seed.view_row("Seed", "Seed", )
         let run_menu = Item::with_menu(title_menu_button("Run"), Menu::new(vec![
             Item::new(menu_button("Run", PadamoAppMessage::Run)),
+            Item::new(menu_button("Reroll and run", PadamoAppMessage::RerollRun)),
             Item::new(self.state.current_seed.view_row("Seed","0 or maybe 42",PadamoAppMessage::SetSeed))
         ]).max_width(150.0).offset(0.0).spacing(5.0));
 
