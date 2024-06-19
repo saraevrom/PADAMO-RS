@@ -7,6 +7,9 @@ pub use joined::LazyHDF5DirSignalNode;
 pub mod array;
 pub use array::LazyHDF5ArrayNode;
 
+pub mod save;
+pub use save::SaveHDF5Node;
+
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 use padamo_api::prelude::*;
 

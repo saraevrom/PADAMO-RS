@@ -18,6 +18,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         crate::nodes_mod::LazyHDF5SignalNode,
         crate::nodes_mod::LazyHDF5DirSignalNode,
-        crate::nodes_mod::LazyHDF5ArrayNode
+        crate::nodes_mod::LazyHDF5ArrayNode,
+        crate::nodes_mod::SaveHDF5Node
     )
 }
