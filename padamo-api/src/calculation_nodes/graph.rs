@@ -113,7 +113,8 @@ impl CalculationSequenceStorage{
         if let SortResults::Full(sorted) = sorter.into_vec_nodes(){
             for i in sorted.iter(){
                 //println!("Executing node {}", i);
-                self.execute_node(*i,&mut random_state)?;
+                let mut state2 = random_state.separate(*i as u64);
+                self.execute_node(*i,&mut state2)?;
             }
         }
         else{

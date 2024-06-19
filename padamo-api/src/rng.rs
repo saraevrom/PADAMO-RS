@@ -19,6 +19,14 @@ impl RandomState{
     }
 
 
+    pub fn separate(&self,mutator:u64)->Self{
+        let state = self.current_state;
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(state);
+        hasher.write_u64(mutator);
+        Self::new(hasher.finish())
+    }
+
     /// Generate new u64 value
     pub fn generate_new(&mut self)->u64{
         let mut hasher = DefaultHasher::new();
