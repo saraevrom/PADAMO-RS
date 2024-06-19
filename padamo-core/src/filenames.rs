@@ -74,7 +74,62 @@ impl CalculationNode for FileSplit{
 
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec![
-        FileSplit
+        FileSplit,
+        FileMerge
     ]
 
+}
+
+
+
+#[derive(Clone,Debug)]
+pub struct FileMerge;
+
+impl FileMerge{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
+        let f1:String = inputs.request_string("Path 1")?.into();
+        let f2:String = inputs.request_string("Path 2")?.into();
+        let fp1 = Path::new(&f1);
+        let fp2 = Path::new(&f2);
+        let res:String = fp1.join(fp2).into_os_string().into_string().map_err(|x| ExecutionError::OtherError(format!("Could not convert {:?} into path",x).into()))?;
+        outputs.set_value("Path", res.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for FileMerge{
+    fn name(&self,) -> RString{
+        "Merge file path".into()
+    }
+
+    fn category(&self,) -> RVec<RString> {
+        rvec![
+            "File path manipulation".into()
+        ]
+    }
+
+    fn is_primary(&self,) -> bool {
+        false
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("Path 1", ContentType::String),
+            ("Path 2", ContentType::String)
+        )
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>{
+        ports!(
+            ("Path", ContentType::String)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!()
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
 }
