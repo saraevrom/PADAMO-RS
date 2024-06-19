@@ -25,7 +25,7 @@ impl CalculationNode for UniformRandomNode{
     }
 
     fn name(&self,) -> RString where {
-        "Uniform".into()
+        "Random uniform".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>{
@@ -43,6 +43,49 @@ impl CalculationNode for UniformRandomNode{
             ("lower",0.0),
             ("upper",1.0)
         )
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}
+
+
+
+#[derive(Clone,Debug)]
+pub struct UUIDRandomNode;
+
+impl UUIDRandomNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+
+        let v = rng.generate_uuid();
+        outputs.set_value("Value", v.into())?;
+        Ok(())
+    }
+}
+
+
+impl CalculationNode for UUIDRandomNode{
+    fn category(&self,) -> RVec<RString>{
+        category()
+    }
+
+    fn name(&self,) -> RString where {
+        "Random UUID".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports!()
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>{
+        ports!(
+            ("Value", ContentType::String)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!()
     }
 
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {

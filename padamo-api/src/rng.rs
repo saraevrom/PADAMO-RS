@@ -8,6 +8,15 @@ pub struct RandomState{
     pub current_state:u64,
 }
 
+pub fn get_byte(value:u64, offset:u64)->String{
+    let byte = ((value>>offset)& 0xFF) as u8;
+    let mapping = "0123456789ABCDEF";
+    format!("{}{}",mapping.chars().nth((byte/16) as usize).unwrap(),mapping.chars().nth((byte%16) as usize).unwrap())
+}
+
+pub fn bytify(value:u64)->String{
+    (0..8).map(|i| get_byte(value, i)).collect()
+}
 
 impl RandomState{
     pub fn new(seed:u64)->Self{
@@ -45,5 +54,16 @@ impl RandomState{
     ///Generate uniformly distributed value in [a..b]
     pub fn generate_uniform(&mut self,a:f64,b:f64)->f64{
         self.generate_uniform_normalized()*(b-a)+a
+    }
+
+    pub fn generate_uuid(&mut self)->String{
+        let a = self.generate_new();
+        let b = self.generate_new();
+        let mut a = bytify(a);
+        a.insert(8, '-');
+        a.insert(13, '-');
+        let mut b = bytify(b);
+        b.insert(4, '-');
+        format!("{}-{}",a,b)
     }
 }

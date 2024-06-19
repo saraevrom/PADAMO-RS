@@ -16,6 +16,7 @@ pub fn plugin_root()->PadamoModule_Ref{
 #[sabi_extern_fn]
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
-        crate::nodes::UniformRandomNode
+        crate::nodes::UniformRandomNode,
+        crate::nodes::UUIDRandomNode
     )
 }
