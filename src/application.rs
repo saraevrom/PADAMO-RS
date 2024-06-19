@@ -19,6 +19,7 @@ use crate::popup_message::PadamoPopupMessageType;
 
 use iced_aw::style::MenuBarStyle;
 use std::path::Path;
+use padamo_iced_forms::double_entry_state::EntryState;
 
 
 fn menu_button(action:&str, msg:PadamoAppMessage)->iced::widget::Button<'_,PadamoAppMessage>{
@@ -43,7 +44,7 @@ pub struct PadamoState{
     pub workspace:padamo_workspace::PadamoWorkspace,
     pub add_delay_ms:u64,
     pub current_page:usize,
-    pub current_seed:u64,
+    pub current_seed:EntryState<u64>,
     popup_messages:MessageList,
 }
 
@@ -87,6 +88,10 @@ impl Padamo{
         //     add_delay_ms:self.add_delay_ms.clone(),
         //     //popup_messages:self.popup_messages.clone(),
         // }
+    }
+
+    pub fn reroll(&mut self){
+
     }
 
     pub fn update_tools(&mut self, msg:Rc<PadamoAppMessage>){
@@ -216,7 +221,7 @@ impl Application for Padamo{
             workspace: padamo_workspace::PadamoWorkspace::initialize(),
             add_delay_ms: 0,
             current_page: 0,
-            current_seed: 0,
+            current_seed: EntryState::new(0),
             popup_messages:MessageList::new(),
         };
 
@@ -242,7 +247,10 @@ impl Application for Padamo{
 
             PadamoAppMessage::PopupMessageClick=>{
                 self.state.popup_messages.pop_oldest_message();
-            }
+            },
+            PadamoAppMessage::SetSeed(seed)=>{
+                self.state.current_seed.set_string(seed);
+            },
             PadamoAppMessage::ChooseDetector=>{
                 if let Some(path) = self.state.workspace.workspace("detectors").open_dialog(vec![("Detector",vec!["json"])]){
                     let s = match std::fs::read_to_string(path) {
@@ -281,9 +289,11 @@ impl Application for Padamo{
             Item::new(menu_button("Choose detector", PadamoAppMessage::ChooseDetector)),
         ]).max_width(100.0).offset(0.0).spacing(5.0));
 
+        //let v = self.state.current_seed.view_row("Seed", "Seed", )
         let run_menu = Item::with_menu(title_menu_button("Run"), Menu::new(vec![
             Item::new(menu_button("Run", PadamoAppMessage::Run)),
-        ]).max_width(50.0).offset(0.0).spacing(5.0));
+            Item::new(self.state.current_seed.view_row("Seed","0 or maybe 42",PadamoAppMessage::SetSeed))
+        ]).max_width(150.0).offset(0.0).spacing(5.0));
 
         let settings_menu = Item::with_menu(title_menu_button("Settings"), Menu::new(vec![
             Item::new(menu_button("Choose workspace directory", PadamoAppMessage::ResetWorkspace)),

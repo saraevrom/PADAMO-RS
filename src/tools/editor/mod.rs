@@ -80,7 +80,7 @@ impl PadamoTool for PadamoEditor{
             crate::messages::PadamoAppMessage::Run=>{
                 let mut x_mut = &mut padamo.compute_graph;
                 padamo.nodes.make_compute_graph(&mut x_mut, &self.state.nodes);
-                if let Err(err) = x_mut.execute(padamo.current_seed){
+                if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value){
                     padamo.show_error(format!("Execution error: {}",err));
                     //println!("Execution error: {}",err);
                 }
