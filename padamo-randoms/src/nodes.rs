@@ -121,7 +121,7 @@ impl CalculationNode for RandomIntNode{
 
     fn outputs(&self,) -> RVec<CalculationIO>{
         ports!(
-            ("Value", ContentType::String)
+            ("Value", ContentType::Integer)
         )
     }
 
@@ -166,7 +166,7 @@ impl CalculationNode for RandomIntRangeNode{
 
     fn outputs(&self,) -> RVec<CalculationIO>{
         ports!(
-            ("Value", ContentType::String)
+            ("Value", ContentType::Integer)
         )
     }
 
