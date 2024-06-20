@@ -413,11 +413,11 @@ pub struct AdditiveNormalNoiseNode;
 
 impl AdditiveNormalNoiseNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let sigma = constants.request_float("sigma")?;
+        let sigma = inputs.request_float("sigma")?;
         if sigma<=0.0{
             return Err(ExecutionError::OtherError("Standard deviation must be positive".into()));
         }
-        let seed = constants.request_integer("seed")?;
+        let seed = inputs.request_integer("seed")?;
         let mut signal = inputs.request_detectorfulldata("Background")?;
         signal.2 = ROption::RNone;
         signal.0 = make_lao_box(crate::ops::LazyAdditiveNormalNoise::new(signal.0, seed, sigma));
@@ -440,7 +440,9 @@ impl CalculationNode for AdditiveNormalNoiseNode{
     #[doc = r" Input definitions of node"]
     fn inputs(&self) -> RVec<CalculationIO> {
         ports![
-            ("Background", ContentType::DetectorFullData)
+            ("Background", ContentType::DetectorFullData),
+            ("seed", ContentType::Integer),
+            ("sigma", ContentType::Float)
         ]
     }
 
@@ -456,8 +458,6 @@ impl CalculationNode for AdditiveNormalNoiseNode{
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self) -> RVec<CalculationConstant> {
         constants![
-            ("seed", 42),
-            ("sigma", 1.0)
         ]
     }
 
