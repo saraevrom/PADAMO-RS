@@ -92,3 +92,92 @@ impl CalculationNode for UUIDRandomNode{
         self.calculate(inputs, outputs, constants, environment, rng).into()
     }
 }
+
+#[derive(Clone,Debug)]
+pub struct RandomIntNode;
+
+impl RandomIntNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+
+        let v = rng.generate_new();
+        outputs.set_value("Value", (v as i64).into())?;
+        Ok(())
+    }
+}
+
+
+impl CalculationNode for RandomIntNode{
+    fn category(&self,) -> RVec<RString>{
+        category()
+    }
+
+    fn name(&self,) -> RString where {
+        "Random Integer (seed)".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports!()
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>{
+        ports!(
+            ("Value", ContentType::String)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!()
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}
+
+
+
+#[derive(Clone,Debug)]
+pub struct RandomIntRangeNode;
+
+impl RandomIntRangeNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+
+        let a = constants.request_integer("a")? as f64;
+        let b = constants.request_integer("b")? as f64;
+        let v = rng.generate_uniform(a,b).floor();
+        outputs.set_value("Value", (v as i64).into())?;
+        Ok(())
+    }
+}
+
+
+impl CalculationNode for RandomIntRangeNode{
+    fn category(&self,) -> RVec<RString>{
+        category()
+    }
+
+    fn name(&self,) -> RString where {
+        "Random Integer in range".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports!()
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>{
+        ports!(
+            ("Value", ContentType::String)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!(
+            ("a",0),
+            ("b",10)
+        )
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}

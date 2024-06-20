@@ -17,6 +17,8 @@ pub fn plugin_root()->PadamoModule_Ref{
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         crate::nodes::UniformRandomNode,
-        crate::nodes::UUIDRandomNode
+        crate::nodes::UUIDRandomNode,
+        crate::nodes::RandomIntNode,
+        crate::nodes::RandomIntRangeNode
     )
 }
