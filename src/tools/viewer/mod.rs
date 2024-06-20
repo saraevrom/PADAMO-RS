@@ -212,6 +212,28 @@ impl PadamoViewer{
         res
     }
 
+    fn rerun(&mut self, padamo:crate::application::PadamoStateRef)->Option<PadamoAppMessage>{
+        if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
+            //let signal_w = signal.clone();
+            self.signal = Some(signal.clone());
+            //self.signal = Some((signal_w.0,signal_w.1,signal_w.2.into()));
+            self.length = signal.0.length()-1;
+            self.end = self.length;
+            self.clamp();
+            self.update_buffer(Some(padamo));
+            self.fill_strings();
+            return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
+                start: self.start,
+                end: self.end+1,
+                pointer: self.pointer,
+                force_clear:true,
+            }));
+        }
+        else {
+            None
+        }
+    }
+
     fn update_buffer(&mut self, padamo:Option<crate::application::PadamoStateRef>){
         self.clamp();
         if let Some(signal) = &self.signal{
@@ -883,21 +905,14 @@ impl PadamoTool for PadamoViewer{
 
     fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<PadamoAppMessage> {
         if let crate::messages::PadamoAppMessage::Run = msg.as_ref(){
-            if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
-                //let signal_w = signal.clone();
-                self.signal = Some(signal.clone());
-                //self.signal = Some((signal_w.0,signal_w.1,signal_w.2.into()));
-                self.length = signal.0.length()-1;
-                self.end = self.length;
-                self.clamp();
-                self.update_buffer(Some(padamo));
-                self.fill_strings();
-                return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
-                    start: self.start,
-                    end: self.end+1,
-                    pointer: self.pointer,
-                    force_clear:true,
-                }));
+            if let Some(v) = self.rerun(padamo){
+                return Some(v);
+            }
+        }
+
+        if let crate::messages::PadamoAppMessage::RerollRun = msg.as_ref(){
+            if let Some(v) = self.rerun(padamo){
+                return Some(v);
             }
         }
 
