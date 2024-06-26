@@ -15,7 +15,7 @@ use nom::Parser;
 use crate::polygon::DetectorPixel;
 
 use super::base_parsers::{parse_index,parse_point,sp, parse_grid_point};
-use super::detector_building_data::{PixelGrid, PixelGridError, PixelMaker, PolygonArray, SinglePixel, Transformable, TransformablePixelMaker};
+use super::detector_building_data::{PixelGrid, PixelGridError, PolygonArray, SinglePixel, Transformable, TransformablePixelMaker, IndexExtend,IndexExtension};
 
 #[derive(Clone, Copy)]
 enum RectSpec{
@@ -201,7 +201,7 @@ pub fn parse_offset_pixelable<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker,
 }
 
 pub fn parse_pixelable_pre<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
-    alt((parse_pixel,parse_grid,parse_rotate_pixelable,parse_offset_pixelable)).parse(i)
+    alt((parse_pixel,parse_grid,parse_rotate_pixelable,parse_offset_pixelable,parse_prepend,parse_append)).parse(i)
 }
 
 pub fn parse_pixelable<'a>(i:&'a str)-> IResult<&'a str, Box<dyn TransformablePixelMaker>, nom::error::Error<&'a str>>{
@@ -227,6 +227,25 @@ pub fn parse_grid<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error:
             IResult::Err(nom::Err::Failure(nom::error::Error { input: i, code: ErrorKind::Fail }))
         },
     }
+}
+
+pub fn parse_prepend<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    let parser = separated_pair(preceded(sp,tag("prepend") ),sp_sep , parse_index).map(|x| x.1);
+    let parser = separated_pair(parser, sp_sep, parse_pixelable);
+    let mut parser = parser.map(|(index,parseable)|{
+        BoxedPixelMaker::new(IndexExtend::prepend(index, parseable))
+    });
+    parser.parse(i)
+}
+
+
+pub fn parse_append<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    let parser = separated_pair(preceded(sp,tag("append") ),sp_sep , parse_index).map(|x| x.1);
+    let parser = separated_pair(parser, sp_sep, parse_pixelable);
+    let mut parser = parser.map(|(index,parseable)|{
+        BoxedPixelMaker::new(IndexExtend::append(index, parseable))
+    });
+    parser.parse(i)
 }
 
 //Tests are outdated

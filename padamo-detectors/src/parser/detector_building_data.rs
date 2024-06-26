@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::clone::Clone;
 use dyn_clone::DynClone;
+use iced::widget::shader::wgpu::naga::proc::index;
 use crate::polygon::DetectorPixel;
 
 pub trait Transformable{
@@ -159,6 +160,10 @@ impl Transformable for PixelGrid{
         let y = self.ax_y.1;
         self.ax_y = (x*a11+y*a12,x*a21+y*a22);
         self.subpixel.rotate(angle);
+
+        let x = self.base.0;
+        let y = self.base.1;
+        self.base = (x*a11+y*a12,x*a21+y*a22);
     }
 }
 
@@ -182,5 +187,92 @@ impl PixelGrid{
             return Err(PixelGridError::YInvalid(lowers.1,uppers.1,steps.1));
         }
         Ok(Self { lowers, uppers, steps, base: (0.0,0.0), ax_x, ax_y, base_index:subpixel.get_index(), subpixel })
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub enum IndexExtension {
+    Prepend(Vec<usize>),
+    Append(Vec<usize>),
+}
+
+impl IndexExtension{
+    pub fn modify_index(&self, index:&Vec<usize>)->Vec<usize>{
+        match &self{
+            IndexExtension::Prepend(pre)=>{
+                let mut index2 = pre.clone();
+                index2.extend(index.clone());
+                index2
+            }
+            IndexExtension::Append(add)=>{
+                let mut index2 = index.clone();
+                index2.extend(add.clone());
+                index2
+            }
+        }
+    }
+
+    pub fn bite_index(&mut self, index:&Vec<usize>)->Vec<usize>{
+        match self{
+            IndexExtension::Prepend(ref mut pre)=>{
+                let prelen = pre.len();
+                *pre = index[0..prelen].to_vec();
+                index[prelen..].to_vec()
+            }
+            IndexExtension::Append(ref mut add)=>{
+                let addlen = add.len();
+                let index_len = index.len();
+                let start_index = index_len-addlen;
+                *add = index[start_index..].to_vec();
+                index[0..start_index].to_vec()
+            }
+        }
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct IndexExtend{
+    pub source: Box<dyn TransformablePixelMaker>,
+    pub extension:IndexExtension
+}
+
+impl IndexExtend{
+    pub fn prepend(index:Vec<usize>,source:Box<dyn TransformablePixelMaker>)->Self{
+        Self { source, extension: IndexExtension::Prepend(index) }
+    }
+
+    pub fn append(index:Vec<usize>,source:Box<dyn TransformablePixelMaker>)->Self{
+        Self { source, extension: IndexExtension::Append(index) }
+    }
+}
+
+impl PixelMaker for IndexExtend{
+    fn get_pixels(&self)->Vec<DetectorPixel> {
+        let mut pixels = self.source.get_pixels();
+        pixels.iter_mut().for_each(|pix|{
+            pix.index = self.extension.modify_index(&pix.index)
+        });
+        pixels
+    }
+}
+
+impl Transformable for IndexExtend{
+    fn offset(&mut self,offset:(f64,f64)) {
+        self.source.offset(offset)
+    }
+    fn rotate(&mut self,angle:f64) {
+        self.source.rotate(angle)
+    }
+}
+
+impl Indexed for IndexExtend{
+    fn get_index(&self) ->Vec<usize>{
+        self.extension.modify_index(&self.source.get_index())
+    }
+
+    fn set_index(&mut self, index:Vec<usize>) {
+        let rest = self.extension.bite_index(&index);
+        self.source.set_index(rest);
     }
 }
