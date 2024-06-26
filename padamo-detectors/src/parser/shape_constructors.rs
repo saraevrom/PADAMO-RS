@@ -201,7 +201,7 @@ pub fn parse_offset_pixelable<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker,
 }
 
 pub fn parse_pixelable_pre<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
-    alt((parse_pixel,parse_grid,parse_rotate_pixelable,parse_offset_pixelable,parse_prepend,parse_append)).parse(i)
+    alt((parse_pixel,parse_grid,parse_rotate_pixelable,parse_offset_pixelable,parse_prepend,parse_append, parse_grid_nd)).parse(i)
 }
 
 pub fn parse_pixelable<'a>(i:&'a str)-> IResult<&'a str, Box<dyn TransformablePixelMaker>, nom::error::Error<&'a str>>{
