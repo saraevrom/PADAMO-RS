@@ -97,6 +97,8 @@ pub enum PixelGridError{
     XInvalid(usize,usize,usize),
     #[error("Invalid Y axis indices: {0}:{1}:{2}")]
     YInvalid(usize,usize,usize),
+    #[error("Index {0} is out of bounds")]
+    IndexOutOfBound(usize)
 }
 
 #[derive(Debug,Clone)]
@@ -104,6 +106,7 @@ pub struct PixelGrid{
     pub lowers:(usize,usize),
     pub uppers:(usize,usize),
     pub steps:(usize,usize),
+    pub mutated_indices:(usize,usize),
     pub base:(f64,f64),
     pub ax_x:(f64,f64),
     pub ax_y:(f64,f64),
@@ -124,10 +127,10 @@ impl PixelMaker for PixelGrid{
                 let x = self.base.0+self.ax_x.0*(i_delta as f64)+self.ax_y.0*(j_delta as f64);
                 let y = self.base.1+self.ax_x.1*(i_delta as f64)+self.ax_y.1*(j_delta as f64);
                 let mut index = self.base_index.clone();
-                if let Some(v) = index.get_mut(0){
+                if let Some(v) = index.get_mut(self.mutated_indices.0){
                     *v+=i;
                 }
-                if let Some(v) = index.get_mut(1){
+                if let Some(v) = index.get_mut(self.mutated_indices.1){
                     *v+=j;
                 }
                 pix.offset((x,y));
@@ -179,14 +182,21 @@ impl Indexed for PixelGrid{
 }
 
 impl PixelGrid{
-    pub fn new(lowers:(usize,usize),uppers:(usize,usize),steps:(usize,usize),ax_x:(f64,f64),ax_y:(f64,f64),subpixel:Box<dyn TransformablePixelMaker>)->Result<Self,PixelGridError>{
+    pub fn new(lowers:(usize,usize),uppers:(usize,usize),steps:(usize,usize),mutated_indices:(usize,usize),ax_x:(f64,f64),ax_y:(f64,f64),subpixel:Box<dyn TransformablePixelMaker>)->Result<Self,PixelGridError>{
         if lowers.0>=uppers.0 || steps.0==0{
             return Err(PixelGridError::XInvalid(lowers.0,uppers.0,steps.0));
         }
         if lowers.1>=uppers.1 || steps.1==0{
             return Err(PixelGridError::YInvalid(lowers.1,uppers.1,steps.1));
         }
-        Ok(Self { lowers, uppers, steps, base: (0.0,0.0), ax_x, ax_y, base_index:subpixel.get_index(), subpixel })
+        let base_index = subpixel.get_index();
+        if mutated_indices.0>=base_index.len(){
+            return Err(PixelGridError::IndexOutOfBound(mutated_indices.0));
+        }
+        if mutated_indices.1>=base_index.len(){
+            return Err(PixelGridError::IndexOutOfBound(mutated_indices.1));
+        }
+        Ok(Self { lowers, uppers, steps, base: (0.0,0.0), ax_x, ax_y, base_index, subpixel, mutated_indices })
     }
 }
 

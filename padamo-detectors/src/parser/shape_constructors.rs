@@ -217,7 +217,7 @@ pub fn parse_grid<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error:
     let parser = separated_pair(parser, sp_sep, parse_pixelable); //AY
     let mut parser = parser.map(|x|{
         let (((((lowers,uppers),steps),ax),ay),obj) = x;
-        PixelGrid::new(lowers, uppers, steps, ax, ay, obj)
+        PixelGrid::new(lowers, uppers, steps, (0,1), ax, ay, obj)
     });
 
     let res:(&str, Result<PixelGrid,PixelGridError>) = parser.parse(i)?;
@@ -228,6 +228,29 @@ pub fn parse_grid<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error:
         },
     }
 }
+
+pub fn parse_grid_nd<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
+    let parser = separated_pair(preceded(sp, tag_no_case("ndgrid")), sp_sep, parse_grid_point).map(|x| x.1); //lowers
+    let parser = separated_pair(parser, sp_sep, parse_grid_point); //uppers
+    let parser = separated_pair(parser, sp_sep, parse_grid_point); //steps
+    let parser = separated_pair(parser, sp_sep, parse_grid_point); //mutated indices
+    let parser = separated_pair(parser, sp_sep, parse_point); //AX
+    let parser = separated_pair(parser, sp_sep, parse_point); //AY
+    let parser = separated_pair(parser, sp_sep, parse_pixelable); //AY
+    let mut parser = parser.map(|x|{
+        let ((((((lowers,uppers),steps),mutated_indices),ax),ay),obj) = x;
+        PixelGrid::new(lowers, uppers, steps, mutated_indices, ax, ay, obj)
+    });
+
+    let res:(&str, Result<PixelGrid,PixelGridError>) = parser.parse(i)?;
+    match res.1{
+        Ok(v)=> IResult::Ok((res.0,BoxedPixelMaker::new(v))),
+        Err(_)=>{
+            IResult::Err(nom::Err::Failure(nom::error::Error { input: i, code: ErrorKind::Fail }))
+        },
+    }
+}
+
 
 pub fn parse_prepend<'a>(i:&'a str)-> IResult<&'a str, BoxedPixelMaker, nom::error::Error<&'a str>>{
     let parser = separated_pair(preceded(sp,tag("prepend") ),sp_sep , parse_index).map(|x| x.1);
