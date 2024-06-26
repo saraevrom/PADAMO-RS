@@ -238,7 +238,8 @@ impl PadamoViewer{
         self.clamp();
         if let Some(signal) = &self.signal{
             let time_start = Instant::now();
-            let frame = signal.0.request_range(self.pointer,self.pointer+1).squeeze();
+            let mut frame = signal.0.request_range(self.pointer,self.pointer+1);
+            frame.shape.drain(0..1);
             let tim = signal.1.request_range(self.pointer,self.pointer+1)[0];
             self.buffer = Some((frame,tim));
             let time_stop = time_start.elapsed();
@@ -328,6 +329,9 @@ impl PadamoTool for PadamoViewer{
             if buffer.0.form_compatible(&detector_shape){
                 frame = Some((&buffer.0,buffer.1));
                 //println!("OK {:?} and {:?}", detector_shape, buffer.shape);
+            }
+            else{
+                println!("Incompatible shapes {:?} and {:?}", buffer.0.shape, detector_shape);
             }
         }
 
