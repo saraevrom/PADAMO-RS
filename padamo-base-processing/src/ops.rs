@@ -147,12 +147,13 @@ pub struct LazySlidingQuantileNormalize{
     source:LazyDetectorSignal,
     window:usize,
     q:f64,
-    gaussmode:bool
+    gaussmode:bool,
+    variance:bool,
 }
 
 impl LazySlidingQuantileNormalize{
-    pub fn new(source:LazyDetectorSignal,window:usize, q:f64, gaussmode:bool)->Self{
-        Self { window, q, source, gaussmode}
+    pub fn new(source:LazyDetectorSignal,window:usize, q:f64, gaussmode:bool, variance:bool)->Self{
+        Self { window, q, source, gaussmode, variance}
     }
 }
 
@@ -186,6 +187,7 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingQuantileNormalize{
 
         let sourced = self.source.request_range(range_start,range_end);
         let k = if self.gaussmode {1.4826} else {1.0};
+        let use_variance = self.variance;
         let window = self.window;
 
         //println!("{:?}",sourced);
@@ -195,7 +197,10 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingQuantileNormalize{
 
         let slices:Vec<_> =
             slices.par_iter().map(|x|
-                x.mapv(|y| f64::abs(y)*k).to_owned().quantile_axis_skipnan_mut(
+                x
+                    .mapv(|y| f64::abs(y)*k)
+                    //.mapv(|y| if use_variance {y*y} else {y})
+                    .to_owned().quantile_axis_skipnan_mut(
                     Axis(0),
                     n64(q),
                     &ndarray_stats::interpolate::Linear).unwrap()
@@ -205,7 +210,11 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingQuantileNormalize{
         //println!("Calculated sliding median (after norm calculation) normalize in {:.2?}", time_start.elapsed());
         let views:Vec<_> = slices.par_iter().map(|x| x.view()).collect();
         //println!("FRAMES: {}",views.len());
-        let divider = ndarray::stack(Axis(0), &views).unwrap();
+        let mut divider = ndarray::stack(Axis(0), &views).unwrap();
+
+        if use_variance{
+            divider.par_map_inplace(|x| {*x = *x * *x});
+        }
 
         let divisor = sourced.slice(ndarray::s![self.window/2..self.window/2+end-start,..,..]);
         //println!("Calculated sliding median (no division) normalize in {:.2?}", time_start.elapsed());

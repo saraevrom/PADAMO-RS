@@ -80,12 +80,13 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingMedian{
 pub struct LazySlidingMedianNormalize{
     source:LazyDetectorSignal,
     window:usize,
-    gaussmode:bool
+    gaussmode:bool,
+    variance:bool
 }
 
 impl LazySlidingMedianNormalize{
-    pub fn new(source:LazyDetectorSignal,window:usize, gaussmode:bool)->Self{
-        Self { window, source, gaussmode}
+    pub fn new(source:LazyDetectorSignal,window:usize, gaussmode:bool, variance:bool)->Self{
+        Self { window, source, gaussmode, variance}
     }
 }
 
@@ -143,6 +144,7 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingMedianNormalize{
 
         let sourced = self.source.request_range(range_start,range_end);
         let k = if self.gaussmode {1.4826} else {1.0};
+        let use_variance = self.variance;
         let window = self.window;
 
         let sourced1 = sourced.clone();
@@ -161,7 +163,11 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingMedianNormalize{
         };
 
 
-        let divider = temporal_moving_median(sourced,window);
+        let mut divider = temporal_moving_median(sourced,window);
+        if use_variance{
+            divider.flat_data = divider.flat_data.to_vec().par_drain(..).map(|x| {x*x}).collect::<Vec<f64>>().into();
+        }
+
 
         //divisor
         safe_divide_arrs(divisor,divider)

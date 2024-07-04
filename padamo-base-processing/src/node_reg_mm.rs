@@ -93,12 +93,13 @@ impl SlidingMedianNodeNormalizer{
         let source = inputs.request_detectorfulldata("Signal")?;
         let trigger = source.2.map(|x| LazyArrayOperationBox::from_value(LazySkipper::new(x, window), TD_Opaque));
         let gauss = constants.request_boolean("Gauss mode")?;
+        let variance = constants.request_boolean("Use Variance")?;
 
         if source.0.length()<window{
             return Err(ExecutionError::OtherError("Signal is too small".into()));
         }
 
-        let norm = LazySlidingMedianNormalize::new(source.0.clone(), window, gauss);
+        let norm = LazySlidingMedianNormalize::new(source.0.clone(), window, gauss, variance);
         let norm = LazyArrayOperationBox::from_value(norm, TD_Opaque);
         let norm = norm.cached();
 
@@ -139,7 +140,8 @@ impl CalculationNode for SlidingMedianNodeNormalizer {
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants!(
             ("Sliding window", 64),
-            ("Gauss mode", true)
+            ("Gauss mode", true),
+            ("Use Variance", false)
         )
     }
 

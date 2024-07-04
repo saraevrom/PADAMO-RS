@@ -104,12 +104,13 @@ impl SlidingQuantileNodeNormalizer{
         let source = inputs.request_detectorfulldata("Signal")?;
         let trigger = source.2.map(|x| LazyArrayOperationBox::from_value(LazySkipper::new(x, window), TD_Opaque));
         let gauss = constants.request_boolean("Gauss mode")?;
+        let variance = constants.request_boolean("Use Variance")?;
 
         if source.0.length()<window{
             return Err(ExecutionError::OtherError("Signal is too small".into()));
         }
 
-        let norm = LazySlidingQuantileNormalize::new(source.0.clone(), window, quantile,gauss);
+        let norm = LazySlidingQuantileNormalize::new(source.0.clone(), window, quantile,gauss, variance);
         let norm = LazyArrayOperationBox::from_value(norm, TD_Opaque);
         let norm = norm.cached();
 
@@ -151,7 +152,8 @@ impl CalculationNode for SlidingQuantileNodeNormalizer {
         constants!(
             ("Sliding window", 64),
             ("Quantile", 0.5),
-            ("Gauss mode", true)
+            ("Gauss mode", true),
+            ("Use Variance", false)
         )
     }
 
