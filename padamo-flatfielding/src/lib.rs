@@ -7,6 +7,7 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub mod lambert;
 pub mod ops;
+pub mod nodes_estimate;
 pub mod nodes;
 
 
@@ -20,6 +21,8 @@ pub fn plugin_root()->PadamoModule_Ref{
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         nodes::PhysicalFFNode,
-        nodes::MapMultiplyNode
+        nodes::MapMultiplyNode,
+        nodes::MapDivideNode,
+        nodes_estimate::QuantileNode
     )
 }

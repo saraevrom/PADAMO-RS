@@ -15,4 +15,7 @@ abi_stable = "0.11.3"
 # Main padamo api
 padamo-api = { path = "../padamo-api" }
 rayon = "1.10.0"
-
+ndarray-stats = "0.5.1"
+ndarray = "0.15.6"
+noisy_float = "0.2.0"
+# dyn-clone = "1.0.17"
