@@ -46,6 +46,12 @@ impl<Message> Detector<Message>{
         Self::from_cells(cells)
     }
 
+    pub fn alive_pixels_mask(&self)->ArrayND<f64>{
+        let shape = self.alive_pixels.shape.clone();
+        let flat_data = self.alive_pixels.flat_data.iter().map(|x| if *x {1.0} else {0.0}).collect::<Vec<f64>>().into();
+        ArrayND { flat_data, shape }
+    }
+
     pub fn toggle_pixel(&mut self, index:&Vec<usize>){
         self.alive_pixels[index] = !self.alive_pixels[index];
     }

@@ -8,6 +8,7 @@ pub struct ViewerNode;
 
 pub const VIEWER_FILENAME_VAR:&'static str = "ViewerOpenedFile";
 pub const VIEWER_SIGNAL_VAR:&'static str = "ViewerSignal";
+pub const VIEWER_MASK_VAR:&'static str = "alive_pixels";
 
 impl ViewerNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>{
@@ -82,6 +83,48 @@ impl CalculationNode for LoadedFileNode{
     fn outputs(&self,) -> RVec<CalculationIO>where {
         ports!(
             ("File path", ContentType::String)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        rvec![]
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct ViewerMaskNode;
+
+impl ViewerMaskNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
+        let mask= environment.request_detectorsignal(VIEWER_MASK_VAR)?;
+        outputs.set_value("Alive pixels".into(), mask.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for ViewerMaskNode{
+    fn name(&self,) -> abi_stable::std_types::RString{
+        "Detector mask".into()
+    }
+
+    fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
+        rvec![
+            "Application".into(),
+            "Viewer".into()
+        ]
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports!()
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("Alive pixels", ContentType::DetectorSignal)
         )
     }
 

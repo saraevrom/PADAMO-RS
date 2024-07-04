@@ -2,7 +2,10 @@ mod messages;
 
 use super::PadamoTool;
 use abi_stable::std_types::ROption;
+use padamo_api::calculation_nodes::content::Content;
+use padamo_api::lazy_array_operations::make_lao_box;
 use padamo_detectors::Detector;
+use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::widget::{column,row};
@@ -222,6 +225,7 @@ impl PadamoViewer{
             self.clamp();
             self.update_buffer(Some(padamo));
             self.fill_strings();
+
             return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
                 start: self.start,
                 end: self.end+1,
@@ -313,6 +317,10 @@ impl PadamoViewer{
             e.stop();
         }
         self.export_status = "IDLE".into();
+    }
+
+    fn update_pixels(&self, padamo :&mut PadamoState){
+        padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(self.chart.alive_pixels_mask())));
     }
 }
 
@@ -441,7 +449,10 @@ impl PadamoTool for PadamoViewer{
     }
 
     fn update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
-        if let crate::messages::PadamoAppMessage::ViewerMessage(view) = msg.as_ref(){
+        if let crate::messages::PadamoAppMessage::Run = msg.as_ref(){
+            self.update_pixels(padamo);
+        }
+        else if let crate::messages::PadamoAppMessage::ViewerMessage(view) = msg.as_ref(){
             let mut request_buffer_fill = true;
             match view {
                 ViewerMessage::SetViewPosition(pos)=>{
@@ -599,6 +610,7 @@ impl PadamoTool for PadamoViewer{
                 }
                 ViewerMessage::TogglePixel(pix)=>{
                     self.chart.toggle_pixel(pix);
+                    self.update_pixels(padamo);
                 }
 
                 ViewerMessage::Export=>{

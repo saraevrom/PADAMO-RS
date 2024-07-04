@@ -181,6 +181,7 @@ impl Application for Padamo{
 
         nodes.register_node(builtin_nodes::viewer::LoadedFileNode).unwrap();
         nodes.register_node(builtin_nodes::viewer::ViewerNode).unwrap();
+        nodes.register_node(builtin_nodes::viewer::ViewerMaskNode).unwrap();
 
         let current_exe = std::env::current_exe().unwrap();
         let current_dir = current_exe.parent().unwrap();
