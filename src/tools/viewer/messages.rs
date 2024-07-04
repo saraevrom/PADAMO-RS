@@ -31,6 +31,7 @@ pub enum ViewerMessage{
     SetAutostop(bool),
     SetMinSignal(String),
     SetMaxSignal(String),
+    TogglePixel(Vec<usize>),
     //PopupPlot(usize,usize,Vec<usize>)
 }
 

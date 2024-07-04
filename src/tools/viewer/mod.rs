@@ -420,9 +420,11 @@ impl PadamoTool for PadamoViewer{
             self.animation_fields.view().map(ViewerMessage::EditAnimationSettings),
         ].width(200).into();
 
-        let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
+        //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
         let top_row = row![
-            self.chart.view(frame,self.plot_scale,action, Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
+            self.chart.view(frame,self.plot_scale,
+                            Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
+                            Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
             iced::widget::rule::Rule::vertical(10),
             iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(200),
         ];
@@ -595,6 +597,10 @@ impl PadamoTool for PadamoViewer{
                 ViewerMessage::SetAutostop(v)=>{
                     self.stop_on_trigger = *v;
                 }
+                ViewerMessage::TogglePixel(pix)=>{
+                    self.chart.toggle_pixel(pix);
+                }
+
                 ViewerMessage::Export=>{
                     if let Some(filename) = padamo.workspace.workspace("viewed_hdf5_data").save_dialog(vec![("HDF5 data", vec!["h5"])]){
                         //if let nfd::Response::Okay(filename) = res{

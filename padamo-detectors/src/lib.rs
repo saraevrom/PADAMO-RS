@@ -46,6 +46,10 @@ impl<Message> Detector<Message>{
         Self::from_cells(cells)
     }
 
+    pub fn toggle_pixel(&mut self, index:&Vec<usize>){
+        self.alive_pixels[index] = !self.alive_pixels[index];
+    }
+
     pub fn from_cells(cells:polygon::DetectorContent)->Self{
         let alive_pixels = ArrayND::new(cells.compat_shape.clone(), true) ;
         Self { cells, _marker:PhantomData, spec: RefCell::new(None),alive_pixels}
