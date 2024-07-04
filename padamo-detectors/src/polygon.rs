@@ -228,8 +228,8 @@ impl DetectorContent{
         format!("{}\n{}",header ,lines)
     }
 
-    pub fn pixels_values<'a>(&'a self, pixels:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->RectIterator<'a>{
-        RectIterator::new(self, pixels, scale)
+    pub fn pixels_values<'a>(&'a self, alive_pixels:&'a ArrayND<bool>, pixels:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->RectIterator<'a>{
+        RectIterator::new(self, alive_pixels, pixels, scale)
     }
 
     pub fn pixels_colors<'a>(&'a self, pixels:&'a [Vec<usize>], vis:&'a [bool])->ColorIterator<'a>{
@@ -242,17 +242,18 @@ impl DetectorContent{
 }
 
 
-
+/// Iterator for signal display value
 pub struct RectIterator<'a>{
     pub detector:&'a DetectorContent,
+    pub alive_pixels:&'a ArrayND<bool>,
     current_index:usize,
     source:&'a Option<(&'a ArrayND<f64>,f64)>,
     scale:super::Scaling,
 }
 
 impl<'a> RectIterator<'a>{
-    pub fn new(detector:&'a DetectorContent,source:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->Self{
-        Self{detector, current_index:0, source, scale}
+    pub fn new(detector:&'a DetectorContent, alive_pixels: &'a ArrayND<bool>,source:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->Self{
+        Self{detector, current_index:0, source, scale, alive_pixels}
     }
 
 
@@ -261,8 +262,11 @@ impl<'a> RectIterator<'a>{
         // let coords = (coords.0-self.size.0/2.0,coords.1-self.size.1/2.0);
         let poly = &self.detector.content[self.current_index];
 
-        let color = if let Some((arr,_)) = self.source{
-            let (min_,max_) = self.scale.get_bounds(arr);
+        let color = if !self.alive_pixels[&poly.index]{
+            plotters::style::colors::BLACK.filled()
+        }
+        else if let Some((arr,_)) = self.source{
+            let (min_,max_) = self.scale.get_bounds(arr,self.alive_pixels);
             //println!("COORDS {},{}",self.i,self.j);
             if let Some(v) = arr.try_get(&poly.index){
                 plotters::style::colors::colormaps::ViridisRGB::get_color_normalized(*v,min_,max_).filled()
@@ -296,6 +300,7 @@ impl<'a> Iterator for RectIterator<'a>{
 
 //pub type StableColorMatrix = ArrayND<abi_stable::std_types::Tuple3<u8,u8,u8>>;
 
+/// Iterator for colored pixelmaps
 pub struct ColorIterator<'a>{
     pub detector:&'a DetectorContent,
     current_index:usize,

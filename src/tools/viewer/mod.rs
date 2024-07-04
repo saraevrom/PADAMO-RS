@@ -284,7 +284,7 @@ impl PadamoViewer{
         self.start_str = self.start.to_string();
         self.end_str = self.end.to_string();
         if let Some(frame) = &self.buffer{
-            let (min,max) = self.plot_scale.get_bounds(&frame.0);
+            let (min,max) = self.plot_scale.get_bounds(&frame.0,&self.chart.alive_pixels);
             self.min_signal_entry = min.to_string();
             self.max_signal_entry = max.to_string();
         }

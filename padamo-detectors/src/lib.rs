@@ -34,6 +34,7 @@ pub struct Margins{
 #[derive(Clone)]
 pub struct Detector<Message>{
     pub cells:polygon::DetectorContent,
+    pub alive_pixels:ArrayND<bool>,
     spec:RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
     _marker: PhantomData<Message>,
 }
@@ -46,8 +47,8 @@ impl<Message> Detector<Message>{
     }
 
     pub fn from_cells(cells:polygon::DetectorContent)->Self{
-
-        Self { cells, _marker:PhantomData, spec: RefCell::new(None)}
+        let alive_pixels = ArrayND::new(cells.compat_shape.clone(), true) ;
+        Self { cells, _marker:PhantomData, spec: RefCell::new(None),alive_pixels}
     }
 
 
@@ -159,7 +160,7 @@ impl<Message> Detector<Message>{
             .disable_mesh()
             .draw()
             .unwrap();
-        let rects = self.cells.pixels_values(pixels,scale);
+        let rects = self.cells.pixels_values(&self.alive_pixels,pixels,scale);
         chart.draw_series(
             rects
         ).unwrap();
@@ -169,7 +170,7 @@ impl<Message> Detector<Message>{
         Some(chart.as_coord_spec().clone());
 
         let (min,max) =  if let Some(pix) = pixels{
-            scale.get_bounds(pix.0)
+            scale.get_bounds(pix.0,&self.alive_pixels)
         }
         else{
             (0.0,1.0)
@@ -322,11 +323,15 @@ pub enum Scaling{
 }
 
 impl Scaling{
-    pub fn get_bounds(&self, frame:&ArrayND<f64>)->(f64,f64){
+    pub fn get_bounds(&self, frame:&ArrayND<f64>, alive_pixels:&ArrayND<bool>)->(f64,f64){
         let first = frame.flat_data[0];
         match self{
             Self::Autoscale=>{
-                let (min,max) = frame.flat_data.iter().fold((first,first), |a,b| (a.0.min(*b),a.1.max(*b)));
+                let (min,max) = frame.flat_data.iter()
+                    .enumerate()
+                    .filter(|x| alive_pixels.flat_data[x.0])
+                    .map(|x| x.1)
+                    .fold((first,first), |a,b| (a.0.min(*b),a.1.max(*b)));
                 if max<=min{
                     (min-0.1,max+0.1)
                 }
