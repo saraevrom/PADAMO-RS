@@ -1,7 +1,7 @@
-use std::{collections::VecDeque, sync::{Arc, Mutex}, thread};
+use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
 use abi_stable::std_types::RVec;
-use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyDetectorSignal, ndim_array::ArrayND, LazyTimeSignal};
+use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTimeSignal};
 use rayon::prelude::*;
 use ndarray_stats::SummaryStatisticsExt;
 
@@ -134,5 +134,30 @@ impl LazyArrayOperation<RVec<f64>> for LazyTimeConverter{
         let unrarified: RVec<f64> = self.source.request_range(start*self.divider, end*self.divider);
         let rarified:Vec<_> = unrarified.into_iter().skip(self.divider/2).step_by(self.divider).collect();
         rarified.into()
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct CutterOperator<T:Clone+Debug>{
+    start:usize,
+    end:usize,
+    source:LazyArrayOperationBox<T>
+}
+
+impl<T:Clone+Debug> CutterOperator<T>{
+    pub fn new(start:usize, end:usize, source:LazyArrayOperationBox<T>)->Self{
+        Self{start,end,source}
+    }
+}
+
+impl<T:Clone+Debug> LazyArrayOperation<T> for CutterOperator<T>{
+    fn length(&self,) -> usize where {
+        self.end-self.start
+    }
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
+        self.source.calculate_overhead(start+self.start,end+self.start)
+    }
+    fn request_range(&self,start:usize,end:usize,) -> T where {
+        self.source.request_range(start+self.start,end+self.start)
     }
 }

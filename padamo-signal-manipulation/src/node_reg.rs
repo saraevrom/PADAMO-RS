@@ -1,6 +1,6 @@
 use abi_stable::{rvec, std_types::ROption};
 use padamo_api::{prelude::*, ports, constants};
-use abi_stable::std_types::RVec;
+use abi_stable::std_types::{RResult,RVec,RString};
 use super::ops::{LazySpaceConverter,LazyTimeConverter};
 use padamo_api::lazy_array_operations::LazyArrayOperationBox;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
@@ -57,7 +57,67 @@ impl CalculationNode for TimeResolutionReduceNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub struct CutterNode;
+
+impl CutterNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+        let mut src = inputs.request_detectorfulldata("Signal")?;
+        let start = inputs.request_integer("Start")?;
+        let start:usize = start.try_into().map_err(ExecutionError::from_error)?;
+        let end = inputs.request_integer("End")?;
+        let end:usize = end.try_into().map_err(ExecutionError::from_error)?;
+        let l = src.0.length();
+        if start>end{
+            return Err(ExecutionError::OtherError(format!("Invalid range ({}>{})",start,end).into()));
+        }
+        if end>l{
+            return Err(ExecutionError::OtherError(format!("End point is larget than length of array ({}>{})",end,l).into()));
+        }
+        src.0 = make_lao_box(crate::ops::CutterOperator::new(start, end, src.0));
+        src.1 = make_lao_box(crate::ops::CutterOperator::new(start, end, src.1));
+        src.2 = match src.2.into_option() {
+            Some(v)=>ROption::RSome(make_lao_box(crate::ops::CutterOperator::new(start, end, v))),
+            None=>ROption::RNone,
+        };
+        outputs.set_value("Signal", src.into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for CutterNode{
+    fn name(&self,) -> RString where {
+        "Cut signal".into()
+    }
+    fn category(&self,) -> abi_stable::std_types::RVec<RString> where {
+        rvec!["Signal manipulation".into()]
+    }
+
+    fn inputs(&self)->RVec<CalculationIO>{
+        ports!(
+            ("Signal", ContentType::DetectorFullData),
+            ("Start", ContentType::Integer),
+            ("End", ContentType::Integer)
+        )
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("Signal", ContentType::DetectorFullData)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!()
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
     }
 }

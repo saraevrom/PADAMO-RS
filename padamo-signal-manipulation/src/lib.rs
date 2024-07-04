@@ -10,7 +10,8 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 #[sabi_extern_fn]
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
-        node_reg::TimeResolutionReduceNode
+        node_reg::TimeResolutionReduceNode,
+        node_reg::CutterNode
     )
 }
 
