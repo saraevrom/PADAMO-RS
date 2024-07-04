@@ -92,3 +92,81 @@ impl CalculationNode for SaveHDF5Node{
         self.calculate(inputs, outputs, constants, environment, rng).into()
     }
 }
+
+
+
+
+#[derive(Clone,Debug)]
+pub struct SaveHDF5ArrayNode;
+
+impl SaveHDF5ArrayNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError> {
+        let array = inputs.request_detectorsignal("Array")?;
+        let file_path = inputs.request_string("File path")?.to_string();
+        let h5_file = hdf5::File::append(file_path).map_err(ExecutionError::from_error)?;
+
+        let chunk_size = constants.request_integer("chunk")?;
+        let chunk_size:usize = chunk_size.try_into().map_err(ExecutionError::from_error)?;
+
+        let spatial_name = constants.request_string("field")?.into_string();
+
+        let spatial = array.request_range(0,array.length());
+        let deflate = constants.request_boolean("deflate")?;
+
+        let ds_shape:Vec<usize> = spatial.shape.clone().into();
+        let mut chunk_3d = ds_shape.clone();
+        chunk_3d[0] = chunk_size;
+
+        let mut space_ds = h5_file.new_dataset::<f64>()
+            .chunk(chunk_3d)
+            .shape(ds_shape);
+        if deflate{
+            let deflate_level = constants.request_integer("deflate_level")?;
+            let deflate_level = deflate_level.try_into().map_err(ExecutionError::from_error)?;
+            space_ds = space_ds.deflate(deflate_level);
+        }
+        let space_ds = space_ds.create(spatial_name.as_str()).map_err(ExecutionError::from_error)?;
+        space_ds.write(&spatial.to_ndarray()).map_err(ExecutionError::from_error)?;
+
+        Ok(())
+    }
+}
+
+impl CalculationNode for SaveHDF5ArrayNode{
+    fn name(&self,) -> RString {
+        "Save HDF5 array".into()
+    }
+    fn category(&self,) -> RVec<RString>{
+        rvec![
+            "HDF5".into()
+        ]
+    }
+
+    fn is_primary(&self,) -> bool where {
+        true
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports!(
+            ("Array",ContentType::DetectorSignal),
+            ("File path",ContentType::String)
+        )
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports!()
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!(
+            ("deflate",true),
+            ("deflate_level",3),
+            ("field","data"),
+            ("chunk",16)
+        )
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError> {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}

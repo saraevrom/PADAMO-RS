@@ -9,6 +9,7 @@ pub use array::LazyHDF5ArrayNode;
 
 pub mod save;
 pub use save::SaveHDF5Node;
+pub use save::SaveHDF5ArrayNode;
 
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 use padamo_api::prelude::*;
