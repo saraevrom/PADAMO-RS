@@ -40,16 +40,18 @@ pub enum LCMode{
 pub enum TimeAxisFormat{
     AsIs,
     Offset,
-    UnixTime
+    UnixTime,
+    GTU
 }
 
 impl TimeAxisFormat{
     pub fn format(&self,x:f64, x0:f64)->String{
         match self {
-            Self::AsIs=> format!("{:.3}", x),
+            Self::AsIs=> format!("{:.4}", x),
+            Self::GTU=> format!("{}", x as usize),
             Self::Offset=>{
                 let off = x-x0;
-                format!("{:.3}", off)
+                format!("{:.4}", off)
             },
             Self::UnixTime=>{
                 use chrono::{DateTime, TimeZone};
@@ -326,6 +328,25 @@ impl Plotter{
 
     }
 
+    fn update_data_state(&mut self){
+        if let DataState::Loaded(v) = &self.data{
+            self.detector_pixels = v.pixel_count;
+            self.view_pivot = v.start;
+            self.last_x_limits = if let TimeAxisFormat::GTU=self.axis_formatter{
+                (v.start as f64, v.end as f64)
+            }
+            else{
+                (v.time[0],v.time[v.time.len()-1])
+            };
+            self.last_x_limits_live = self.last_x_limits;
+
+            self.last_y_limits = (v.minv,v.maxv);
+            self.last_y_limits_live = self.last_y_limits;
+            self.sync_entries();
+            self.cache.clear();
+        }
+    }
+
 }
 
 impl PadamoTool for Plotter{
@@ -426,6 +447,7 @@ impl PadamoTool for Plotter{
                 widget::Container::new(widget::column![
                     widget::text("Time format"),
                     widget::radio::Radio::new("Unixtime",TimeAxisFormat::AsIs, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
+                    widget::radio::Radio::new("GTU",TimeAxisFormat::GTU, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
                     widget::radio::Radio::new("Seconds",TimeAxisFormat::Offset, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
                     widget::radio::Radio::new("Time",TimeAxisFormat::UnixTime, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
                 ]),
@@ -476,17 +498,18 @@ impl PadamoTool for Plotter{
                 if let Some(worker) = self.data.take_worker(){
                     if worker.is_finished(){
                         if let Ok(v) = worker.join(){
-                            self.detector_pixels = v.pixel_count;
-                            self.view_pivot = v.start;
-                            self.last_x_limits = (v.time[0],v.time[v.time.len()-1]);
-                            self.last_x_limits_live = self.last_x_limits;
-
-                            self.last_y_limits = (v.minv,v.maxv);
-                            self.last_y_limits_live = self.last_y_limits;
+                            // self.detector_pixels = v.pixel_count;
+                            // self.view_pivot = v.start;
+                            // self.last_x_limits = (v.time[0],v.time[v.time.len()-1]);
+                            // self.last_x_limits_live = self.last_x_limits;
+                            //
+                            // self.last_y_limits = (v.minv,v.maxv);
+                            // self.last_y_limits_live = self.last_y_limits;
                             self.data = DataState::Loaded(v);
-                            self.sync_entries();
+                            self.update_data_state();
+                            // self.sync_entries();
                             println!("Loaded interval");
-                            self.cache.clear();
+                            // self.cache.clear();
                         }
                     }
                     else{
@@ -545,6 +568,7 @@ impl PadamoTool for Plotter{
                     }
                     PlotterMessage::SetTimeFormat(fmt)=>{
                         self.axis_formatter = *fmt;
+                        self.update_data_state();
                     }
                     PlotterMessage::SetLCOnly(v)=>{
                         self.lc_only = *v;
@@ -675,7 +699,13 @@ impl PadamoTool for Plotter{
 
     fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
         if let PadamoAppMessage::PlotterMessage(PlotterMessage::PlotXClicked(f)) = msg.as_ref(){
-            return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPositionUnixTime(*f)));
+            if let TimeAxisFormat::GTU = self.axis_formatter{
+                let i = *f as usize;
+                return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPosition(i)));
+            }
+            else{
+                return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPositionUnixTime(*f)));
+            }
         }
         None
     }

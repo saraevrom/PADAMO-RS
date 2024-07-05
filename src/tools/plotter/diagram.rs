@@ -1,4 +1,4 @@
-use super::messages::PlotterMessage;
+use super::{messages::PlotterMessage, TimeAxisFormat};
 //use super::colors::get_color;
 use padamo_detectors::{colors::get_color_indexed, Margins};
 use iced::{
@@ -157,7 +157,8 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                         let drawn_series = chart.draw_series(LineSeries::new((0..tim.len()).map(|i| {
                             view_id[0] = i;
                             selected_lc[i] += signal[&view_id];
-                            (tim[i], signal[&view_id])
+                            let x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter{(i+data.start) as f64} else {tim[i]};
+                            (x, signal[&view_id])
                         }), &col));
                         if let Ok(series) = drawn_series{
                             series.label(format!("{:?}", index));
@@ -180,7 +181,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
             if self.plotter_data.display_pointer && index>=start{
                 let pos_index = index-start;
                 if pos_index<tim.len(){
-                    let ptr_x = tim[index-start];
+                    let ptr_x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter {index as f64} else {tim[index-start]};
                     let ptr_data = vec![(ptr_x,ymin),(ptr_x,ymax)];
                     let drawn_ptr = chart.draw_series(LineSeries::new((0..2).map(|i| ptr_data[i]), &RED));
                     if let Ok(series) = drawn_ptr{
@@ -196,7 +197,9 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
 
                     let divider = if self.plotter_data.lc_mean {*total_pix_count as f64} else {1.0};
                     let drawn_series = chart.draw_series(LineSeries::new((0..tim.len()).map(|i| {
-                        (tim[i], lc_total[i]/divider)
+                        //let x = if let TimeAxisFormat::GTU = self
+                        let x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter{(i+data.start) as f64} else {tim[i]};
+                        (x, lc_total[i]/divider)
                     }), &BLACK));
                     if let Ok(series) = drawn_series{
                         series.label("LC");
@@ -207,7 +210,8 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                     let divider = if self.plotter_data.lc_mean {pixels_count} else {1.0};
 
                     let drawn_series = chart.draw_series(LineSeries::new((0..tim.len()).map(|i| {
-                        (tim[i], selected_lc[i]/divider)
+                        let x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter{(i+data.start) as f64} else {tim[i]};
+                        (x, selected_lc[i]/divider)
                     }), &BLACK));
                     if let Ok(series) = drawn_series{
                         series.label("LC");
