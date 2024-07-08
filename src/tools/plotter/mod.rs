@@ -44,6 +44,12 @@ pub enum TimeAxisFormat{
     GTU
 }
 
+#[derive(Clone,Debug,Copy,Eq,PartialEq)]
+pub enum TimeAxisRangeFormat{
+    Seconds,
+    GTU
+}
+
 impl TimeAxisFormat{
     pub fn format(&self,x:f64, x0:f64)->String{
         match self {
@@ -67,6 +73,12 @@ impl TimeAxisFormat{
             }
         }
     }
+    pub fn range_format(&self)->TimeAxisRangeFormat{
+        match self {
+            Self::AsIs | Self::Offset | Self::UnixTime => TimeAxisRangeFormat::Seconds,
+            Self::GTU => TimeAxisRangeFormat::GTU
+        }
+    }
 }
 
 //type DataCache = (Vec<f64>,ArrayND<f64>, Vec<f64>, usize);
@@ -84,6 +96,7 @@ pub struct Plotter{
     channelmap_show:bool,
 
     safeguard:EntryState<usize>,
+    step_threshold:EntryState<f64>,
     //safeguard_str:String,
 
     //last_indices:Option<(usize,usize)>,
@@ -135,8 +148,25 @@ pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal
         }
 
         //self.data = Some((temporal,spatial_out,lc, pixel_count_u64));
+        let time_probe_size = lazy_temporal.length().min(1000);
+        let time_probe:Vec<f64> = lazy_temporal.request_range(0,time_probe_size).into();
+
+        let mut t_last = time_probe[0];
+        let mut time_step = f64::MAX;
+        for rt in time_probe.iter(){
+            let t = *rt;
+            let dt = t-t_last;
+            if dt > 0.0{
+                if dt<time_step{
+                    time_step = dt;
+                }
+            }
+            t_last = t;
+        }
+
         data_state::DataCache {
             time:temporal,
+            time_step,
             signal:spatial_out,
             lc,
             pixel_count:pixel_count_u64,
@@ -171,6 +201,7 @@ impl Plotter{
                 detector:Detector::default_vtl(),
                 pixels:Vec::new(),
                 safeguard:EntryState::new(30000) ,
+                step_threshold:EntryState::new(1.5),
                 //safeguard_str:"30000".into(),
                 //last_indices:None,
                 pixels_show: Vec::new(),
@@ -443,11 +474,12 @@ impl PadamoTool for Plotter{
                 //     widget::text_input("value",&self.safeguard_str).on_input(PlotterMessage::SetSafeguardString).on_submit(PlotterMessage::SafeguardCommit)
                 // ],
                 self.safeguard.view_row("Safeguard","value",PlotterMessage::SetSafeguardString),
+                self.step_threshold.view_row("Discontinuity threshold [steps]", "value", PlotterMessage::SetDiscontinuityThreshold),
                 widget::rule::Rule::horizontal(10),
                 widget::Container::new(widget::column![
                     widget::text("Time format"),
                     widget::radio::Radio::new("Unixtime",TimeAxisFormat::AsIs, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
-                    widget::radio::Radio::new("GTU",TimeAxisFormat::GTU, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
+                    widget::radio::Radio::new("Frames",TimeAxisFormat::GTU, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
                     widget::radio::Radio::new("Seconds",TimeAxisFormat::Offset, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
                     widget::radio::Radio::new("Time",TimeAxisFormat::UnixTime, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
                 ]),
@@ -475,7 +507,7 @@ impl PadamoTool for Plotter{
                     widget::scrollable(widget::container::Container::new(pixlist_element).width(Length::Fill)),
                 ),
                 //),
-            ]).width(200).height(iced::Length::Fill)
+            ]).width(300).height(iced::Length::Fill)
         ]).width(iced::Length::Shrink).height(iced::Length::Fill)
             .into();
 
@@ -567,8 +599,11 @@ impl PadamoTool for Plotter{
                         self.lc_mode = *mode;
                     }
                     PlotterMessage::SetTimeFormat(fmt)=>{
+                        let needs_update = self.axis_formatter.range_format()!=fmt.range_format();
                         self.axis_formatter = *fmt;
-                        self.update_data_state();
+                        if needs_update {
+                            self.update_data_state();
+                        }
                     }
                     PlotterMessage::SetLCOnly(v)=>{
                         self.lc_only = *v;
@@ -682,6 +717,9 @@ impl PadamoTool for Plotter{
                     }
                     PlotterMessage::TogglePixelSelector=>{
                         self.is_selecting_pixels = !self.is_selecting_pixels;
+                    }
+                    PlotterMessage::SetDiscontinuityThreshold(v)=>{
+                        self.step_threshold.set_string(v.clone());
                     }
                     PlotterMessage::TogglePixelByName(v)=>{
                         println!("Toggled pixel {:?}",v);

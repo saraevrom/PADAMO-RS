@@ -10,7 +10,7 @@ use plotters_iced::{
     Chart, ChartWidget, Renderer,
 };
 
-use plotters::coord::{ReverseCoordTranslate, Shift};
+use plotters::{coord::{ReverseCoordTranslate, Shift}, style::full_palette::ORANGE};
 use plotters::prelude::*;
 
 
@@ -218,6 +218,24 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                     }
                 },
             }
+
+            if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter {
+                // Gray line shenanigans
+                for i in 0..tim.len()-1{
+                    let x = (i+data.start) as f64;
+                    let ptr_data = vec![(x,ymin),(x,ymax)];
+                    if tim[i+1]<tim[i]{
+                        chart.draw_series(LineSeries::new((0..2).map(|i| ptr_data[i]), &RGBColor(157,0,0))).unwrap();
+                    }
+                    else if tim[i+1]-tim[i] > self.plotter_data.step_threshold.parsed_value*data.time_step{
+                        chart.draw_series(LineSeries::new((0..2).map(|i| ptr_data[i]), &RGBColor(127,127,127))).unwrap();
+                    }
+                }
+            }
+            else{
+                // White rectangles shenanigans
+            }
+
             *self.plotter_data.plot_spec.borrow_mut() = Some(chart.as_coord_spec().clone());
         }
     }

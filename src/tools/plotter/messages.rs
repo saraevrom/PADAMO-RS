@@ -26,6 +26,7 @@ pub enum PlotterMessage{
     SetSizeX(String),
     SetSizeY(String),
     SetThreshold(String),
+    SetDiscontinuityThreshold(String),
     //SubmitThreshold,
     SelectByThreshold,
     //SubmitSize,
