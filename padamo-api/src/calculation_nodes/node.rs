@@ -122,7 +122,13 @@ pub trait CalculationNode: Debug+Clone{
         rvec![]
     }
 
+    fn identifier(&self)->RString{
+        self.path().join("/").into()
+    }
 
+    fn old_id(&self)->ROption<RString>{
+        ROption::RNone
+    }
 
     /// If node requires calculation by anyway. Set it to true if node is outputting data in environment or somewhere else
     fn is_primary(&self)->bool{
