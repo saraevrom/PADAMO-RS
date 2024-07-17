@@ -43,7 +43,7 @@ impl NodesRegistry{
                     Err(NodeRegistryError::LegacyDuplicate(old_id))
                 }
                 else{
-                    println!("Registered legacy mapping {}->{}",old_id,key);
+                    //println!("Registered legacy mapping {}->{}",old_id,key);
                     self.legacy_map.insert(old_id, key.clone());
                     self.nodes.insert(key, nodebox);
                     Ok(())
