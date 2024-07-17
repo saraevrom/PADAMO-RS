@@ -126,7 +126,7 @@ pub trait CalculationNode: Debug+Clone{
         self.path().join("/").into()
     }
 
-    fn old_id(&self)->ROption<RString>{
+    fn old_identifier(&self)->ROption<RString>{
         ROption::RNone
     }
 

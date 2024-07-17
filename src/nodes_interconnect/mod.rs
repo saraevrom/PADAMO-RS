@@ -19,29 +19,41 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 
 pub struct NodesRegistry{
-    nodes:HashMap<String,CalculationNodeBox>
+    nodes:HashMap<String,CalculationNodeBox>,
+    legacy_map:HashMap<String,String>
 }
 
 impl NodesRegistry{
     pub fn new()->Self{
-        Self { nodes: HashMap::new() }
+        Self { nodes: HashMap::new(), legacy_map:HashMap::new() }
     }
 
-    fn register_node_by_path(&mut self, path:Vec<String>,nodebox:CalculationNodeBox)->Result<(),NodeRegistryError>{
-        let key:String = path.join("/");
-        println!("Registering node {}", key);
+
+    fn register_node_box(&mut self, nodebox:CalculationNodeBox)->Result<(),NodeRegistryError>{
+        let key:String = nodebox.identifier().into();
+        //self.register_node_by_path(path, nodebox)
+        println!("Registering node with key {}", key);
         if self.nodes.contains_key(&key){
             Err(NodeRegistryError::NodeDuplicate(key))
         }
         else {
-            self.nodes.insert(key, nodebox);
-            Ok(())
+            if let Some(old_id) = nodebox.old_identifier().into_option(){
+                let old_id:String = old_id.into();
+                if self.legacy_map.contains_key(&old_id){
+                    Err(NodeRegistryError::LegacyDuplicate(old_id))
+                }
+                else{
+                    println!("Registered legacy mapping {}->{}",old_id,key);
+                    self.legacy_map.insert(old_id, key.clone());
+                    self.nodes.insert(key, nodebox);
+                    Ok(())
+                }
+            }
+            else{
+                    self.nodes.insert(key, nodebox);
+                    Ok(())
+            }
         }
-    }
-
-    fn register_node_box(&mut self, nodebox:CalculationNodeBox)->Result<(),NodeRegistryError>{
-        let path:Vec<String> = nodebox.path().to_vec().iter().map(|x| x.to_string()).collect();
-        self.register_node_by_path(path, nodebox)
     }
 
     pub fn register_node<T:CalculationNode + 'static>(&mut self, node:T)->Result<(),NodeRegistryError>{
@@ -111,13 +123,21 @@ impl NodesRegistry{
         //println!("{:?}",compute_graph.nodes);
     }
 
-    pub fn create_calculation_node(&self, path:String)->Option<GraphNode>{
-        if !self.nodes.contains_key(&path){
-            return None;
+    pub fn create_calculation_node(&self, identifier:String)->Option<GraphNode>{
+        let mut true_id = identifier;
+        if !self.nodes.contains_key(&true_id){
+            if self.legacy_map.contains_key(&true_id){
+                true_id = self.legacy_map[&true_id].clone();
+            }
+            else{
+                return None;
+            }
         }
-        let entry = &self.nodes[&path];
+        let identifier = true_id;
+
+        let entry = &self.nodes[&identifier];
         let display_name = entry.name();
-        let mut res = GraphNode::new(display_name.into(), path);
+        let mut res = GraphNode::new(display_name.into(), identifier);
         let inputs = entry.inputs();
         for input in inputs.iter(){
             res.add_input(&input.name.to_string(), input.port_type);
