@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::ROption};
+use abi_stable::{rvec, std_types::ROption::{self, RSome}};
 use padamo_api::{prelude::*, ports, constants};
 use abi_stable::std_types::{RResult,RVec,RString};
 use super::ops::{LazySpaceConverter,LazyTimeConverter};
@@ -36,6 +36,14 @@ impl CalculationNode for TimeResolutionReduceNode{
 
     fn category(&self,) -> RVec<abi_stable::std_types::RString>where {
         rvec!["Signal manipulation".into()]
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamosignalmanipulation.reduce_temp_resolution".into()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Signal manipulation/Reduce temporal resolution".into())
     }
 
     fn inputs(&self)->RVec<CalculationIO>{
@@ -97,6 +105,14 @@ impl CalculationNode for CutterNode{
     }
     fn category(&self,) -> abi_stable::std_types::RVec<RString> where {
         rvec!["Signal manipulation".into()]
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Signal manipulation/Cut signal".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamosignalmanipulation.cut_signal".into()
     }
 
     fn inputs(&self)->RVec<CalculationIO>{
