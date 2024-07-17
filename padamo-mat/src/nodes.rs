@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 use crate::ops::{self, ConstantArray};
 
@@ -35,6 +35,14 @@ impl CalculationNode for MatReadNode{
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["MAT".into()]
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamomat.mat_reader".into()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("MAT/MAT file matrix".into())
     }
 
     #[allow(clippy::let_and_return)]
