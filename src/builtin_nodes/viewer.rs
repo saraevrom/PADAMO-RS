@@ -1,5 +1,5 @@
 use padamo_api::prelude::*;
-use abi_stable::rvec;
+use abi_stable::{rvec, std_types::ROption::RSome};
 use padamo_api::ports;
 use abi_stable::std_types::RVec;
 
@@ -28,6 +28,14 @@ impl CalculationNode for ViewerNode{
             "Application".into(),
             "Viewer".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<abi_stable::std_types::RString>where {
+        RSome("Application/Viewer/View".into())
+    }
+
+    fn identifier(&self,) -> abi_stable::std_types::RString where {
+        "builtin.viewer.view".into()
     }
 
     fn is_primary(&self,) -> bool where {
@@ -76,6 +84,14 @@ impl CalculationNode for LoadedFileNode{
         ]
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<abi_stable::std_types::RString>where {
+        RSome("Application/Viewer/Opened file".into())
+    }
+
+    fn identifier(&self,) -> abi_stable::std_types::RString where {
+        "builtin.viewer.opened_file".into()
+    }
+
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports!()
     }
@@ -116,6 +132,14 @@ impl CalculationNode for ViewerMaskNode{
             "Application".into(),
             "Viewer".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<abi_stable::std_types::RString>where {
+        RSome("Application/Viewer/Detector mask".into())
+    }
+
+    fn identifier(&self,) -> abi_stable::std_types::RString where {
+        "builtin.viewer.detector_mask".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
