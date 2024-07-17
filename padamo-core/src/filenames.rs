@@ -1,4 +1,5 @@
 use abi_stable::rvec;
+use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::{RString, RVec, RResult};
 use padamo_api::{prelude::*, constants};
 use padamo_api::{ports,nodes_vec};
@@ -44,6 +45,14 @@ impl CalculationNode for FileSplit{
         rvec![
             "File path manipulation".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("File path manipulation/Split file path".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.file_path.split".into()
     }
 
     fn is_primary(&self,) -> bool {
@@ -106,6 +115,15 @@ impl CalculationNode for FileMerge{
         rvec![
             "File path manipulation".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("File path manipulation/Merge file path".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.file_path.merge".into()
+        //format!("padamocore.constant.{}",idmark).into()
     }
 
     fn is_primary(&self,) -> bool {

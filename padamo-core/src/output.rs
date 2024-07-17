@@ -1,4 +1,7 @@
+use std::fmt::format;
+
 use abi_stable::rvec;
+use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::{RString, RVec, RResult};
 use padamo_api::{prelude::*, constants};
 use padamo_api::{ports,nodes_vec};
@@ -24,6 +27,15 @@ impl CalculationNode for Printer{
         rvec![
             "IO".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome(format!("IO/Print {:?}", self.0).into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        let idmark = format!("{:?}",self.0).to_lowercase();
+        format!("padamocore.print.{}",idmark).into()
     }
 
     fn is_primary(&self,) -> bool {

@@ -1,5 +1,5 @@
 use padamo_api::{constants, nodes_vec, ports, prelude::*};
-use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
 
 
 
@@ -30,6 +30,15 @@ impl CalculationNode for StringConcatNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Strings/String Concatenate".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.strings.concatenate".into()
+        //format!("padamocore.constant.{}",idmark).into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
@@ -89,6 +98,14 @@ impl CalculationNode for StringReplaceNode{
         )
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Strings/String Replace".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.strings.replace".into()
+    }
+
     fn outputs(&self,) -> RVec<CalculationIO>where {
         ports!(
             ("s",ContentType::String)
@@ -132,6 +149,14 @@ impl CalculationNode for StringReplaceRegexNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Strings/String Replace (Regex)".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.strings.replace_regex".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
