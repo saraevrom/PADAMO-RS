@@ -10,6 +10,7 @@ use crate::messages::PadamoAppMessage;
 use crate::custom_widgets::treeview::Tree;
 
 use super::PadamoTool;
+use abi_stable::traits::IntoOwned;
 use iced::Length;
 use iced::widget::scrollable;
 use once_cell::sync::Lazy;
@@ -20,13 +21,13 @@ static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
 pub struct PadamoEditor{
     state: editor_program::EditorState,
-    tree: Tree,
+    tree: Tree<String>,
     hor_divider_position: u16,
     current_scroll_offset: scrollable::RelativeOffset,
 }
 
 impl PadamoEditor{
-    pub fn new(tree:Tree)->Self{
+    pub fn new(tree:Tree<String>)->Self{
 
         //println!("{:?}",tree);
         Self{state: editor_program::EditorState::new(), tree, hor_divider_position:200, current_scroll_offset: scrollable::RelativeOffset::START}
@@ -79,13 +80,13 @@ impl PadamoTool for PadamoEditor{
                 match emsg {
                     messages::EditorMessage::CanvasMessage(msg) => {self.state.nodes.handle_message(msg)},
                     messages::EditorMessage::TreeSplitPositionSet(pos)=>{self.hor_divider_position = *pos},
-                    messages::EditorMessage::NodeListClicked(p)=>{
-                        let path = p.join("/");
-                        let node = padamo.nodes.create_calculation_node(path);
+                    messages::EditorMessage::NodeListClicked(identifier)=>{
+                        // let path = p.join("/");
+                        let node = padamo.nodes.create_calculation_node(identifier.into_owned());
                         if let Some(n) = node{
                             self.state.nodes.insert_node(n);
                         }
-                        //println!("Clicked node {:?}", p);
+                        println!("Clicked node {:?}", identifier);
                     },
                     messages::EditorMessage::EditorScroll(view) => {self.current_scroll_offset = view.relative_offset()},
                 }

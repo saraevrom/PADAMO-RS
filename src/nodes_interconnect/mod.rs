@@ -86,12 +86,12 @@ impl NodesRegistry{
         return Ok(());
     }
 
-    pub fn make_tree(&self)->crate::custom_widgets::treeview::Tree{
+    pub fn make_tree(&self)->crate::custom_widgets::treeview::Tree<String>{
         let mut tree = crate::custom_widgets::treeview::Tree::new();
         for (_,node) in self.nodes.iter(){
             let path= node.path();
             let path = path.iter().map(|x| x.as_str()).collect();
-            tree.parse_path(path);
+            tree.parse_path(path, Some(node.identifier().into()));
         }
         tree
     }

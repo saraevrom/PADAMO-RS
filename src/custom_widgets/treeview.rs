@@ -7,17 +7,18 @@ const X_OFFSET:f32 = 20.0;
 
 
 #[derive(Debug)]
-pub struct TreeNode{
+pub struct TreeNode<T:std::fmt::Debug+Clone>{
     visible:bool,
     name:String,
-    pub content:BTreeMap<String,Weak<RefCell<TreeNode>>>,
-    pub parent:Weak<RefCell<TreeNode>>,
+    pub content:BTreeMap<String,Weak<RefCell<TreeNode<T>>>>,
+    pub parent:Weak<RefCell<TreeNode<T>>>,
     last_rect:RefCell<Option<iced::Rectangle>>,
+    pub metadata:Option<T>
 }
 
-impl TreeNode{
-    pub fn new(name:String, parent:Weak<RefCell<TreeNode>>)->Self{
-        Self { visible: false, content: BTreeMap::new(), name, parent, last_rect:RefCell::new(None)}
+impl<T:std::fmt::Debug+Clone> TreeNode<T>{
+    pub fn new(name:String, parent:Weak<RefCell<TreeNode<T>>>, metadata:Option<T>)->Self{
+        Self { visible: false, content: BTreeMap::new(), name, parent, last_rect:RefCell::new(None),metadata}
     }
 
     fn path(&self)->Vec<String>{
@@ -148,36 +149,36 @@ impl TreeNode{
 }
 
 #[derive(Debug)]
-pub struct Tree{
-    nodes:BTreeMap<String,Rc<RefCell<TreeNode>>>,
+pub struct Tree<T:std::fmt::Debug+Clone>{
+    nodes:BTreeMap<String,Rc<RefCell<TreeNode<T>>>>,
     last_height:RefCell<f32>
 }
 
-fn new_node(name:&str, parent:Weak<RefCell<TreeNode>>)->Rc<RefCell<TreeNode>>{
-    Rc::new(RefCell::new(TreeNode::new(name.to_string(), parent)))
+fn new_node<T:std::fmt::Debug+Clone>(name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>)->Rc<RefCell<TreeNode<T>>>{
+    Rc::new(RefCell::new(TreeNode::new(name.to_string(), parent, metadata)))
 }
 
-impl Tree{
+impl<T:std::fmt::Debug+Clone> Tree<T>{
     pub fn new()->Self{
         Self { nodes: BTreeMap::new(), last_height:RefCell::new(1.0)}
     }
 
 
 
-    fn insert_node(&mut self, name:&str, parent:Weak<RefCell<TreeNode>>)->Rc<RefCell<TreeNode>>{
-        let newnode = Rc::new(RefCell::new(TreeNode::new(name.to_string(),parent)));
+    fn insert_node(&mut self, name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>)->Rc<RefCell<TreeNode<T>>>{
+        let newnode = Rc::new(RefCell::new(TreeNode::new(name.to_string(),parent,metadata)));
         self.nodes.insert(name.to_string(),newnode.clone());
         newnode
     }
 
-    fn parse_path_in(&mut self, node:Rc<RefCell<TreeNode>>, mut path:Vec<&str>){
+    fn parse_path_in(&mut self, node:Rc<RefCell<TreeNode<T>>>, mut path:Vec<&str>, metadata:Option<T>){
         let mut node_mut = node.borrow_mut();
         let mut splitter = path.drain(..);
         if let Some(category) = splitter.next(){
-            let entry = node_mut.content.entry(category.to_string()).or_insert_with(|| Rc::downgrade(&self.insert_node(category,Rc::downgrade(&node))));
+            let entry = node_mut.content.entry(category.to_string()).or_insert_with(|| Rc::downgrade(&self.insert_node(category,Rc::downgrade(&node),metadata.clone())));
             let rest:Vec<&str> = splitter.collect();
             if let Some(next_node) = Weak::upgrade(entry){
-                self.parse_path_in(next_node,rest);
+                self.parse_path_in(next_node,rest,metadata);
             }
             else {
                 panic!("Invalid plot detected. Investigate this problem");
@@ -185,18 +186,18 @@ impl Tree{
         }
     }
 
-    pub fn parse_path(&mut self, mut path:Vec<&str>){
+    pub fn parse_path(&mut self, mut path:Vec<&str>, metadata:Option<T>){
         //println!("Parse path {}", path);
         let mut splitter = path.drain(..);
         if let Some(category) = splitter.next(){
-            let entry = self.nodes.entry(category.to_string()).or_insert_with(|| new_node(category,Weak::new()));
+            let entry = self.nodes.entry(category.to_string()).or_insert_with(|| new_node(category,Weak::new(),metadata.clone()));
             let entry = entry.clone();
             let rest = splitter.collect();
-            self.parse_path_in(entry,rest);
+            self.parse_path_in(entry,rest,metadata);
         }
     }
 
-    pub fn view<Message>(&self, action:Option<fn(Vec<String>)->Message>)->TreeView<Message>{
+    pub fn view<Message,F:Fn(T)->Message>(&self, action:Option<F>)->TreeView<Message,T,F>{
         TreeView::new(self, action)
     }
 
@@ -228,18 +229,24 @@ impl Tree{
 }
 
 
-pub struct TreeView<'a, Message>{
-    tree:&'a Tree,
-    action:Option<fn(Vec<String>)->Message>
+pub struct TreeView<'a, Message,T:std::fmt::Debug+Clone,F>
+where
+    F:Fn(T)->Message
+{
+    tree:&'a Tree<T>,
+    action:Option<F>
 }
 
-impl<'a, Message> TreeView<'a, Message>{
-    pub fn new(tree:&'a Tree, action:Option<fn(Vec<String>)->Message>)->Self{
+impl<'a, Message,T:std::fmt::Debug+Clone,F> TreeView<'a, Message, T,F>
+where
+    F:Fn(T)->Message
+{
+    pub fn new(tree:&'a Tree<T>, action:Option<F>)->Self{
         Self{tree, action}
     }
 }
 
-impl<'a,Message,Theme,Renderer> Widget<Message, Theme, Renderer> for TreeView<'a, Message>
+impl<'a,Message,Theme,Renderer,T:std::fmt::Debug+Clone,F:Fn(T)->Message> Widget<Message, Theme, Renderer> for TreeView<'a, Message,T,F>
 where
     Renderer: iced::advanced::text::Renderer
 {
@@ -293,8 +300,11 @@ where
                     let mut node_ref = node.borrow_mut();
                     if node_ref.contains_point(pos){
                         if node_ref.is_final(){
-                            if let Some(action) = self.action{
-                                shell.publish(action(node_ref.path()));
+                            if let Some(action) = &self.action{
+                                println!("{:?}",node_ref.metadata);
+                                if let Some(m) = node_ref.metadata.clone(){
+                                    shell.publish(action(m));
+                                }
                             }
                             //println!("{}",node_ref.path());
                         }

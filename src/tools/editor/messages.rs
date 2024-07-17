@@ -17,7 +17,7 @@ pub enum EditorCanvasMessage{
 pub enum EditorMessage{
     CanvasMessage(EditorCanvasMessage),
     TreeSplitPositionSet(u16),
-    NodeListClicked(Vec<String>),
+    NodeListClicked(String),
     EditorScroll(scrollable::Viewport),
 }
 
