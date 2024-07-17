@@ -1,5 +1,6 @@
 use abi_stable::rvec;
-use abi_stable::std_types::{RResult, RString, RVec};
+use abi_stable::std_types::ROption::RSome;
+use abi_stable::std_types::{ROption, RResult, RString, RVec};
 use padamo_api::function_operator::{DoubleFunctionOperator,DoubleFunctionOperatorBox, make_function_box};
 use padamo_api::{constants, ports, prelude::*};
 
@@ -70,6 +71,14 @@ impl CalculationNode for LCSwitchNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/LC centering node".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.centering_node".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -156,6 +165,14 @@ impl CalculationNode for LCPivotNode{
         category()
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/LC pivot switch".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.pivot_switch".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Output definition of node"]
     fn outputs(&self,) -> RVec<CalculationIO>where {
@@ -213,6 +230,14 @@ impl CalculationNode for LinearLCNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/Linear LC".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.lc_linear".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -275,6 +300,14 @@ impl CalculationNode for ExponentLCNode{
         category()
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/Exponent LC".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.lc_exponent".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Output definition of node"]
     fn outputs(&self,) -> RVec<CalculationIO>where {
@@ -324,6 +357,14 @@ impl CalculationNode for TerminationLCNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/Terminate LC".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.lc_zero".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -376,6 +417,14 @@ impl CalculationNode for ConstantLCNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/Constant LC".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.lc_constant".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -431,6 +480,14 @@ impl CalculationNode for MultiplyByFloatNode{
 
     fn category(&self,) -> RVec<RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Functions/LC/Multiply by value".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.lc.multiply_by_value".into()
     }
 
     #[allow(clippy::let_and_return)]

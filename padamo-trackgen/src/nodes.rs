@@ -1,5 +1,6 @@
 use std::default;
 
+use abi_stable::std_types::ROption::RSome;
 use padamo_api::lazy_array_operations::LazyTriSignal;
 use padamo_api::{constants, ports, prelude::*};
 use abi_stable::std_types::{ROption, RResult, RString, RVec, Tuple3};
@@ -102,6 +103,14 @@ impl CalculationNode for BasicLinearTrackGeneratorNode{
         "Basic linear track".into()
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Artificial data/Basic linear track".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.basic_linear_track".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self) -> RVec<CalculationIO> {
@@ -201,6 +210,14 @@ impl CalculationNode for AnyLCLinearTrackGeneratorNode{
         "Customizable LC linear track".into()
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Artificial data/Customizable LC linear track".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.customizable_lc_linear_track".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self) -> RVec<CalculationIO> {
@@ -295,7 +312,15 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicGaussNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Name of node displayed in graph editor or node list"]
     fn name(&self,) -> RString  {
-        "Dynamic Customizable LC linear track".into()
+        "Gauss PSF Customizable LC linear track".into()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Artificial data/Dynamic Customizable LC linear track".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.linear_track_gauss_dynamic".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -400,6 +425,14 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicMoffatNode{
         "Moffat PSF Customizable LC linear track".into()
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Artificial data/Moffat PSF Customizable LC linear track".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.linear_track_moffat_dynamic".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self) -> RVec<CalculationIO> {
@@ -486,6 +519,14 @@ impl CalculationNode for BlankDataNode{
         rvec!["Artificial data".into()]
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Artificial data/Blank data".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.blank_data".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO> {
@@ -543,6 +584,14 @@ impl CalculationNode for AdditiveNormalNoiseNode{
 
     fn category(&self) -> RVec<RString> {
         rvec!["Artificial data".into()]
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Artificial data/Additive normal noise".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamotrackgen.gaussian_noise".into()
     }
 
     #[allow(clippy::let_and_return)]
