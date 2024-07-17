@@ -1,5 +1,5 @@
 use crate::{constants, trigger_ops::LazyTriggerExpand};
-use abi_stable::{rvec, std_types::{ROption, RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::{self, RSome}, RResult, RString, RVec}};
 use padamo_api::{ports, constants, prelude::*};
 
 #[derive(Clone,Debug)]
@@ -36,6 +36,14 @@ impl CalculationNode for TriggerExpandNode{
     #[doc = r" Name of node displayed in graph editor or node list"]
     fn name(&self,) -> RString where {
         "Expand trigger".into()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Trigger manipulation/Expand trigger".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.trigger_manipulation.expand_trigger".into()
     }
 
     #[allow(clippy::let_and_return)]
