@@ -1,3 +1,4 @@
+use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::RResult;
 use padamo_api::prelude::*;
 use padamo_api::{ports,constants};
@@ -59,6 +60,14 @@ impl CalculationNode for SlidingQuantileNode {
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["Data Processing".into()]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Data Processing/Sliding quantile".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasesignalprocessing.sliding_quantile".into()
     }
 
     #[doc = " Input definitions of node"]
@@ -133,6 +142,14 @@ impl CalculationNode for SlidingQuantileNodeNormalizer {
         rvec!["Data Processing".into()]
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Data Processing/Sliding quantile normalize".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasesignalprocessing.sliding_quantile_normalize".into()
+    }
+
     #[doc = " Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports!(
@@ -186,6 +203,14 @@ impl CalculationNode for LazyFlashSuppression{
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["Data Processing".into()]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Data Processing/Flash suppression".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasesignalprocessing.flash_suppression".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
@@ -242,6 +267,14 @@ impl CalculationNode for LazyThresholdNode{
     #[doc = r" Name of node displayed in graph editor or node list"]
     fn category(&self,) -> RVec<RString>where {
         rvec!["Data Processing".into()]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Data Processing/Threshold replace".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasesignalprocessing.threshold_replace".into()
     }
 
     #[allow(clippy::let_and_return)]

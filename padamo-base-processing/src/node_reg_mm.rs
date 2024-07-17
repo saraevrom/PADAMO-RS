@@ -1,3 +1,4 @@
+use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::RResult;
 use padamo_api::prelude::*;
 use padamo_api::{ports,constants};
@@ -51,6 +52,14 @@ impl CalculationNode for SlidingMedianNode {
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["Data Processing".into()]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Data Processing/Sliding median".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasesignalprocessing.sliding_median".into()
     }
 
     #[doc = " Input definitions of node"]
@@ -120,6 +129,14 @@ impl CalculationNode for SlidingMedianNodeNormalizer {
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["Data Processing".into()]
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Data Processing/Sliding median normalize".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasesignalprocessing.sliding_median_normalize".into()
     }
 
     #[doc = " Input definitions of node"]
