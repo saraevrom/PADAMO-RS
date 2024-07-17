@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::{RResult, RString, RVec}, traits::IntoReprC};
+use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}, traits::IntoReprC};
 use padamo_api::{constants, ports, prelude::*};
 
 
@@ -26,6 +26,14 @@ impl CalculationNode for UniformRandomNode{
 
     fn name(&self,) -> RString where {
         "Random uniform".into()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Random/Random uniform".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamorandom.uniform".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>{
@@ -74,6 +82,14 @@ impl CalculationNode for UUIDRandomNode{
         "Random UUID".into()
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Random/Random UUID".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamorandom.uuid".into()
+    }
+
     fn inputs(&self,) -> RVec<CalculationIO>{
         ports!()
     }
@@ -113,6 +129,14 @@ impl CalculationNode for RandomIntNode{
 
     fn name(&self,) -> RString where {
         "Random Integer (seed)".into()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Random/Random Integer (seed)".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamorandom.random_seed".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>{
@@ -158,6 +182,14 @@ impl CalculationNode for RandomIntRangeNode{
 
     fn name(&self,) -> RString where {
         "Random Integer in range".into()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Random/Random Integer in range".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamorandom.uniform_int".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>{
