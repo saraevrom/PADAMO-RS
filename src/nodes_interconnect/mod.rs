@@ -127,7 +127,9 @@ impl NodesRegistry{
         let mut true_id = identifier;
         if !self.nodes.contains_key(&true_id){
             if self.legacy_map.contains_key(&true_id){
+                print!("Remapping old id \"{}\" ",true_id);
                 true_id = self.legacy_map[&true_id].clone();
+                println!("to \"{}\"",true_id);
             }
             else{
                 return None;
