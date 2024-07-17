@@ -24,7 +24,8 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         nodes::BasicLinearTrackGeneratorNode,
         nodes::AnyLCLinearTrackGeneratorNode,
-        nodes::AnyLCLinearTrackGeneratorDynamicNode,
+        nodes::AnyLCLinearTrackGeneratorDynamicGaussNode,
+        nodes::AnyLCLinearTrackGeneratorDynamicMoffatNode,
         nodes::BlankDataNode,
         nodes::AdditiveNormalNoiseNode,
         lc_nodes::LCSwitchNode,

@@ -47,3 +47,15 @@ pub fn gauss_spot(wireframe:&detector::DetectorWireframe,x0:f64,y0:f64,sigma_x:f
     };
     make_frame(wireframe, &gauss)
 }
+
+
+pub fn moffat_spot(wireframe:&detector::DetectorWireframe,x0:f64,y0:f64,alpha:f64,beta:f64, energy:f64)->ArrayND<f64>{
+    let alpha_sqr = alpha*alpha;
+    let gauss = |x:f64,y:f64| {
+        let dx = x-x0;
+        let dy = y-y0;
+        let r_sqr = dx*dx+dy*dy;
+        energy*(1.0+(r_sqr/alpha_sqr)).powf(-beta)
+    };
+    make_frame(wireframe, &gauss)
+}
