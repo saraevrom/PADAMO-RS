@@ -16,7 +16,7 @@ pub fn make_node_box<T:CalculationNode+'static>(x:T)->CalculationNodeBox{
 
 #[macro_export]
 macro_rules! ports {
-    ($( $x:expr ),*) => {
+    ($( $x:expr ),* $(,)?) => {
         {
             let mut temp_vec: RVec<CalculationIO> = RVec::new();
             $(
@@ -30,7 +30,7 @@ macro_rules! ports {
 
 #[macro_export]
 macro_rules! constants {
-    ($( $x:expr ),*) => {
+    ($( $x:expr ),* $(,)?) => {
         {
             let mut temp_vec: RVec<CalculationConstant> = RVec::new();
             $(
@@ -44,7 +44,7 @@ macro_rules! constants {
 
 #[macro_export]
 macro_rules! nodes_vec {
-    ($( $x:expr ),*) => {
+    ($( $x:expr ),* $(,)?) => {
         {
             let mut temp_vec: RVec<CalculationNodeBox> = RVec::new();
             $(
