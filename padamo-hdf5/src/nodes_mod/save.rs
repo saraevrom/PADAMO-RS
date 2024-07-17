@@ -1,4 +1,5 @@
 use abi_stable::rvec;
+use abi_stable::std_types::ROption::{self, RSome};
 use abi_stable::std_types::{RVec, RString, RResult};
 use padamo_api::{constants, ports, prelude::*};
 
@@ -61,6 +62,14 @@ impl CalculationNode for SaveHDF5Node{
         rvec![
             "HDF5".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("HDF5/Save HDF5 signal".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamohdf5.signal_writer".into()
     }
 
     fn is_primary(&self,) -> bool where {

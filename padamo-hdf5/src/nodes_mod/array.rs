@@ -1,4 +1,5 @@
 use abi_stable::rvec;
+use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::{RString,RArc,ROption};
 use padamo_api::prelude::*;
 use padamo_api::{ports, constants};
@@ -31,6 +32,14 @@ impl CalculationNode for LazyHDF5ArrayNode{
         rvec![
             "HDF5".into()
         ]
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("HDF5/Lazy HDF5 Array reader".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamohdf5.array_reader".into()
     }
 
     fn inputs(&self) -> RVec<CalculationIO>{
