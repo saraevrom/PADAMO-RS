@@ -26,11 +26,13 @@ pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
         .commit()
     {
         Ok(())=>{
-            match nodes::ANN3DNode::new("ANN trigger Model A", &format!("{}/model_A.onnx",library_dir), (128,16,16), "concatenate".into()){
+            match nodes::ANN3DNode::new("ANN trigger Model A", &format!("{}/model_A.onnx",library_dir), (128,16,16), "concatenate".into(),
+                                        "model_a","ANN trigger Model A"){
                 Ok(v)=>res.push(make_node_box(v)),
                 Err(e)=>println!("{}",e),
             }
-            match nodes::ANN3DNode::new("ANN trigger Model L2 (multiconv)", &format!("{}/model_L2.onnx",library_dir), (128,8,8), "flatten_1".into()){
+            match nodes::ANN3DNode::new("ANN trigger Model L2 (multiconv)", &format!("{}/model_L2.onnx",library_dir), (128,8,8), "flatten_1".into(),
+                                        "model_l2","ANN trigger Model L2 (multiconv)"){
                 Ok(v)=>res.push(make_node_box(v)),
                 Err(e)=>println!("{}",e),
             }

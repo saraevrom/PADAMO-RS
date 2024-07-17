@@ -7,6 +7,8 @@ use padamo_api::{constants, ports, prelude::*};
 #[derive(Clone,Debug)]
 pub struct ANN3DNode{
     name:String,
+    id:String,
+    old_name:String,
     //ann_model_path:String,
     ann_model:Arc<ort::Session>,
     size_hint:(usize,usize,usize),
@@ -25,9 +27,9 @@ fn request_usize(constants:&ConstantContentContainer,key:&str)->Result<usize,Exe
 
 
 impl ANN3DNode {
-    pub fn new(name: &str, ann_model_path: &str, size_hint: (usize,usize,usize), output_layer:String) -> Result<Self,Box<dyn Error>> {
+    pub fn new(name: &str, ann_model_path: &str, size_hint: (usize,usize,usize), output_layer:String, id:&str,old_name:&str) -> Result<Self,Box<dyn Error>> {
         let ann_model = Arc::new(Session::builder()?.commit_from_file(ann_model_path)?);
-        Ok(Self { name:name.into(), ann_model, size_hint, output_layer })
+        Ok(Self { name:name.into(), ann_model, size_hint, output_layer, id:id.to_owned(), old_name:old_name.to_owned() })
     }
 
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
@@ -57,6 +59,14 @@ impl CalculationNode for ANN3DNode{
 
     fn category(&self,) -> RVec<RString>{
         rvec!["ANN 3D triggers".into()]
+    }
+
+    fn identifier(&self,) -> RString where {
+        format!("padamoneuraltrigger.{}",self.id).into()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome(format!("ANN 3D triggers/{}",self.old_name).into())
     }
 
     #[allow(clippy::let_and_return)]
