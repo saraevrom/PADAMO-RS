@@ -1,3 +1,4 @@
+use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::RResult;
 use padamo_api::prelude::*;
 use padamo_api::{ports,constants};
@@ -29,6 +30,14 @@ impl CalculationNode for PixelThresholdTriggerNode{
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["Base triggers".into()]
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Base triggers/Pixel threshold node".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasictriggers.pixel_threshold_trigger".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
@@ -80,6 +89,14 @@ impl CalculationNode for LCThresholdTriggerNode{
         rvec!["Base triggers".into()]
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Base triggers/Lightcurve threshold node".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasictriggers.lightcurve_threshold_trigger".into()
+    }
+
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports!(
             ("Signal", ContentType::DetectorFullData)
@@ -126,6 +143,14 @@ impl CalculationNode for MedianThresholdTriggerNode{
 
     fn category(&self,) -> RVec<RString>where {
         rvec!["Base triggers".into()]
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("Base triggers/Median threshold node".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamobasictriggers.median_threshold_trigger".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
