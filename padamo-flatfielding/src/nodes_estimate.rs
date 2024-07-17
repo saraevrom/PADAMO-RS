@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display,Debug};
 
-use abi_stable::std_types::RVec;
+use abi_stable::std_types::{RString, RVec};
 use ndarray::{Axis, s};
 use noisy_float::types::n64;
 use padamo_api::calculation_nodes::content::ContentType;
@@ -12,7 +12,7 @@ use padamo_api::{constants, prelude::*};
 use padamo_api::ports;
 use rayon::prelude::*;
 use ndarray_stats::QuantileExt;
-use super::nodes::category;
+use super::nodes::{category,old_id};
 
 //pub fn calculate_median()
 
@@ -43,6 +43,14 @@ impl CalculationNode for QuantileNode{
 
     fn category(&self,) -> RVec<abi_stable::std_types::RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        old_id("Signal Quantile")
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamoflatfielding.estimate.quantile".into()
     }
 
     fn inputs(&self,) -> RVec<padamo_api::prelude::CalculationIO>where {

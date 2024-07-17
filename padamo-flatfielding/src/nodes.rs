@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::{self, RSome}, RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 
 use crate::ops::PhysicalFFConstants;
@@ -7,6 +7,9 @@ pub fn category() -> abi_stable::std_types::RVec<abi_stable::std_types::RString>
     rvec!["Flat fielding".into()]
 }
 
+pub fn old_id(name:&str)->ROption<RString>{
+    RSome(format!("Flat fielding/{}",name).into())
+}
 
 #[derive(Clone,Debug)]
 pub struct PhysicalFFNode;
@@ -46,6 +49,14 @@ impl CalculationNode for PhysicalFFNode{
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        old_id("Pile up flat fielding")
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamoflatfielding.pile_up_ff".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -116,6 +127,14 @@ impl CalculationNode for MapMultiplyNode{
         category()
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        old_id("Multiply by map")
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamoflatfielding.map_multiply".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>where {
@@ -180,6 +199,14 @@ impl CalculationNode for MapDivideNode{
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
         category()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        old_id("Divide by map")
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamoflatfielding.map_divide".into()
     }
 
     #[allow(clippy::let_and_return)]
