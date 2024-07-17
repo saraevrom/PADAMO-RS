@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 use padamo_api::function_operator::DoubleFunctionOperatorBox;
 use crate::{implement_binary_combinator, implement_onearg_function, implement_unary_combinator};
@@ -206,6 +206,14 @@ impl CalculationNode for ConstantNode{
         category0()
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Functions/Constant".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamofunctions.constant".into()
+    }
+
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports![
             ("Value", ContentType::Float)
@@ -236,6 +244,14 @@ impl CalculationNode for FCalculateNode{
         category0()
     }
 
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Functions/Calculate value".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamofunctions.calculate_value".into()
+    }
+
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports![
             ("x", ContentType::Float),
@@ -259,19 +275,19 @@ impl CalculationNode for FCalculateNode{
 }
 
 
-implement_onearg_function!(LinearNode, "X", category);
-implement_onearg_function!(SquareNode, "X^2", category);
-implement_onearg_function!(LowerStepNode, "Lower step function", category);
+implement_onearg_function!(LinearNode, "X", category, "linear", "X");
+implement_onearg_function!(SquareNode, "X^2", category, "square", "X^2");
+implement_onearg_function!(LowerStepNode, "Lower step function", category, "lowerstep", "Lower step function");
 
-implement_binary_combinator!(SumNode, "Sum", category);
-implement_binary_combinator!(MultiplyNode, "Multiply", category);
-implement_binary_combinator!(MinNode,"Min",category);
-implement_binary_combinator!(MaxNode,"Max",category);
+implement_binary_combinator!(SumNode, "Sum", category, "sum", "Sum");
+implement_binary_combinator!(MultiplyNode, "Multiply", category, "mul", "Multiply");
+implement_binary_combinator!(MinNode,"Min",category, "min", "Min");
+implement_binary_combinator!(MaxNode,"Max",category, "max", "Max");
 
-implement_unary_combinator!(ExponentNode, "Exponent", category);
-implement_unary_combinator!(LogNode, "Log", category);
-implement_unary_combinator!(AbsNode, "Abs", category);
-implement_unary_combinator!(NegNode, "Negate", category);
+implement_unary_combinator!(ExponentNode, "Exponent", category,"exp","Exponent");
+implement_unary_combinator!(LogNode, "Log", category,"log","Log");
+implement_unary_combinator!(AbsNode, "Abs", category,"abs","Abs");
+implement_unary_combinator!(NegNode, "Negate", category,"neg","Negate");
 
 #[derive(Clone,Debug)]
 pub struct LinearModificationNode;
@@ -299,6 +315,14 @@ impl CalculationNode for LinearModificationNode{
 
     fn category(&self,) -> RVec<RString>where {
         category0()
+    }
+
+    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
+        RSome("Functions/Linear modification".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamofunctions.linear_modification".into()
     }
 
     #[allow(clippy::let_and_return)]
