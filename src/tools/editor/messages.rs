@@ -8,6 +8,7 @@ pub enum EditorCanvasMessage{
     UnlinkInput{node:usize, input_port:String},
     Unselect,
     Select(usize),
+    SetShift(bool),
     DeleteSelectedNode,
     ConstantEdit(super::nodes::constants::NodeConstantMessage),
     //TreeSplitPositionSet(u16)

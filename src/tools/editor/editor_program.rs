@@ -246,8 +246,26 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
 
                     },
 
-                    Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(iced::keyboard::key::Named::Delete), location:_, modifiers:_,text:_ })=>{
-                        msg = Some(EditorCanvasMessage::DeleteSelectedNode);
+                    Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_,text:_ })=>{
+                        match pressed_key{
+                            iced::keyboard::key::Named::Delete=>{
+                                msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+                            }
+                            iced::keyboard::key::Named::Shift=>{
+                                msg = Some(EditorCanvasMessage::SetShift(true))
+                            }
+                            _=>{}
+                        }
+                       ;
+                    },
+                    Event::Keyboard(iced::keyboard::Event::KeyReleased { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_ })=>{
+                        match pressed_key{
+                            iced::keyboard::key::Named::Shift=>{
+                                msg = Some(EditorCanvasMessage::SetShift(false))
+                            }
+                            _=>{}
+                        }
+                       ;
                     },
                     _=>{
                         return (event::Status::Ignored, None);

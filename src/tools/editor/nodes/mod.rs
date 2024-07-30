@@ -359,9 +359,62 @@ impl GraphNode{
 //
 }
 
+
+pub struct NodeSelection{
+    pub selected_nodes:Vec<Weak<RefCell<GraphNode>>>
+}
+
+
+impl NodeSelection{
+    pub fn new()->Self{
+        Self { selected_nodes: Vec::new() }
+    }
+
+    pub fn simplify(&mut self){
+        self.selected_nodes = self.selected_nodes.drain(..).filter(|x| x.upgrade().is_some()).collect();
+    }
+
+    pub fn clear(&mut self){
+        self.selected_nodes.clear();
+    }
+
+    pub fn get_solitary_node(&self)->Option<Rc<RefCell<GraphNode>>>{
+        if let Some(v) = self.selected_nodes.get(0){
+            v.upgrade()
+        }
+        else{
+            None
+        }
+    }
+
+    pub fn contains_node(&self, node:&Rc<RefCell<GraphNode>>)->bool{
+        for r in self.selected_nodes.iter(){
+            if let Some(v) = r.upgrade(){
+                if Rc::ptr_eq(&v, node){
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn add_to_selection(&mut self, node:&Rc<RefCell<GraphNode>>){
+        if self.contains_node(node){
+            return;
+        }
+        self.selected_nodes.push(Rc::downgrade(node));
+    }
+
+
+
+}
+
+
 pub struct GraphNodeStorage{
     pub nodes:Vec<Rc<RefCell<GraphNode>>>,
-    selected_node: Weak<RefCell<GraphNode>>,
+    //selected_node: Weak<RefCell<GraphNode>>,
+    selection:NodeSelection,
+    shift_mod:bool
 }
 
 #[derive(Debug)]
@@ -391,7 +444,11 @@ impl Error for GraphDeserializationError{
 
 impl GraphNodeStorage{
     pub fn new()->Self{
-        Self { nodes: Vec::new(), selected_node:Weak::new()}
+        Self { nodes: Vec::new(),
+            //selected_node:Weak::new()
+            selection:NodeSelection::new(),
+            shift_mod:false,
+        }
     }
 
     pub fn lookup_node(&self, node_tgt:&Rc<RefCell<GraphNode>>)->Option<usize>{
@@ -419,12 +476,13 @@ impl GraphNodeStorage{
             node.borrow().draw_links(frame);
         }
         for node in self.nodes.iter(){
-            let highlight:bool = if let Some(s) = self.selected_node.upgrade(){
-                Rc::ptr_eq(&s, node)
-            }
-            else{
-                false
-            };
+            let highlight = self.selection.contains_node(node);
+            // let highlight:bool = if let Some(s) = self.selected_node.upgrade(){
+            //     Rc::ptr_eq(&s, node)
+            // }
+            // else{
+            //     false
+            // };
             node.borrow().draw(frame, highlight);
         }
     }
@@ -480,16 +538,27 @@ impl GraphNodeStorage{
                 }
             }
             EditorCanvasMessage::Unselect=>{
-                self.unselect_node();
+                self.unselect_nodes();
             }
             EditorCanvasMessage::Select(i)=>{
-                self.select_node(*i);
+                if !self.shift_mod && !self.is_selected(*i){
+                    self.selection.clear();
+                }
+                self.add_to_selection(*i);
             },
+            EditorCanvasMessage::SetShift(shift)=>{
+                self.shift_mod = *shift;
+            }
             EditorCanvasMessage::DeleteSelectedNode=>{
-                self.delete_selected_node();
+                self.delete_selected_nodes();
             },
             EditorCanvasMessage::ConstantEdit(v)=>{
-                if let Some(x) = self.selected_node.upgrade(){
+                // if let Some(x) = self.selected_node.upgrade(){
+                //     let mut selected = x.borrow_mut();
+                //     selected.modify_constant(v.clone()).unwrap();
+                // }
+
+                if let Some(x) = self.selection.get_solitary_node(){
                     let mut selected = x.borrow_mut();
                     selected.modify_constant(v.clone()).unwrap();
                 }
@@ -545,33 +614,71 @@ impl GraphNodeStorage{
         }
     }
 
-    pub fn unselect_node(&mut self){
-        self.selected_node = Weak::new();
+    pub fn unselect_nodes(&mut self){
+        self.selection.clear()
+        //self.selected_node = Weak::new();
+    }
+
+    pub fn add_to_selection(&mut self, i:usize){
+        if let Some(x) = self.nodes.get(i){
+            self.selection.add_to_selection(x);
+            //self.selected_node = Rc::downgrade(x);
+        }
+    }
+
+    pub fn is_selected(&self, i:usize)->bool{
+        if let Some(x) = self.nodes.get(i){
+            self.selection.contains_node(x)
+        }
+        else{
+            false
+        }
     }
 
     pub fn select_node(&mut self, i:usize){
-        if let Some(x) = self.nodes.get(i){
-            self.selected_node = Rc::downgrade(x);
-        }
+        self.unselect_nodes();
+        self.add_to_selection(i);
+        // if let Some(x) = self.nodes.get(i){
+        //     self.selected_node = Rc::downgrade(x);
+        // }
     }
 
-    pub fn delete_selected_node(&mut self){
-        if let Some(sel) = self.selected_node.upgrade(){
-            let mut rem_id = None;
-            for (i,x) in self.nodes.iter().enumerate(){
-                if Rc::ptr_eq(x,& sel){
-                    rem_id = Some(i);
-                    break;
+    // pub fn delete_selected_node(&mut self){
+    //     if let Some(sel) = self.selected_node.upgrade(){
+    //         let mut rem_id = None;
+    //         for (i,x) in self.nodes.iter().enumerate(){
+    //             if Rc::ptr_eq(x,& sel){
+    //                 rem_id = Some(i);
+    //                 break;
+    //             }
+    //         }
+    //         if let Some(i) = rem_id{
+    //             self.nodes.remove(i);
+    //         }
+    //     }
+    // }
+
+    pub fn delete_selected_nodes(&mut self){
+        for node in self.selection.selected_nodes.iter(){
+            if let Some(sel) = node.upgrade(){
+                let mut rem_id = None;
+                for (i,x) in self.nodes.iter().enumerate(){
+                    if Rc::ptr_eq(x,& sel){
+                        rem_id = Some(i);
+                        break;
+                    }
+                }
+                if let Some(i) = rem_id{
+                    self.nodes.remove(i);
                 }
             }
-            if let Some(i) = rem_id{
-                self.nodes.remove(i);
-            }
         }
+        self.selection.clear();
     }
 
     pub fn view_selected_constants(&self)->Option<constants::NodeConstantStorage>{
-        if let Some(x) = self.selected_node.upgrade(){
+        //if let Some(x) = self.selected_node.upgrade(){
+        if let Some(x) = self.selection.get_solitary_node(){
             Some(x.borrow().constants.clone())
         }
         else{
