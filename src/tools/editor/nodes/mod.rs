@@ -379,6 +379,9 @@ impl NodeSelection{
     }
 
     pub fn get_solitary_node(&self)->Option<Rc<RefCell<GraphNode>>>{
+        if self.selected_nodes.len()!=1{
+            return None;
+        }
         if let Some(v) = self.selected_nodes.get(0){
             v.upgrade()
         }
