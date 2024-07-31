@@ -151,6 +151,14 @@ impl CalculationNode for SaveHDF5ArrayNode{
         ]
     }
 
+    fn old_identifier(&self,) -> ROption<RString>where {
+        RSome("HDF5/Save HDF5 array".into())
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamohdf5.array_writer".into()
+    }
+
     fn is_primary(&self,) -> bool where {
         true
     }
