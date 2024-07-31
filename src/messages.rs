@@ -29,6 +29,7 @@ pub enum PadamoAppMessage{
     Save,
     Copy,
     Paste,
+    SelectAll,
     Tick,
     ResetWorkspace
 }

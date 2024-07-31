@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use std::fs;
 use std::rc::Rc;
 
+use iced::advanced::graphics::core::SmolStr;
 use iced::{ Application, Theme, Command};
 use iced::widget::{row, button};
 use crate::messages::PadamoAppMessage;
@@ -295,6 +296,7 @@ impl Application for Padamo{
         ]).max_width(100.0).offset(0.0).spacing(5.0));
 
         let edit_menu = Item::with_menu(title_menu_button("Edit"), Menu::new(vec![
+            Item::new(menu_button("Select all", PadamoAppMessage::SelectAll)),
             Item::new(menu_button("Copy", PadamoAppMessage::Copy)),
             Item::new(menu_button("Paste", PadamoAppMessage::Paste)),
         ]).max_width(100.0).offset(0.0).spacing(5.0));
@@ -351,8 +353,33 @@ impl Application for Padamo{
     }
 
     fn subscription(&self) -> iced::Subscription<Self::Message> {
-        iced::time::every(std::time::Duration::from_millis(33+self.state.add_delay_ms)).map(|_| {
-            PadamoAppMessage::Tick
-        })
+
+        iced::Subscription::batch(vec![
+            iced::time::every(std::time::Duration::from_millis(33+self.state.add_delay_ms)).map(|_| {
+                PadamoAppMessage::Tick
+            }),
+            iced::keyboard::on_key_press(|key,modifiers|{
+                println!("{:?}",key);
+                if modifiers.control(){
+                    match key {
+                        iced::keyboard::key::Key::Character(c)=>{
+                            match c.as_str(){
+                                "s"=>Some(PadamoAppMessage::Save),
+                                "o"=>Some(PadamoAppMessage::Open),
+                                "c"=>Some(PadamoAppMessage::Copy),
+                                "v"=>Some(PadamoAppMessage::Paste),
+                                "a"=>Some(PadamoAppMessage::SelectAll),
+                                _=>None
+                            }
+                        },
+                        _=>None
+                    }
+                }
+                else{
+                    None
+                }
+
+            })
+        ])
     }
 }
