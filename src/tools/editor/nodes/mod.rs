@@ -480,34 +480,13 @@ impl GraphNodeStorage{
         }
     }
 
-    pub fn clone_selection(&self)->Option<GraphNodeCloneBuffer>{
-        if self.selection.selected_nodes.len()==0{
-            return None;
-        }
-        let mut res = Self::new();
-        let mut offset = iced::Point::new(-10.0f32, -0.0f32);
-        for node_weak in self.selection.selected_nodes.iter(){
-            if let Some(node_rc) = node_weak.upgrade(){
-                let other = node_rc.borrow().clone_without_links();
-                if offset.x<0.0 || offset.x<other.position.x || offset.y<other.position.y{
-                    offset = other.position;
-                }
-                res.insert_node(other);
-            }
-        }
-        Some(GraphNodeCloneBuffer{
-            storage:res,
-            offset
-        })
-    }
-
-    pub fn clone_whole(&self)->Option<GraphNodeCloneBuffer>{
+    fn clone_partial<T:Iterator<Item = Rc<RefCell<GraphNode>>>>(&self,iterable:T)->Option<GraphNodeCloneBuffer>{
         if self.nodes.len()==0{
             return None;
         }
         let mut res = Self::new();
         let mut offset = iced::Point::new(-10.0f32, -0.0f32);
-        for node_rc in self.nodes.iter(){
+        for node_rc in iterable{
             let other = node_rc.borrow().clone_without_links();
             if offset.x<0.0 || offset.x<other.position.x || offset.y<other.position.y{
                 offset = other.position;
@@ -518,6 +497,14 @@ impl GraphNodeStorage{
             storage:res,
             offset
         })
+    }
+
+    pub fn clone_selection(&self)->Option<GraphNodeCloneBuffer>{
+        self.clone_partial(self.selection.selected_nodes.iter().filter_map(|x| x.upgrade()))
+    }
+
+    pub fn clone_whole(&self)->Option<GraphNodeCloneBuffer>{
+        self.clone_partial(self.nodes.iter().map(|x|x.clone()))
     }
 
     pub fn instantiate(&mut self, buffer:&GraphNodeCloneBuffer, position:iced::Point){
