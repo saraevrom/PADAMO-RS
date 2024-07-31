@@ -1,7 +1,7 @@
 pub mod constants;
 pub mod errors;
 
-use std::{cell::RefCell, error::Error, fmt::{write, Display}, rc::{Rc, Weak}};
+use std::{cell::RefCell, collections::HashMap, error::Error, fmt::{write, Display}, rc::{Rc, Weak}};
 
 use iced::widget::{canvas::{Frame, Path, self,Text}, shader::wgpu::core::identity};
 use serde_json::Map;
@@ -443,7 +443,8 @@ pub struct GraphNodeStorage{
 #[derive(Debug)]
 pub struct GraphNodeCloneBuffer{
     pub storage:GraphNodeStorage,
-    pub offset:iced::Point
+    pub offset:iced::Point,
+    pub connections:HashMap<usize,HashMap<String,(usize,String)>>,
 }
 
 #[derive(Debug)]
@@ -481,21 +482,51 @@ impl GraphNodeStorage{
     }
 
     fn clone_partial<T:Iterator<Item = Rc<RefCell<GraphNode>>>>(&self,iterable:T)->Option<GraphNodeCloneBuffer>{
-        if self.nodes.len()==0{
-            return None;
-        }
         let mut res = Self::new();
         let mut offset = iced::Point::new(-10.0f32, -0.0f32);
+        let mut tgt_i_cnt:usize = 0;
+        let mut mapping:HashMap<usize,usize> = HashMap::new();
         for node_rc in iterable{
             let other = node_rc.borrow().clone_without_links();
             if offset.x<0.0 || offset.x<other.position.x || offset.y<other.position.y{
                 offset = other.position;
             }
             res.insert_node(other);
+
+            let src_i = self.lookup_node(&node_rc).unwrap();
+            let tgt_i = tgt_i_cnt;
+
+            mapping.insert(src_i, tgt_i);
+
+            tgt_i_cnt+=1;
+
         }
+
+        if res.nodes.len()==0{
+            return None;
+        }
+
+        let mut conn_mapping = HashMap::new();
+        for (src_i,tgt_i) in mapping.iter(){
+            let src_node = &self.nodes[*src_i];
+            for (input_key,input_value) in src_node.borrow().inputs.iter(){
+                if let Some(conn) = &input_value.connection{
+                    if let Some(conn_node) = conn.node.upgrade(){
+                        if let Some(conn_i) = self.lookup_node(&conn_node){
+                            if let Some(tgt_conn) = mapping.get(&conn_i){
+                                let node_entry = conn_mapping.entry(*tgt_i).or_insert(HashMap::new());
+                                node_entry.insert(input_key.clone(), (*tgt_conn,conn.port.clone()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Some(GraphNodeCloneBuffer{
             storage:res,
-            offset
+            offset,
+            connections:conn_mapping
         })
     }
 
@@ -509,10 +540,25 @@ impl GraphNodeStorage{
 
     pub fn instantiate(&mut self, buffer:&GraphNodeCloneBuffer, position:iced::Point){
         let delta = position - buffer.offset;
+        // let mut tgt_i_cnt:usize = self.nodes.len();
+        // let mut src_i_cnt:usize = 0;
+        // let mapping
+        let add = self.nodes.len();
+
         for node in buffer.storage.nodes.iter(){
             let mut newnode = node.borrow().clone_without_links();
             newnode.position = newnode.position+delta;
             self.insert_node(newnode);
+        }
+
+        for (tgt_node_id_mapped, conn) in buffer.connections.iter(){
+            let tgt_node_id = tgt_node_id_mapped+add;
+            for (input_port,(src_node_id_mapped,output_port)) in conn.iter(){
+                let src_node_id = src_node_id_mapped+add;
+                if let Err(e) = self.link_from_to(src_node_id, output_port, tgt_node_id, input_port){
+                    eprintln!("{}",e);
+                }
+            }
         }
     }
 

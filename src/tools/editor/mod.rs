@@ -1,5 +1,6 @@
 pub mod editor_program;
 pub mod nodes;
+use std::collections::HashMap;
 use std::io::Read;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -91,7 +92,7 @@ impl PadamoTool for PadamoEditor{
                         if let Some(n) = node{
                             let mut storage = GraphNodeStorage::new();
                             storage.insert_node(n);
-                            let buffer = GraphNodeCloneBuffer{storage,offset:iced::Point::new(0.0, 0.0)};
+                            let buffer = GraphNodeCloneBuffer{storage,offset:iced::Point::new(0.0, 0.0), connections:HashMap::new()};
                             *self.state.pending_paste.borrow_mut() = Some(Rc::new(buffer));
                             //self.state.nodes.insert_node(n);
                         }
