@@ -359,7 +359,6 @@ impl Application for Padamo{
                 PadamoAppMessage::Tick
             }),
             iced::keyboard::on_key_press(|key,modifiers|{
-                println!("{:?}",key);
                 if modifiers.control(){
                     match key {
                         iced::keyboard::key::Key::Character(c)=>{
