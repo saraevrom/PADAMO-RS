@@ -483,14 +483,18 @@ impl GraphNodeStorage{
 
     fn clone_partial<T:Iterator<Item = Rc<RefCell<GraphNode>>>>(&self,iterable:T)->Option<GraphNodeCloneBuffer>{
         let mut res = Self::new();
-        let mut offset = iced::Point::new(-10.0f32, -0.0f32);
+        //let mut offset = iced::Point::new(-10.0f32, -0.0f32);
+        let mut offset_x:f32 = 0.0;
+        let mut offset_y:f32 = 0.0;
+        let mut cnt:usize = 0;
         let mut tgt_i_cnt:usize = 0;
         let mut mapping:HashMap<usize,usize> = HashMap::new();
         for node_rc in iterable{
             let other = node_rc.borrow().clone_without_links();
-            if offset.x<0.0 || offset.x<other.position.x || offset.y<other.position.y{
-                offset = other.position;
-            }
+            offset_x += other.position.x+other.size.width/2.0;
+            offset_y += other.position.y+other.size.height/2.0;
+            cnt += 1;
+
             res.insert_node(other);
 
             let src_i = self.lookup_node(&node_rc).unwrap();
@@ -501,6 +505,10 @@ impl GraphNodeStorage{
             tgt_i_cnt+=1;
 
         }
+
+        offset_x /= cnt as f32;
+        offset_y /= cnt as f32;
+        let offset = iced::Point::new(offset_x, offset_y);
 
         if res.nodes.len()==0{
             return None;
