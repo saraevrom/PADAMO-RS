@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::rc::Weak;
 
@@ -17,18 +18,18 @@ static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 pub struct EditorState{
     pub nodes: super::nodes::GraphNodeStorage,
     pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
-    pub requested_paste:bool,
+    pub pending_paste:RefCell<Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>>,
 }
 
 
 impl EditorState{
     pub fn new()->Self{
         let nodes = super::nodes::GraphNodeStorage::new();
-        Self { nodes, copied_data:None, requested_paste:false }
+        Self { nodes, copied_data:None, pending_paste:RefCell::new(None)}
     }
 
     pub fn request_paste(&mut self){
-        self.requested_paste = true;
+        *self.pending_paste.borrow_mut() = self.copied_data.clone();
     }
 
     pub fn copy_buffer(&mut self){
@@ -120,12 +121,14 @@ impl EditorState{
 
     pub fn handle_message(&mut self,msg:&EditorCanvasMessage){
         if let EditorCanvasMessage::CancelPaste = msg{
-            self.requested_paste = false;
+            *self.pending_paste.borrow_mut() = None;
             println!("Paste cancelled");
         }
         else if let EditorCanvasMessage::CommitPaste(point) = msg{
-            self.requested_paste = false;
-            self.paste_buffer(*point);
+            if let Some(buf) = self.pending_paste.take(){
+                self.nodes.instantiate(buf.as_ref(), *point);
+            }
+            //self.paste_buffer(*point);
             println!("Pasted");
         }
         else{
@@ -240,44 +243,16 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
             cursor: mouse::Cursor,
         )->(event::Status, Option<EditorCanvasMessage>){
 
-            if self.editor_state.requested_paste{
 
-                let mut msg:Option<EditorCanvasMessage> = None;
-                let mut curpos = iced::Point::new(0.0,0.0);
-                if let Some(curpos1) = cursor.position(){
-                    if !bounds.contains(curpos1){
-                        return (event::Status::Ignored, None);
-                    }
-                    curpos = iced::Point::new(curpos1.x-bounds.x,curpos1.y-bounds.y);
-                }
-
-
-                if let EditorProgramState::Inserting { buffer} = state{
-                    match event{
-                        Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
-                            *state = EditorProgramState::Idle;
-                            msg = Some(EditorCanvasMessage::CommitPaste(curpos));
-                            println!("Commiting paste...");
-                        }
-                        Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right))=>{
-                            *state = EditorProgramState::Idle;
-                            msg = Some(EditorCanvasMessage::CancelPaste);
-                        }
-                        _=>{
-                            return (event::Status::Ignored, None);
-                        }
-                    }
-                    return (event::Status::Captured, msg);
-                }
-                else{
-                    if let Some(clone_state) = &self.editor_state.copied_data{
-                        *state = EditorProgramState::Inserting { buffer: clone_state.clone()}
-                    }
-                    return (event::Status::Captured, None);
+            if let EditorProgramState::Inserting{buffer:_} = state{
+                if self.editor_state.pending_paste.borrow().is_none(){
+                    *state = EditorProgramState::Idle;
+                    println!("Cancelled insert mode");
                 }
             }
-            if let EditorProgramState::Inserting { buffer:_} = state{
-                *state = EditorProgramState::Idle;
+
+            if let Some(buffer) = self.editor_state.pending_paste.borrow().as_ref(){
+                *state = EditorProgramState::Inserting { buffer:buffer.clone()}
             }
 
             let mut msg:Option<EditorCanvasMessage> = None;
@@ -320,7 +295,15 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                             }
                         }
                         else{
-                            *state = EditorProgramState::Selecting { start_position: curpos };
+
+                            if let EditorProgramState::Inserting { buffer:_ } = state{
+                                *state = EditorProgramState::Idle;
+                                msg = Some(EditorCanvasMessage::CommitPaste(curpos));
+                                println!("Commiting paste...");
+                            }
+                            else{
+                                *state = EditorProgramState::Selecting { start_position: curpos };
+                            }
                             // msg = Some(EditorCanvasMessage::Unselect);
                             // *state = EditorProgramState::Idle
                         }
@@ -337,6 +320,13 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                                 _=>{
                                     return (event::Status::Ignored, None);
                                 }
+                            }
+                        }
+                        else{
+                            if let EditorProgramState::Inserting { buffer:_ } = state{
+                                *state = EditorProgramState::Idle;
+                                msg = Some(EditorCanvasMessage::CancelPaste);
+                                println!("Commiting paste...");
                             }
                         }
                     },

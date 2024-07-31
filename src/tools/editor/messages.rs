@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use iced::widget::scrollable;
 
 #[derive(Debug, Clone)]
