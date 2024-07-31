@@ -31,6 +31,35 @@ pub fn make_iced_color(color:padamo_api::calculation_nodes::content::Color)->ice
     iced::Color { r: color.r, g: color.g, b: color.b, a: color.a  }
 }
 
+fn reflection_point(p1:iced::Point,p2:iced::Point, direction:f32)->iced::Point{
+    let xc = (p1.x+p2.x)/2.0;
+    let yc = (p1.y+p2.y)/2.0;
+    let r = 0.5*((p1.y-p2.y)*(p1.y-p2.y) + (p1.x-p2.x)*(p1.x-p2.x)).sqrt();
+    iced::Point::new(xc+r*direction, yc)
+}
+
+fn coordinated_y(y1:f32,h1:f32,y2:f32,h2:f32, y_start:f32,y_end:f32)->(f32,bool){
+    let meanish_y = (1.1*y_start+y_end)/2.1;
+    if meanish_y>y1+h1 && meanish_y<y2{
+        return (meanish_y,false);
+    }
+    if meanish_y>y2+h2 && meanish_y<y1{
+        return (meanish_y,false);
+    }
+
+    let top = y1.min(y2);
+    let bottom = (y1+h1).max(y2+h2);
+    let pass = y_start-y1;
+    (if (y_start - top).abs() < (y_start - bottom).abs(){
+        //top is closer
+        top-pass
+    }
+    else{
+        //bottom is closer
+        bottom+pass
+    },true)
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone,Copy)]
 struct SerdePoint{
     x:f32,
@@ -289,8 +318,70 @@ impl GraphNode{
                 if let Some(src_port_id) = src_imm.get_output_index(&output_port){
                     let src_pos = src_imm.get_center_output_position(src_port_id);
                     let tgt_pos = pos + PORT_CENTER_OFFSET;
-                    let line = Path::line(src_pos, tgt_pos);
-                    frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
+
+
+
+                    if tgt_pos.x>=src_pos.x{
+                        //unobscured view
+                        let line = Path::new(|builder|{
+                            let p3 = src_pos + (tgt_pos-src_pos)*0.5;
+                            builder.move_to(src_pos);
+                            let p2 = reflection_point(src_pos, p3, 1.0);
+                            //builder.line_to();
+                            builder.quadratic_curve_to(p2,p3);
+                            //builder.
+                            let p4 = reflection_point(p3, tgt_pos, -1.0);
+                            //builder.line_to();
+                            builder.quadratic_curve_to(p4, tgt_pos);
+                        });
+                        frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
+                    }
+                    else{
+                        //obscured view
+                        let output_dx = 10.0+(src_pos.y-src_imm.get_output_position(0).y);
+                        let input_dx = 20.0+(self.get_input_position(self.inputs.len()-1).y+PORT_CENTER_OFFSET.y-tgt_pos.y);
+                        let (intermediate_y,bypass) = coordinated_y(src_imm.position.y, src_imm.size.height,
+                                                                self.position.y, self.size.height,
+                                                                src_pos.y, tgt_pos.y);
+                        let min_x = self.position.x.min(src_imm.position.x);
+                        let max_x = (self.position.x+self.size.width).max(src_imm.position.x+src_imm.size.width);
+
+                        let first_x = src_pos.x+output_dx;
+                        let first_x = if first_x<max_x+output_dx && bypass{
+                            max_x+output_dx
+                        }
+                        else{
+                            first_x
+                        };
+
+                        let last_x = tgt_pos.x-input_dx;
+                        let last_x = if last_x>min_x-input_dx && bypass{
+                            min_x-input_dx
+                        }
+                        else{
+                            last_x
+                        };
+
+                        let line = Path::new(|builder|{
+                            let mut p1 = src_pos;
+                            builder.move_to(p1);
+                            p1.x = first_x;
+                            builder.line_to(p1);
+
+                            p1.y = intermediate_y;
+                            builder.line_to(p1);
+
+                            p1.x = last_x;
+                            builder.line_to(p1);
+                            p1.y = tgt_pos.y;
+                            builder.line_to(p1);
+                            builder.line_to(tgt_pos);
+                        });
+
+                        frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
+                    }
+                    // let line = Path::line(src_pos, tgt_pos);
+                    // frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
                 }
             }
         }
