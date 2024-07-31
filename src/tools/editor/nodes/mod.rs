@@ -64,6 +64,7 @@ impl OutputDefinition{
     }
 }
 
+#[derive(Debug)]
 pub struct Connection{
     pub node:Weak<RefCell<GraphNode>>, //source node
     pub port:String                    //output port
@@ -84,6 +85,7 @@ pub struct SerdeConnection{
 
 
 
+#[derive(Debug)]
 pub struct InputDefinition{
     //pub name:String,
     pub port_type:PortType,
@@ -122,11 +124,13 @@ impl InputDefinition {
     }
 }
 
+
+#[derive(Debug)]
 pub struct GraphNode{
     pub position:iced::Point,
     pub title:String,
     pub identifier:String,
-    size:iced::Size,
+    pub size:iced::Size,
     title_offset:f32,
     pub inputs:OrderedHashMap<String,InputDefinition>,
     pub outputs:OrderedHashMap<String,OutputDefinition>,
@@ -156,6 +160,20 @@ impl GraphNode{
         };
         res.reestimate_size();
         res
+    }
+
+    pub fn clone_without_links(&self)->Self{
+        let mut inputs = OrderedHashMap::new();
+        for (key,value) in self.inputs.iter(){
+            inputs.insert(key.clone(), InputDefinition::new(value.port_type));
+        }
+        Self { position: self.position,
+            title: self.title.clone(), identifier: self.identifier.clone(),
+            size: self.size, title_offset: self.title_offset,
+            inputs,
+            outputs: self.outputs.clone(), constants: self.constants.clone()
+
+        }
     }
 
     pub fn remove_dead_connections(&mut self){
@@ -360,6 +378,7 @@ impl GraphNode{
 }
 
 
+#[derive(Debug)]
 pub struct NodeSelection{
     pub selected_nodes:Vec<Weak<RefCell<GraphNode>>>
 }
@@ -413,11 +432,18 @@ impl NodeSelection{
 }
 
 
+#[derive(Debug)]
 pub struct GraphNodeStorage{
     pub nodes:Vec<Rc<RefCell<GraphNode>>>,
     //selected_node: Weak<RefCell<GraphNode>>,
     selection:NodeSelection,
     shift_mod:bool
+}
+
+#[derive(Debug)]
+pub struct GraphNodeCloneBuffer{
+    pub storage:GraphNodeStorage,
+    pub offset:iced::Point
 }
 
 #[derive(Debug)]
@@ -451,6 +477,36 @@ impl GraphNodeStorage{
             //selected_node:Weak::new()
             selection:NodeSelection::new(),
             shift_mod:false,
+        }
+    }
+
+    pub fn clone_selection(&self)->Option<GraphNodeCloneBuffer>{
+        if self.selection.selected_nodes.len()==0{
+            return None;
+        }
+        let mut res = Self::new();
+        let mut offset = iced::Point::new(-10.0f32, -0.0f32);
+        for node_weak in self.selection.selected_nodes.iter(){
+            if let Some(node_rc) = node_weak.upgrade(){
+                let other = node_rc.borrow().clone_without_links();
+                if offset.x<0.0 || offset.x<other.position.x || offset.y<other.position.y{
+                    offset = other.position;
+                }
+                res.insert_node(other);
+            }
+        }
+        Some(GraphNodeCloneBuffer{
+            storage:res,
+            offset
+        })
+    }
+
+    pub fn instantiate(&mut self, buffer:&GraphNodeCloneBuffer, position:iced::Point){
+        let delta = position - buffer.offset;
+        for node in buffer.storage.nodes.iter(){
+            let mut newnode = node.borrow().clone_without_links();
+            newnode.position = newnode.position+delta;
+            self.insert_node(newnode);
         }
     }
 
@@ -629,6 +685,8 @@ impl GraphNodeStorage{
                     selected.modify_constant(v.clone()).unwrap();
                 }
             }
+            EditorCanvasMessage::CancelPaste=>(),
+            EditorCanvasMessage::CommitPaste(_)=>(),
             //_=>(),
         }
     }

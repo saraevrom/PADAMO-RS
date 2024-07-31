@@ -294,6 +294,11 @@ impl Application for Padamo{
             Item::new(menu_button("Choose detector", PadamoAppMessage::ChooseDetector)),
         ]).max_width(100.0).offset(0.0).spacing(5.0));
 
+        let edit_menu = Item::with_menu(title_menu_button("Edit"), Menu::new(vec![
+            Item::new(menu_button("Copy", PadamoAppMessage::Copy)),
+            Item::new(menu_button("Paste", PadamoAppMessage::Paste)),
+        ]).max_width(100.0).offset(0.0).spacing(5.0));
+
         //let v = self.state.current_seed.view_row("Seed", "Seed", )
         let run_menu = Item::with_menu(title_menu_button("Run"), Menu::new(vec![
             Item::new(menu_button("Run", PadamoAppMessage::Run)),
@@ -305,7 +310,7 @@ impl Application for Padamo{
             Item::new(menu_button("Choose workspace directory", PadamoAppMessage::ResetWorkspace)),
         ]).max_width(200.0).offset(0.0).spacing(5.0));
 
-        let menu_bar = MenuBar::new(vec![file_menu,run_menu,settings_menu])
+        let menu_bar = MenuBar::new(vec![file_menu,edit_menu,run_menu,settings_menu])
             .draw_path(iced_aw::menu::DrawPath::Backdrop)
             .style(|theme:&iced::Theme| iced_aw::menu::Appearance{
                     path_border: iced::Border{

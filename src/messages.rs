@@ -27,6 +27,8 @@ pub enum PadamoAppMessage{
     SetSeed(String),
     Open,
     Save,
+    Copy,
+    Paste,
     Tick,
     ResetWorkspace
 }

@@ -12,6 +12,8 @@ pub enum EditorCanvasMessage{
     SetShift(bool),
     DeleteSelectedNode,
     ConstantEdit(super::nodes::constants::NodeConstantMessage),
+    CancelPaste,
+    CommitPaste(iced::Point),
     //TreeSplitPositionSet(u16)
 }
 

@@ -78,7 +78,10 @@ impl PadamoTool for PadamoEditor{
         match &*msg{
             crate::messages::PadamoAppMessage::EditorMessage(emsg) =>{
                 match emsg {
-                    messages::EditorMessage::CanvasMessage(msg) => {self.state.nodes.handle_message(msg)},
+                    messages::EditorMessage::CanvasMessage(msg) => {
+                        self.state.handle_message(msg)
+
+                    },
                     messages::EditorMessage::TreeSplitPositionSet(pos)=>{self.hor_divider_position = *pos},
                     messages::EditorMessage::NodeListClicked(identifier)=>{
                         // let path = p.join("/");
@@ -93,40 +96,49 @@ impl PadamoTool for PadamoEditor{
             },
             crate::messages::PadamoAppMessage::Run=>{
                 self.run(padamo);
-            }
+            },
             crate::messages::PadamoAppMessage::RerollRun=>{
                 padamo.reroll();
                 self.run(padamo);
-            }
+            },
             _=>()
         }
 
     }
     fn context_update(&mut self, msg: Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
-        if let crate::messages::PadamoAppMessage::Save = msg.as_ref(){
-            if let Some(file_path) = padamo.workspace.workspace("graphs-rs").save_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
-                let jsd = self.state.nodes.serialize();
-                if let Ok(s) = serde_json::to_string_pretty(&jsd){
-                    if let Ok(_) = std::fs::write(file_path, s){
-                        println!("Wrote file");
+        match msg.as_ref() {
+            crate::messages::PadamoAppMessage::Save =>{
+                if let Some(file_path) = padamo.workspace.workspace("graphs-rs").save_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
+                    let jsd = self.state.nodes.serialize();
+                    if let Ok(s) = serde_json::to_string_pretty(&jsd){
+                        if let Ok(_) = std::fs::write(file_path, s){
+                            println!("Wrote file");
+                        }
                     }
                 }
-            }
-        }
-        if let crate::messages::PadamoAppMessage::Open = msg.as_ref(){
-            if let Some(file_path) = padamo.workspace.workspace("graphs-rs").open_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
-                if let Ok(mut f) = std::fs::File::open(file_path){
-                    let mut buf:String = String::new();
-                    if let Ok(_) = f.read_to_string(&mut buf){
-                        if let Ok(jsd) = serde_json::Value::from_str(&buf){
-                            if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
-                                padamo.show_error(format!("{}",e));
-                                self.state.nodes.clear();
+            },
+            crate::messages::PadamoAppMessage::Open =>{
+                if let Some(file_path) = padamo.workspace.workspace("graphs-rs").open_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
+                    if let Ok(mut f) = std::fs::File::open(file_path){
+                        let mut buf:String = String::new();
+                        if let Ok(_) = f.read_to_string(&mut buf){
+                            if let Ok(jsd) = serde_json::Value::from_str(&buf){
+                                if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
+                                    padamo.show_error(format!("{}",e));
+                                    self.state.nodes.clear();
+                                }
                             }
                         }
                     }
                 }
+            },
+            crate::messages::PadamoAppMessage::Copy => {
+                self.state.copy_buffer();
             }
+            crate::messages::PadamoAppMessage::Paste=>{
+                self.state.request_paste();
+            }
+            _=>(),
         }
 
     }
