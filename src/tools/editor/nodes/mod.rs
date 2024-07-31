@@ -504,14 +504,50 @@ impl GraphNodeStorage{
         match msg {
             EditorCanvasMessage::MoveNode { index, position }=>{
                 if let Some(node) = self.nodes.get(*index){
+                    let old_position = {
+                        node.borrow().position
+                    };
                     let mut target_position = *position;
-                    if target_position.x<=0.0{
-                        target_position.x = 0.0;
+                    // if target_position.x<=0.0{
+                    //     target_position.x = 0.0;
+                    // }
+                    // if target_position.y<=0.0{
+                    //     target_position.y = 0.0;
+                    // }
+
+                    let mut delta = target_position-old_position;
+
+                    //TODO: needs check if we can move all nodes
+                    for selected_node_weak in self.selection.selected_nodes.iter(){
+                        if let Some(selected_node) = selected_node_weak.upgrade(){
+                            let borrowed_node = selected_node.borrow();
+                            let mut newpos = borrowed_node.position + delta;
+                            let mut change_delta = false;
+                            if newpos.x<=0.0{
+                                newpos.x = 0.0;
+                                change_delta = true;
+                            }
+
+                            if newpos.y<=0.0{
+                                newpos.y = 0.0;
+                                change_delta = true;
+                            }
+
+                            if change_delta{
+                                delta = newpos - borrowed_node.position;
+                            }
+                        }
                     }
-                    if target_position.y<=0.0{
-                        target_position.y = 0.0;
+
+                    for selected_node_weak in self.selection.selected_nodes.iter(){
+                        if let Some(selected_node) = selected_node_weak.upgrade(){
+                            let mut mut_borrowed_node = selected_node.borrow_mut();
+                            let newpos = mut_borrowed_node.position + delta;
+                            mut_borrowed_node.position = newpos;
+                        }
                     }
-                    node.borrow_mut().position = target_position;
+
+                    //node.borrow_mut().position = target_position;
                 }
             }
             EditorCanvasMessage::LinkNode { from, output_port, to, input_port }=>{
