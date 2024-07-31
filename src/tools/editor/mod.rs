@@ -8,6 +8,7 @@ use crate::application::PadamoState;
 use crate::messages::PadamoAppMessage;
 
 use crate::custom_widgets::treeview::Tree;
+use crate::tools::editor::nodes::{GraphNodeCloneBuffer, GraphNodeStorage};
 
 use super::PadamoTool;
 use abi_stable::traits::IntoOwned;
@@ -86,8 +87,13 @@ impl PadamoTool for PadamoEditor{
                     messages::EditorMessage::NodeListClicked(identifier)=>{
                         // let path = p.join("/");
                         let node = padamo.nodes.create_calculation_node(identifier.into_owned());
+
                         if let Some(n) = node{
-                            self.state.nodes.insert_node(n);
+                            let mut storage = GraphNodeStorage::new();
+                            storage.insert_node(n);
+                            let buffer = GraphNodeCloneBuffer{storage,offset:iced::Point::new(0.0, 0.0)};
+                            *self.state.pending_paste.borrow_mut() = Some(Rc::new(buffer));
+                            //self.state.nodes.insert_node(n);
                         }
                         println!("Clicked node {:?}", identifier);
                     },

@@ -437,7 +437,7 @@ pub struct GraphNodeStorage{
     pub nodes:Vec<Rc<RefCell<GraphNode>>>,
     //selected_node: Weak<RefCell<GraphNode>>,
     selection:NodeSelection,
-    shift_mod:bool
+    pub shift_mod:bool
 }
 
 #[derive(Debug)]
@@ -494,6 +494,25 @@ impl GraphNodeStorage{
                 }
                 res.insert_node(other);
             }
+        }
+        Some(GraphNodeCloneBuffer{
+            storage:res,
+            offset
+        })
+    }
+
+    pub fn clone_whole(&self)->Option<GraphNodeCloneBuffer>{
+        if self.nodes.len()==0{
+            return None;
+        }
+        let mut res = Self::new();
+        let mut offset = iced::Point::new(-10.0f32, -0.0f32);
+        for node_rc in self.nodes.iter(){
+            let other = node_rc.borrow().clone_without_links();
+            if offset.x<0.0 || offset.x<other.position.x || offset.y<other.position.y{
+                offset = other.position;
+            }
+            res.insert_node(other);
         }
         Some(GraphNodeCloneBuffer{
             storage:res,
@@ -741,6 +760,12 @@ impl GraphNodeStorage{
     pub fn unselect_nodes(&mut self){
         self.selection.clear()
         //self.selected_node = Weak::new();
+    }
+
+    pub fn select_all(&mut self){
+        for i in 0..self.nodes.len(){
+            self.add_to_selection(i);
+        }
     }
 
     pub fn add_to_selection(&mut self, i:usize){

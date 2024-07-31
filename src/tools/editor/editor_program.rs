@@ -8,6 +8,8 @@ use iced::widget::canvas::{self, Canvas, Frame, Geometry, Path, Stroke};
 use iced::{Element, Length, Point, Rectangle, Renderer, Theme};
 use iced::widget::scrollable::{self, Properties};
 use once_cell::sync::Lazy;
+use crate::tools::editor::nodes::GraphNodeCloneBuffer;
+
 pub use super::messages::EditorCanvasMessage;
 
 use super::nodes::constants::{NodeConstantStorage, NodeConstantContent, NodeConstantMessage, NodeConstantMessageContent};
@@ -125,8 +127,19 @@ impl EditorState{
             println!("Paste cancelled");
         }
         else if let EditorCanvasMessage::CommitPaste(point) = msg{
+            let mut newstate = None;
+
             if let Some(buf) = self.pending_paste.take(){
+                if self.nodes.shift_mod{
+                    if let Some(storage)= buf.storage.clone_whole(){
+                        newstate = Some(std::rc::Rc::new(storage));
+                    }
+                }
                 self.nodes.instantiate(buf.as_ref(), *point);
+            }
+            if newstate.is_some(){
+                *self.pending_paste.borrow_mut() = newstate;
+                println!("Starting new paste");
             }
             //self.paste_buffer(*point);
             println!("Pasted");
