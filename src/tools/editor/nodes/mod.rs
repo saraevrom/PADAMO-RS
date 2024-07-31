@@ -585,6 +585,33 @@ impl GraphNodeStorage{
                 }
                 self.add_to_selection(*i);
             },
+            EditorCanvasMessage::SquareSelect(startpos, endpos)=>{
+                if !self.shift_mod{
+                    self.selection.clear();
+                }
+                let minpos_x = startpos.x.min(endpos.x);
+                let minpos_y = startpos.y.min(endpos.y);
+
+                let maxpos_x = startpos.x.max(endpos.x);
+                let maxpos_y = startpos.y.max(endpos.y);
+
+                let total_width = maxpos_x - minpos_x;
+                let total_height = maxpos_y - minpos_y;
+
+                for i in 0..self.nodes.len(){
+                    let node = &self.nodes[i];
+                    let node_size = node.borrow().size;
+                    let truncated_width = total_width - node_size.width;
+                    let truncated_height = total_height - node_size.height;
+                    let node_pos = node.borrow().position;
+                    let truncated_x = node_pos.x-minpos_x;
+                    let truncated_y = node_pos.y-minpos_y;
+                    if truncated_x>0.0 && truncated_x<truncated_width &&
+                        truncated_y>0.0 && truncated_y<truncated_height{
+                            self.add_to_selection(i);
+                        }
+                }
+            }
             EditorCanvasMessage::SetShift(shift)=>{
                 self.shift_mod = *shift;
             }

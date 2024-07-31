@@ -110,6 +110,9 @@ pub enum EditorProgramState{
     Linking{
         from:Option<(usize, iced::Point, String)>,
         to:Option<(usize, iced::Point, String)>
+    },
+    Selecting{
+        start_position:iced::Point,
     }
 }
 
@@ -167,6 +170,16 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                         frame.stroke(&line, canvas::stroke::Stroke::default().with_color(iced::Color::BLACK).with_width(2.0));
                     }
                 }
+                EditorProgramState::Selecting { start_position }=>{
+                    let tl_x = start_position.x.min(curpos.x);
+                    let tl_y = start_position.y.min(curpos.y);
+                    let tl = iced::Point::new(tl_x, tl_y);
+                    let sx = (start_position.x-curpos.x).abs();
+                    let sy = (start_position.y-curpos.y).abs();
+                    let size = iced::Size::new(sx, sy);
+                    let selector = Path::rectangle(tl, size);
+                    frame.stroke(&selector, canvas::stroke::Stroke::default().with_color(iced::Color::BLACK).with_width(2.0))
+                }
             }
         }
 
@@ -219,8 +232,9 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                             }
                         }
                         else{
-                            msg = Some(EditorCanvasMessage::Unselect);
-                            *state = EditorProgramState::Idle
+                            *state = EditorProgramState::Selecting { start_position: curpos };
+                            // msg = Some(EditorCanvasMessage::Unselect);
+                            // *state = EditorProgramState::Idle
                         }
                     },
                     Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right))=>{
@@ -243,7 +257,10 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                              msg = Some(EditorCanvasMessage::MoveNode { index:*index, position: *start_position+(curpos-*cursor_start_position) });
                             *state = EditorProgramState::Idle;
                         }
-
+                        else if let EditorProgramState::Selecting { start_position } = state{
+                            msg = Some(EditorCanvasMessage::SquareSelect(*start_position, curpos));
+                            *state = EditorProgramState::Idle
+                        }
                     },
 
                     Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_,text:_ })=>{
