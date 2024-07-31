@@ -131,7 +131,7 @@ impl EditorState{
 
             if let Some(buf) = self.pending_paste.take(){
                 if self.nodes.shift_mod{
-                    if let Some(storage)= buf.storage.clone_whole(){
+                    if let Some(storage)= buf.clone_whole_for_repeating_copy(){
                         newstate = Some(std::rc::Rc::new(storage));
                     }
                 }

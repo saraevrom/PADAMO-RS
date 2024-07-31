@@ -538,6 +538,18 @@ pub struct GraphNodeCloneBuffer{
     pub connections:HashMap<usize,HashMap<String,(usize,String)>>,
 }
 
+impl GraphNodeCloneBuffer{
+    pub fn clone_whole_for_repeating_copy(&self)->Option<Self>{
+        let mut res = self.storage.clone_whole();
+        res = res.map(|mut x|{
+            x.connections = self.connections.clone();
+            x
+        });
+        res
+    }
+}
+
+
 #[derive(Debug)]
 pub enum GraphDeserializationError{
     NodeNotFound(String),
