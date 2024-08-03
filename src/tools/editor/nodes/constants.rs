@@ -4,9 +4,17 @@ use serde::{Serialize,Deserialize};
 
 
 #[derive(Clone,Debug,PartialEq)]
-pub enum NodeConstantMessageContent{
+pub enum NodeConstantBuffer{
     Check(bool),
     Text(String)
+}
+
+
+#[derive(Clone,Debug,PartialEq)]
+pub enum NodeConstantMessageContent{
+    Check(bool),
+    Text(String),
+    ToggleExternal(bool)
 }
 
 #[derive(Clone,Debug,PartialEq)]
@@ -27,6 +35,12 @@ impl NodeConstantMessage{
     pub fn text(key: String)->impl Fn(String)->Self{
         move |x| {
             Self { key: key.clone(), value: NodeConstantMessageContent::Text(x) }
+        }
+    }
+
+    pub fn external_toggle(key:String)->impl Fn(bool)->Self{
+        move |x| {
+            Self { key: key.clone(), value: NodeConstantMessageContent::ToggleExternal(x) }
         }
     }
 }
@@ -91,16 +105,17 @@ impl Into<padamo_api::prelude::ConstantContent> for NodeConstantContent{
 
 #[derive(Clone,Debug,PartialEq)]
 pub struct NodeConstant{
-    pub buffer:NodeConstantMessageContent,
+    pub buffer:NodeConstantBuffer,
     pub ok:bool,
     pub content:NodeConstantContent,
-    default_value:NodeConstantContent
+    default_value:NodeConstantContent,
+    pub use_external:bool
 }
 
 
 impl NodeConstant{
     pub fn new(content:NodeConstantContent)->Self{
-        Self { buffer: content.clone().into(),default_value:content.clone(), content, ok:true  }
+        Self { buffer: content.clone().into(),default_value:content.clone(), content, ok:true, use_external:false  }
     }
 
     pub fn update_buffer(&mut self){
@@ -108,13 +123,21 @@ impl NodeConstant{
     }
 
     pub fn commit_buffer(&mut self, other:NodeConstantMessage){
-        self.buffer = other.value;
+        match other.value{
+            NodeConstantMessageContent::Check(x) => {self.buffer = NodeConstantBuffer::Check(x);},
+            NodeConstantMessageContent::Text(x) => {self.buffer = NodeConstantBuffer::Text(x);},
+            _=>()
+        }
     }
 
     pub fn parse_buffer(&mut self){
+        // if let NodeConstantMessageContent::ToggleExternal(v) = self.buffer{
+        //     self.use_external = v;
+        //     return;
+        // }
         match &self.content {
             NodeConstantContent::Text(_)=>{
-                if let NodeConstantMessageContent::Text(txt) = &self.buffer{
+                if let NodeConstantBuffer::Text(txt) = &self.buffer{
                     self.content = NodeConstantContent::Text(txt.into());
                     self.ok = true;
                 }
@@ -123,7 +146,7 @@ impl NodeConstant{
                 }
             },
             NodeConstantContent::Boolean(_)=>{
-                if let NodeConstantMessageContent::Check(b) = &self.buffer{
+                if let NodeConstantBuffer::Check(b) = &self.buffer{
                     self.content = NodeConstantContent::Boolean(*b);
                     self.ok = true;
                 }
@@ -132,7 +155,7 @@ impl NodeConstant{
                 }
             }
             NodeConstantContent::Integer(_)=>{
-                if let NodeConstantMessageContent::Text(txt) = &self.buffer{
+                if let NodeConstantBuffer::Text(txt) = &self.buffer{
                     if let Ok(num) = txt.parse::<i64>() {
                         self.content = NodeConstantContent::Integer(num);
                         self.ok = true;
@@ -146,7 +169,7 @@ impl NodeConstant{
                 }
             }
             NodeConstantContent::Real(_)=>{
-                if let NodeConstantMessageContent::Text(txt) = &self.buffer{
+                if let NodeConstantBuffer::Text(txt) = &self.buffer{
                     if let Ok(num) = txt.parse::<f64>() {
                         self.content = NodeConstantContent::Real(num);
                         self.ok = true;
@@ -182,8 +205,14 @@ impl NodeConstantStorage{
 
     pub fn modify_constant(&mut self, msg:NodeConstantMessage)->Result<(),NodeError>{
         if let Some(v) = self.constants.get_mut(&msg.key){
-            v.commit_buffer(msg);
-            v.parse_buffer();
+            if let NodeConstantMessageContent::ToggleExternal(ext) = msg.value{
+                v.use_external = ext;
+            }
+            else{
+                v.commit_buffer(msg);
+                v.parse_buffer();
+            }
+
             Ok(())
         }
         else{
@@ -253,3 +282,13 @@ impl Into<NodeConstantMessageContent> for NodeConstantContent{
         }
     }
 }
+
+impl Into<NodeConstantBuffer> for NodeConstantContent{
+    fn into(self) -> NodeConstantBuffer {
+        match self {
+            NodeConstantContent::Boolean(x) => NodeConstantBuffer::Check(x),
+            x => NodeConstantBuffer::Text(x.into()),
+        }
+    }
+}
+

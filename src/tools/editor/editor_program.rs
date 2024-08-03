@@ -12,7 +12,7 @@ use crate::tools::editor::nodes::GraphNodeCloneBuffer;
 
 pub use super::messages::EditorCanvasMessage;
 
-use super::nodes::constants::{NodeConstantStorage, NodeConstantContent, NodeConstantMessage, NodeConstantMessageContent};
+use super::nodes::constants::{NodeConstantBuffer, NodeConstantContent, NodeConstantMessage, NodeConstantMessageContent, NodeConstantStorage};
 
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
@@ -65,23 +65,34 @@ impl EditorState{
             // Kicked by borrow checker. Ouch. So I have to make display logic here.
             for (key,c) in x.constants.iter(){
                 //let check = NodeConstantMessage::check(key.into());
-                let field:iced::Element<'_,super::nodes::constants::NodeConstantMessage> = match &c.buffer{
-                    NodeConstantMessageContent::Check(x) => {
-                        iced::widget::Checkbox::new(key, *x).on_toggle(NodeConstantMessage::check(key.into())).into()
-                    },
-                    NodeConstantMessageContent::Text(x) => {
-                        let mut label = iced::widget::Text::new(key.clone());
-                        if !c.ok{
-                            label = label.style(iced::theme::Text::Color(iced::Color::new(1.0, 0.0, 0.0, 1.0)));
-                        }
-                        let editor = iced::widget::TextInput::new("", x).on_input(NodeConstantMessage::text(key.into()));
-                        iced::widget::row!(
-                            label,
-                            editor
-                        ).into()
-                    },
-                };
-                constcol = constcol.push(field);
+
+                let mut constant_row:iced::widget::Column<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Column::new().padding(10);
+                constant_row = constant_row.push(iced::widget::Text::new(format!("{}:",key)));
+
+                let external_toggle:iced::widget::Checkbox<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Checkbox::new("External", c.use_external).on_toggle(NodeConstantMessage::external_toggle(key.into())).into();
+                constant_row = constant_row.push(external_toggle);
+
+                if !c.use_external{
+                    let field:iced::Element<'_,super::nodes::constants::NodeConstantMessage> = match &c.buffer{
+                        NodeConstantBuffer::Check(x) => {
+                            iced::widget::Checkbox::new("Value", *x).on_toggle(NodeConstantMessage::check(key.into())).into()
+                        },
+                        NodeConstantBuffer::Text(x) => {
+                            let mut label = iced::widget::Text::new("Value");
+                            if !c.ok{
+                                label = label.style(iced::theme::Text::Color(iced::Color::new(1.0, 0.0, 0.0, 1.0)));
+                            }
+                            let editor = iced::widget::TextInput::new("", x).on_input(NodeConstantMessage::text(key.into()));
+                            iced::widget::row!(
+                                label,
+                                editor
+                            ).into()
+                        },
+                    };
+                    constant_row = constant_row.push(field);
+                }
+
+                constcol = constcol.push(constant_row);
             }
         }
 
