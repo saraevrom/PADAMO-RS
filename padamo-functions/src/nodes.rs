@@ -18,11 +18,41 @@ impl FCalculateNode{
     }
 }
 
+
+#[derive(Clone,Debug)]
+pub struct FCalculateNode2;
+
+
+impl FCalculateNode2{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>where {
+        let f0 = inputs.request_function("F")?;
+        let x = constants.request_float("x")?;
+        let y = f0.calculate(x);
+        outputs.set_value("y", y.into())?;
+        Ok(())
+    }
+}
+
+
+
 #[derive(Clone,Debug)]
 pub struct ConstantNode;
 impl ConstantNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
         let v = inputs.request_float("Value")?;
+        //let f = make_function_box(crate::ops::Constant(v));
+        let f:DoubleFunctionOperatorBox = (move |_| {v}).into();
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub struct ConstantNode2;
+impl ConstantNode2{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let v = constants.request_float("Value")?;
         //let f = make_function_box(crate::ops::Constant(v));
         let f:DoubleFunctionOperatorBox = (move |_| {v}).into();
         outputs.set_value("F", f.into())?;
@@ -203,7 +233,9 @@ impl CalculationNode for ConstantNode{
     }
 
     fn category(&self,) -> RVec<RString>where {
-        category0()
+        let mut res = rvec!["Legacy".into()];
+        res.extend(category0());
+        res
     }
 
     fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
@@ -211,7 +243,7 @@ impl CalculationNode for ConstantNode{
     }
 
     fn identifier(&self,) -> RString where {
-        "padamofunctions.constant".into()
+        "padamofunctions.constant2".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
@@ -235,13 +267,51 @@ impl CalculationNode for ConstantNode{
     }
 }
 
-impl CalculationNode for FCalculateNode{
+impl CalculationNode for ConstantNode2{
     fn name(&self,) -> RString where {
-        "Calculate value".into()
+        "Constant".into()
     }
 
     fn category(&self,) -> RVec<RString>where {
         category0()
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamofunctions.constant".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("F", ContentType::Function)
+        ]
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![
+            ("Value", 0.0)
+        ]
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
+
+impl CalculationNode for FCalculateNode{
+    fn name(&self,) -> RString where {
+        "Calculate value (Legacy)".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        let mut res = rvec!["Legacy".into()];
+        res.extend(category0());
+        res
     }
 
     fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
@@ -274,6 +344,41 @@ impl CalculationNode for FCalculateNode{
     }
 }
 
+impl CalculationNode for FCalculateNode2{
+    fn name(&self,) -> RString where {
+        "Calculate value".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category0()
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamofunctions.calculate_value2".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("F", ContentType::Function)
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("y", ContentType::Float)
+        ]
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![
+            ("x", 0.0),
+        ]
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment).into()
+    }
+}
 
 implement_onearg_function!(LinearNode, "X", category, "linear", "X");
 implement_onearg_function!(SquareNode, "X^2", category, "square", "X^2");

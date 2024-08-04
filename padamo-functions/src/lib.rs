@@ -21,6 +21,7 @@ pub fn plugin_root()->PadamoModule_Ref{
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         ConstantNode,
+        ConstantNode2,
         LinearNode,
         SquareNode,
         SumNode,
@@ -28,6 +29,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         ExponentNode,
         LogNode,
         FCalculateNode,
+        FCalculateNode2,
         MinNode,
         MaxNode,
         AbsNode,
