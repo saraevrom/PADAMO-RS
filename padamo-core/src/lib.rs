@@ -9,6 +9,7 @@ use padamo_api::make_node_box;
 pub mod output;
 pub mod constants;
 pub mod filenames;
+pub mod filenames_old;
 pub mod trigger_ops;
 pub mod trigger_nodes;
 pub mod boolconv;
@@ -26,6 +27,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     node_list.extend(output::nodes());
     node_list.extend(constants::nodes());
     node_list.extend(filenames::nodes());
+    node_list.extend(filenames_old::nodes());
     node_list.extend(strings::nodes());
     node_list.extend(strings_old::nodes());
     node_list.push(make_node_box(trigger_nodes::TriggerExpandNode));

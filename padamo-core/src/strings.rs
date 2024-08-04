@@ -115,7 +115,6 @@ impl CalculationNode for StringReplaceNode{
         )
     }
 
-
     fn identifier(&self,) -> RString where {
         "padamocore.strings.replace2".into()
     }

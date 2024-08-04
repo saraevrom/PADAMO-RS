@@ -96,8 +96,8 @@ pub struct FileMerge;
 
 impl FileMerge{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let f1:String = inputs.request_string("Path 1")?.into();
-        let f2:String = inputs.request_string("Path 2")?.into();
+        let f1:String = constants.request_string("Path 1")?.into();
+        let f2:String = constants.request_string("Path 2")?.into();
         let fp1 = Path::new(&f1);
         let fp2 = Path::new(&f2);
         let res:String = fp1.join(fp2).into_os_string().into_string().map_err(|x| ExecutionError::OtherError(format!("Could not convert {:?} into path",x).into()))?;
@@ -117,12 +117,8 @@ impl CalculationNode for FileMerge{
         ]
     }
 
-    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
-        RSome("File path manipulation/Merge file path".into())
-    }
-
     fn identifier(&self,) -> RString where {
-        "padamocore.file_path.merge".into()
+        "padamocore.file_path.merge2".into()
         //format!("padamocore.constant.{}",idmark).into()
     }
 
@@ -132,8 +128,8 @@ impl CalculationNode for FileMerge{
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports!(
-            ("Path 1", ContentType::String),
-            ("Path 2", ContentType::String)
+            // ("Path 1", ContentType::String),
+            // ("Path 2", ContentType::String)
         )
     }
 
@@ -144,7 +140,10 @@ impl CalculationNode for FileMerge{
     }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
+        constants![
+            ("Path 1", ""),
+            ("Path 2", "")
+        ]
     }
 
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
