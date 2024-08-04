@@ -8,7 +8,7 @@ const X_OFFSET:f32 = 20.0;
 
 #[derive(Debug)]
 pub struct TreeNode<T:std::fmt::Debug+Clone>{
-    visible:bool,
+    pub visible:bool,
     name:String,
     pub content:BTreeMap<String,Weak<RefCell<TreeNode<T>>>>,
     pub parent:Weak<RefCell<TreeNode<T>>>,
@@ -38,6 +38,26 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
 
     pub fn is_top(&self)->bool{
         self.parent.upgrade().is_none()
+    }
+
+    pub fn is_active(&self)->bool{
+        if self.is_top(){
+            true
+        }
+        else{
+            if let Some(par) = self.parent.upgrade(){
+                let par1 = par.borrow();
+                if par1.visible && par1.is_active(){
+                    true
+                }
+                else{
+                    false
+                }
+            }
+            else{
+                true
+            }
+        }
     }
 
     pub fn contains_point(&self, pos: iced::Point)->bool{
@@ -329,7 +349,7 @@ where
             for node in self.tree.nodes.iter(){
                 if let Some(pos) = cursor.position(){
                     let mut node_ref = node.borrow_mut();
-                    if node_ref.contains_point(pos){
+                    if node_ref.is_active() && node_ref.contains_point(pos){
                         if node_ref.is_final(){
                             if let Some(action) = &self.action{
                                 println!("{:?}",node_ref.metadata);
