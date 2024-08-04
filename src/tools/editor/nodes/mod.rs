@@ -337,7 +337,7 @@ impl GraphNode{
     }
 
     fn max_input_title_size(&self)->usize{
-        self.represented_node.inputs().iter().map(|x| x.0.len()).max().unwrap_or(0)
+        self.inputs.iter().map(|x| x.0.len()).max().unwrap_or(0)
     }
 
     fn max_output_title_size(&self)->usize{
@@ -361,11 +361,12 @@ impl GraphNode{
     pub fn reestimate_size(&mut self){
         let txt = self.make_text();
         self.inputs = self.represented_node.inputs();
+        self.inputs.extend(self.constants.additional_inputs());
         self.outputs = self.represented_node.outputs();
         self.title_offset = txt.line_height.to_absolute(txt.size).0;
         let port_chars:f32 = 3.0*PORT_SIZE+((self.max_input_title_size()+self.max_output_title_size()) as f32) * txt.size.0/2.0;
         let width = (self.represented_node.title().len() as f32)*txt.size.0/2.0;
-        let ports_addition = usize::max(self.represented_node.inputs().len(),self.outputs.len());
+        let ports_addition = usize::max(self.inputs.len(),self.outputs.len());
         let height = self.title_offset+self.get_y_pos(ports_addition)- PORT_SIZE;
         let width = f32::max(width, port_chars);
         self.size = iced::Size::new(width, height);

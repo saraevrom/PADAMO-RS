@@ -1,5 +1,6 @@
-use super::errors::NodeError;
+use super::{errors::NodeError, PortType};
 use ordered_hash_map::OrderedHashMap;
+use padamo_api::calculation_nodes::content::ContentType;
 use serde::{Serialize,Deserialize};
 
 
@@ -108,7 +109,7 @@ pub struct NodeConstant{
     pub buffer:NodeConstantBuffer,
     pub ok:bool,
     pub content:NodeConstantContent,
-    default_value:NodeConstantContent,
+    pub default_value:NodeConstantContent,
     pub use_external:bool
 }
 
@@ -220,7 +221,21 @@ impl NodeConstantStorage{
         }
     }
 
-
+    pub fn additional_inputs(&self)->OrderedHashMap<String,padamo_api::prelude::ContentType>{
+        self.constants.iter()
+            .filter(|(_,x)| x.use_external)
+            .map(|(k,x)|{
+                let k = format!("constant_{}",k);
+                let v = match x.default_value {
+                    NodeConstantContent::Boolean(_)=>ContentType::Boolean,
+                    NodeConstantContent::Text(_)=>ContentType::String,
+                    NodeConstantContent::Integer(_)=>ContentType::Integer,
+                    NodeConstantContent::Real(_)=>ContentType::Float
+                };
+                (k,v)
+            })
+            .collect()
+    }
 }
 
 
