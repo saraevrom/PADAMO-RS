@@ -9,6 +9,7 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 pub mod ops;
 pub mod ensquared_energy;
 pub mod nodes;
+pub mod nodes_old;
 pub mod lc_nodes;
 
 //mod datetime_parser;
@@ -22,12 +23,16 @@ pub fn plugin_root()->PadamoModule_Ref{
 #[sabi_extern_fn]
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
-        nodes::BasicLinearTrackGeneratorNode,
-        nodes::AnyLCLinearTrackGeneratorNode,
+
         nodes::AnyLCLinearTrackGeneratorDynamicGaussNode,
         nodes::AnyLCLinearTrackGeneratorDynamicMoffatNode,
-        nodes::BlankDataNode,
         nodes::AdditiveNormalNoiseNode,
+        nodes::BlankDataNode,
+        nodes_old::BasicLinearTrackGeneratorNodeOld,
+        nodes_old::AnyLCLinearTrackGeneratorNodeOld,
+        nodes_old::AnyLCLinearTrackGeneratorDynamicGaussNodeOld,
+        nodes_old::AnyLCLinearTrackGeneratorDynamicMoffatNodeOld,
+        nodes_old::AdditiveNormalNoiseNodeOld,
         lc_nodes::LCSwitchNode,
         lc_nodes::LinearLCNode,
         lc_nodes::ExponentLCNode,
