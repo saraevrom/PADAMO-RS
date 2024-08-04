@@ -70,11 +70,11 @@ pub struct StringReplaceNode;
 impl StringReplaceNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
         let is_regex = constants.request_boolean("regex")?;
+        let pattern = constants.request_string("pattern")?.to_string();
+        let rep = constants.request_string("rep")?.to_string();
 
         if is_regex{
             let s = inputs.request_string("s")?.to_string();
-            let pattern = inputs.request_string("pattern")?.to_string();
-            let rep = inputs.request_string("rep")?.to_string();
 
 
             let re = regex::Regex::new(&pattern).map_err(|x| ExecutionError::OtherError(format!("Regex error: {:?}",x).into()))?;
@@ -86,8 +86,6 @@ impl StringReplaceNode{
         }
         else{
             let s = inputs.request_string("s")?.to_string();
-            let pattern = inputs.request_string("pattern")?.to_string();
-            let rep = inputs.request_string("rep")?.to_string();
             let c = s.replace(&pattern, &rep);
 
             outputs.set_value("s", c.into())?;
