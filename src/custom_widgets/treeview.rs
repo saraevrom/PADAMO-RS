@@ -165,20 +165,21 @@ impl<T:std::fmt::Debug+Clone> Tree<T>{
 
 
 
-    fn insert_node(&mut self, name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>)->Rc<RefCell<TreeNode<T>>>{
+    fn insert_node(&mut self, name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>,key:&str)->Rc<RefCell<TreeNode<T>>>{
         let newnode = Rc::new(RefCell::new(TreeNode::new(name.to_string(),parent,metadata)));
-        self.nodes.insert(name.to_string(),newnode.clone());
+        self.nodes.insert(key.to_string(),newnode.clone());
         newnode
     }
 
-    fn parse_path_in(&mut self, node:Rc<RefCell<TreeNode<T>>>, mut path:Vec<&str>, metadata:Option<T>){
+    fn parse_path_in(&mut self, node:Rc<RefCell<TreeNode<T>>>, mut path:Vec<&str>, metadata:Option<T>, prev:String){
         let mut node_mut = node.borrow_mut();
         let mut splitter = path.drain(..);
         if let Some(category) = splitter.next(){
-            let entry = node_mut.content.entry(category.to_string()).or_insert_with(|| Rc::downgrade(&self.insert_node(category,Rc::downgrade(&node),metadata.clone())));
+            let key = format!("{}/{}",prev,category);
+            let entry = node_mut.content.entry(category.to_string()).or_insert_with(|| Rc::downgrade(&self.insert_node(category,Rc::downgrade(&node),metadata.clone(),&key)));
             let rest:Vec<&str> = splitter.collect();
             if let Some(next_node) = Weak::upgrade(entry){
-                self.parse_path_in(next_node,rest,metadata);
+                self.parse_path_in(next_node,rest,metadata,key);
             }
             else {
                 panic!("Invalid plot detected. Investigate this problem");
@@ -193,7 +194,7 @@ impl<T:std::fmt::Debug+Clone> Tree<T>{
             let entry = self.nodes.entry(category.to_string()).or_insert_with(|| new_node(category,Weak::new(),metadata.clone()));
             let entry = entry.clone();
             let rest = splitter.collect();
-            self.parse_path_in(entry,rest,metadata);
+            self.parse_path_in(entry,rest,metadata,category.to_owned());
         }
     }
 

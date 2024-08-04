@@ -92,6 +92,7 @@ impl NodesRegistry{
         for (_,node) in self.nodes.iter(){
             let path= node.path();
             let path = path.iter().map(|x| x.as_str()).collect();
+            //println!("Insert node {} as{:?}", node.identifier(), path);
             tree.parse_path(path, Some(node.identifier().into()));
         }
         tree
