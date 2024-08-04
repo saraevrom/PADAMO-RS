@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use abi_stable::sabi_types::StaticRef;
 use abi_stable::std_types::map::RefIterInterface;
 use abi_stable::std_types::{RStr,RString,RVec,RBox,RHashMap,RResult, ROption, Tuple2};
@@ -165,6 +167,7 @@ pub type CalculationNodeBox = CalculationNode_TO<'static, RBox<()>>;
 pub struct CalculationNodeObject{
     pub calculator:CalculationNodeBox,
     pub constants:ConstantContentContainer,
+    pub constants_external_flags: RHashMap<RString,bool>,
     pub input_links: RHashMap<RString, ROption<PortKey>>,
 }
 
@@ -172,7 +175,7 @@ pub struct CalculationNodeObject{
 
 
 impl CalculationNodeObject{
-    pub fn new(calculator:CalculationNodeBox, constants_override:Option<ConstantContentContainer>)->Self{
+    pub fn new(calculator:CalculationNodeBox, constants_override:Option<ConstantContentContainer>, external_override:Option<RHashMap<RString,bool>>)->Self{
         let mut input_links: RHashMap<RString, ROption<PortKey>> = RHashMap::new();
         for link in calculator.inputs().drain(..){
             input_links.insert(link.name, ROption::RNone);
@@ -183,7 +186,20 @@ impl CalculationNodeObject{
             ConstantContentContainer::from_rvec( calculator.constants())
         };
 
-        Self {input_links, constants,calculator}
+        let constants_external_flags = if let Some(f) = external_override{
+            f
+        }
+        else{
+            constants.0.iter().map(|x| (x.0.clone(),false)).collect()
+        };
+
+        for (const_value, const_external) in constants_external_flags.iter().map(|x| (x.0, x.1)){
+            if *const_external{
+                input_links.insert(format!("constant_{}",const_value).into(), ROption::RNone);
+            }
+        }
+
+        Self {input_links, constants,calculator, constants_external_flags}
     }
 
 

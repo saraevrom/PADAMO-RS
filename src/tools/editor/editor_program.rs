@@ -124,7 +124,17 @@ impl EditorState{
                         .scroller_width(20),
                 })
                 .id(SCROLLABLE_ID.clone()),
-            constcol_elem.map(EditorCanvasMessage::ConstantEdit),
+            iced::widget::scrollable(constcol_elem.map(EditorCanvasMessage::ConstantEdit))
+                .width(200)
+                .height(Length::Fill)
+                // .direction(scrollable::Direction::Both{
+                //     vertical: Properties::new()
+                //         .scroller_width(20),
+                //     horizontal:
+                //     Properties::new()
+                //         .scroller_width(20),
+                // })
+            ,
         }.into()
     }
 

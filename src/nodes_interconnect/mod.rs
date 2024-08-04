@@ -3,6 +3,7 @@ pub mod errors;
 use std::collections::HashMap;
 use std::path::Path;
 
+use abi_stable::std_types::RHashMap;
 use padamo_api::prelude::{CalculationNodeBox, CalculationNode, CalculationNode_TO};
 use padamo_api::PadamoModule_Ref;
 use abi_stable::library::{RootModule, lib_header_from_path};
@@ -101,12 +102,12 @@ impl NodesRegistry{
         for node in template.nodes.iter(){
             let node_ref = node.borrow();
             let mut const_storage = ConstantContentContainer::new();
+            let mut externals = RHashMap::new();
             for (name,con) in node_ref.constants.constants.iter(){
                 const_storage.0.insert(name.clone().into(), con.content.clone().into());
+                externals.insert(name.clone().into(), con.use_external);
             }
-            let calc_node = CalculationNodeObject::new(node_ref.represented_node.0.clone(),Some(const_storage));
-
-
+            let calc_node = CalculationNodeObject::new(node_ref.represented_node.0.clone(),Some(const_storage),Some(externals));
             compute_graph.nodes.push(calc_node);
         }
         for (end_i,node) in template.nodes.iter().enumerate(){

@@ -1,9 +1,12 @@
+use std::borrow::BorrowMut;
 use std::collections::{HashMap, VecDeque};
+use std::fmt::format;
 use abi_stable::StableAbi;
 use abi_stable::std_types::{RString, Tuple2};
 use topo_sort::{TopoSort,SortResults};
 
 use crate::rng::RandomState;
+use crate::ConstantContent;
 
 use super::content::{Content, ContentContainer, ConstantContentContainer};
 use super::errors::ExecutionError;
@@ -55,7 +58,29 @@ impl CalculationSequenceStorage{
         }
         drop(input_mapping);
         let inputs = ContentContainer(inputs);
-        let consts = node.constants.clone();
+        let mut consts = node.constants.clone();
+        //println!("Node inputs: {:?}",inputs);
+        for (constant_key, constant_external) in node.constants_external_flags.iter().map(|x| x.into_tuple()){
+            if *constant_external{
+                let req_key:RString = format!("constant_{}",constant_key).into();
+                //println!("override constant {:?} with input {:?}",constant_key,req_key);
+                if let Some(v) = inputs.0.get((&req_key).into()){
+                    'noset:{
+                        let ext_value = match v{
+                            Content::Integer(i)=>ConstantContent::Integer(*i),
+                            Content::Float(f)=>ConstantContent::Float(*f),
+                            Content::Boolean(b)=>ConstantContent::Boolean(*b),
+                            Content::String(s)=>ConstantContent::String(s.to_owned()),
+                            _=>{break 'noset;}
+                        };
+                        consts.0.insert(constant_key.to_owned(),ext_value);
+                    }
+
+                };
+            }
+        }
+        //println!("Constants set {:?}",consts);
+
         let output_defs = node.calculator.outputs();
         let mut outputs = IOData::new(output_defs);
         node.calculator.calculate(inputs, &mut outputs, consts,&mut self.environment, random_state).into_result()?;
