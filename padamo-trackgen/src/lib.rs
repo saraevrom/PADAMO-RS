@@ -11,6 +11,7 @@ pub mod ensquared_energy;
 pub mod nodes;
 pub mod nodes_old;
 pub mod lc_nodes;
+pub mod lc_nodes_old;
 
 //mod datetime_parser;
 mod shape_parser;
@@ -39,6 +40,9 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         lc_nodes::LCPivotNode,
         lc_nodes::TerminationLCNode,
         lc_nodes::ConstantLCNode,
-        lc_nodes::MultiplyByFloatNode
+        lc_nodes::MultiplyByFloatNode,
+        lc_nodes_old::ExponentLCNodeOld,
+        lc_nodes_old::LinearLCNodeOld,
+        lc_nodes_old::MultiplyByFloatNodeOld,
     )
 }

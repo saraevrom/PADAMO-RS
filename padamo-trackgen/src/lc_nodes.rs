@@ -202,7 +202,7 @@ pub struct LinearLCNode;
 
 impl LinearLCNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let tau = inputs.request_float("tau")?;
+        let tau = constants.request_float("tau")?;
         if tau==0.0{
             return Err(ExecutionError::OtherError("Linear LC tau must be nonzero".into()));
         }
@@ -224,7 +224,7 @@ impl CalculationNode for LinearLCNode{
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>{
         ports![
-            ("tau", ContentType::Float)
+            // ("tau", ContentType::Float)
         ]
     }
 
@@ -232,12 +232,8 @@ impl CalculationNode for LinearLCNode{
         category()
     }
 
-    fn old_identifier(&self,) -> ROption<RString>where {
-        RSome("Functions/LC/Linear LC".into())
-    }
-
     fn identifier(&self,) -> RString where {
-        "padamotrackgen.lc.lc_linear".into()
+        "padamotrackgen.lc.lc_linear2".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -252,7 +248,7 @@ impl CalculationNode for LinearLCNode{
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
-            //("tau", 1.0)
+            ("tau", 1.0)
         ]
     }
 
@@ -270,7 +266,7 @@ pub struct ExponentLCNode;
 
 impl ExponentLCNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let tau = inputs.request_float("tau")?;
+        let tau = constants.request_float("tau")?;
         if tau==0.0{
             return Err(ExecutionError::OtherError("Exponent LC tau must not be zero".into()));
         }
@@ -292,7 +288,7 @@ impl CalculationNode for ExponentLCNode{
     #[doc = r" Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO>{
         ports![
-            ("tau", ContentType::Float)
+            //("tau", ContentType::Float)
         ]
     }
 
@@ -300,12 +296,8 @@ impl CalculationNode for ExponentLCNode{
         category()
     }
 
-    fn old_identifier(&self,) -> ROption<RString>where {
-        RSome("Functions/LC/Exponent LC".into())
-    }
-
     fn identifier(&self,) -> RString where {
-        "padamotrackgen.lc.lc_exponent".into()
+        "padamotrackgen.lc.lc_exponent2".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -320,7 +312,7 @@ impl CalculationNode for ExponentLCNode{
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
-            //("tau", 1.0)
+            ("tau", 1.0)
         ]
     }
 
@@ -454,7 +446,7 @@ pub struct MultiplyByFloatNode;
 
 impl MultiplyByFloatNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let m = inputs.request_float("Multiplier")?;
+        let m = constants.request_float("Multiplier")?;
         let inner = inputs.request_function("LC")?;
         let output = inner.map(move |x| x*m);
         outputs.set_value("LC", output.into())?;
@@ -474,7 +466,7 @@ impl CalculationNode for MultiplyByFloatNode{
     fn inputs(&self,) -> RVec<CalculationIO>{
         ports![
             ("LC", ContentType::Function),
-            ("Multiplier", ContentType::Float)
+            //("Multiplier", ContentType::Float)
         ]
     }
 
@@ -482,12 +474,8 @@ impl CalculationNode for MultiplyByFloatNode{
         category()
     }
 
-    fn old_identifier(&self,) -> ROption<RString>where {
-        RSome("Functions/LC/Multiply by value".into())
-    }
-
     fn identifier(&self,) -> RString where {
-        "padamotrackgen.lc.multiply_by_value".into()
+        "padamotrackgen.lc.multiply_by_value2".into()
     }
 
     #[allow(clippy::let_and_return)]
@@ -501,7 +489,9 @@ impl CalculationNode for MultiplyByFloatNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants![]
+        constants![
+            ("Multiplier", 1.0)
+        ]
     }
 
     #[allow(clippy::let_and_return)]
