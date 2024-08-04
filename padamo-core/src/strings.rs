@@ -14,8 +14,8 @@ pub struct StringConcatNode;
 
 impl StringConcatNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let a = inputs.request_string("a")?.to_string();
-        let b = inputs.request_string("b")?.to_string();
+        let a = constants.request_string("a")?.to_string();
+        let b = constants.request_string("b")?.to_string();
         let c = format!("{}{}",a,b);
         outputs.set_value("s", c.into())?;
         Ok(())
@@ -32,19 +32,15 @@ impl CalculationNode for StringConcatNode{
         category()
     }
 
-    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
-        RSome("Strings/String Concatenate".into())
-    }
-
     fn identifier(&self,) -> RString where {
-        "padamocore.strings.concatenate".into()
+        "padamocore.strings.concatenate2".into()
         //format!("padamocore.constant.{}",idmark).into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports!(
-            ("a",ContentType::String),
-            ("b",ContentType::String)
+            // ("a",ContentType::String),
+            // ("b",ContentType::String)
         )
     }
 
@@ -55,7 +51,10 @@ impl CalculationNode for StringConcatNode{
     }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
+        constants![
+            ("a",""),
+            ("b",""),
+        ]
     }
 
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
@@ -70,13 +69,32 @@ pub struct StringReplaceNode;
 
 impl StringReplaceNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let s = inputs.request_string("s")?.to_string();
-        let pattern = inputs.request_string("pattern")?.to_string();
-        let rep = inputs.request_string("rep")?.to_string();
-        let c = s.replace(&pattern, &rep);
+        let is_regex = constants.request_boolean("regex")?;
 
-        outputs.set_value("s", c.into())?;
-        Ok(())
+        if is_regex{
+            let s = inputs.request_string("s")?.to_string();
+            let pattern = inputs.request_string("pattern")?.to_string();
+            let rep = inputs.request_string("rep")?.to_string();
+
+
+            let re = regex::Regex::new(&pattern).map_err(|x| ExecutionError::OtherError(format!("Regex error: {:?}",x).into()))?;
+            let cow = re.replace_all(&s, rep);
+            let c = cow.into_owned();
+
+            outputs.set_value("s", c.into())?;
+            Ok(())
+        }
+        else{
+            let s = inputs.request_string("s")?.to_string();
+            let pattern = inputs.request_string("pattern")?.to_string();
+            let rep = inputs.request_string("rep")?.to_string();
+            let c = s.replace(&pattern, &rep);
+
+            outputs.set_value("s", c.into())?;
+            Ok(())
+        }
+
+
     }
 }
 
@@ -93,17 +111,13 @@ impl CalculationNode for StringReplaceNode{
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports!(
             ("s",ContentType::String),
-            ("pattern",ContentType::String),
-            ("rep",ContentType::String)
+
         )
     }
 
-    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
-        RSome("Strings/String Replace".into())
-    }
 
     fn identifier(&self,) -> RString where {
-        "padamocore.strings.replace".into()
+        "padamocore.strings.replace2".into()
     }
 
     fn outputs(&self,) -> RVec<CalculationIO>where {
@@ -113,82 +127,22 @@ impl CalculationNode for StringReplaceNode{
     }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
+        constants!(
+            ("pattern",""),
+            ("rep",""),
+            ("regex",false)
+        )
     }
 
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment, rng).into()
     }
 }
-
-
-#[derive(Clone,Debug)]
-pub struct StringReplaceRegexNode;
-
-impl StringReplaceRegexNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let s = inputs.request_string("s")?.to_string();
-        let pattern = inputs.request_string("pattern")?.to_string();
-        let rep = inputs.request_string("rep")?.to_string();
-
-
-        let re = regex::Regex::new(&pattern).map_err(|x| ExecutionError::OtherError(format!("Regex error: {:?}",x).into()))?;
-        let cow = re.replace_all(&s, rep);
-        let c = cow.into_owned();
-
-        outputs.set_value("s", c.into())?;
-        Ok(())
-    }
-}
-
-
-impl CalculationNode for StringReplaceRegexNode{
-    fn name(&self,) -> RString where {
-        "String Replace (Regex)".into()
-    }
-
-    fn category(&self,) -> RVec<RString>where {
-        category()
-    }
-
-    fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
-        RSome("Strings/String Replace (Regex)".into())
-    }
-
-    fn identifier(&self,) -> RString where {
-        "padamocore.strings.replace_regex".into()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports!(
-            ("s",ContentType::String),
-            ("pattern",ContentType::String),
-            ("rep",ContentType::String)
-        )
-    }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports!(
-            ("s",ContentType::String)
-        )
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
-    }
-
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
-    }
-}
-
-
-
 
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec![
         StringConcatNode,
         StringReplaceNode,
-        StringReplaceRegexNode
+        //StringReplaceRegexNode
     ]
 }

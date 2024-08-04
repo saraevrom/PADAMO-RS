@@ -13,6 +13,7 @@ pub mod trigger_ops;
 pub mod trigger_nodes;
 pub mod boolconv;
 pub mod strings;
+pub mod strings_old;
 
 #[export_root_module]
 pub fn plugin_root()->PadamoModule_Ref{
@@ -26,6 +27,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     node_list.extend(constants::nodes());
     node_list.extend(filenames::nodes());
     node_list.extend(strings::nodes());
+    node_list.extend(strings_old::nodes());
     node_list.push(make_node_box(trigger_nodes::TriggerExpandNode));
     node_list
 }
