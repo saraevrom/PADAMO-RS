@@ -252,7 +252,7 @@ impl GraphNode{
         // else {
         //     Err(NodeError::NoInput(input_port.into()))
         // }
-        let inputs = self.represented_node.inputs();
+        let inputs = &self.inputs;
         if let Some(input_type) = inputs.get(input_port){
             let dependency_outputs = &dependency.borrow().outputs;
             if let Some(output_type) = dependency_outputs.get(output_port){
@@ -370,6 +370,7 @@ impl GraphNode{
         let height = self.title_offset+self.get_y_pos(ports_addition)- PORT_SIZE;
         let width = f32::max(width, port_chars);
         self.size = iced::Size::new(width, height);
+        self.remove_dead_connections();
     }
 
     pub fn draw_links(&self, frame:&mut Frame){
@@ -1115,6 +1116,14 @@ impl GraphNodeStorage{
 
             entry.insert("connections".into(), conns.into());
             entry.insert("constants".into(), consts);
+
+            let mut external_constants_flags = serde_json::Map::new();
+            for (k,v) in node_ref.constants.constants.iter(){
+                external_constants_flags.insert(k.clone(), serde_json::to_value(v.use_external.clone()).unwrap());
+            }
+
+            entry.insert("constants_external_flags".into(), serde_json::Value::Object(external_constants_flags));
+
             values.push(serde_json::Value::Object(entry));
         }
         serde_json::Value::Array(values)
@@ -1149,6 +1158,19 @@ impl GraphNodeStorage{
                         let consts = obj.get("constants").ok_or(GraphDeserializationError::NodeNotFound("constants".into()))?;
                         let consts = if let serde_json::Value::Object(c) = consts {c} else {return Err(GraphDeserializationError::WrongFormat("constants".into()));};
 
+                        let consts_externals = obj.get("constants_external_flags");
+                        let consts_externals = if let Some(v) = consts_externals{
+                            if let serde_json::Value::Object(v1) = v{
+                                Some(v1)
+                            }
+                            else{
+                                None
+                            }
+                        }
+                        else{
+                            None
+                        };
+
 
                         let mut node = if let Some(v) = registry.create_calculation_node(identifier.clone()) {v}
                         else{
@@ -1158,19 +1180,37 @@ impl GraphNodeStorage{
                         for (key,con) in consts.iter(){
                             let deserialized_con = serde_json::from_value(con.clone());
                             if let Ok(con_val) = &deserialized_con {
-                                println!("Constant deserialize successs");
+                                println!("Constant deserialize success");
+
                                 if let Some(entry) = node.constants.constants.get_mut(key){
                                     println!("Entry found");
                                     if entry.content.is_compatible(con_val){
                                         println!("Entry compatible");
                                         (*entry).content = con_val.clone();
+                                        (*entry).use_external = if let Some(ext) = consts_externals{
+                                            if let Some(v) = ext.get(key){
+                                                if let serde_json::Value::Bool(b) = v{
+                                                    *b
+                                                }
+                                                else{
+                                                    false
+                                                }
+                                            }
+                                            else{
+                                                false
+                                            }
+                                        }
+                                        else{
+                                            false
+                                        };
+
                                         entry.update_buffer();
                                     }
                                 }
                             }
                         }
                         node.position = pos.into();
-
+                        node.reestimate_size();
 
                         self.insert_node(node);
                     }
@@ -1181,11 +1221,15 @@ impl GraphNodeStorage{
                 let obj = if let serde_json::Value::Object(obj) = value{obj} else{panic!("Why cannot I look through value again?")};
                 'stop: {
                     let conns = if let Some(serde_json::Value::Object(c)) = obj.get("connections") {c} else {break 'stop;};
+                    println!("{:?}",conns);
                     for (input_port, conn) in conns.iter(){
-                        let connection:SerdeConnection = if let Ok(c) = serde_json::from_value(conn.clone()) {c} else {break 'stop;};
-                        let output_port = connection.port;
-                        let start_node = connection.node_index;
-                        self.nodes[target_node].borrow_mut().link_from(input_port, &self.nodes[start_node], &output_port).unwrap();
+                        'conn_test: {
+                            println!("Trying connect to ->{}",input_port);
+                            let connection:SerdeConnection = if let Ok(c) = serde_json::from_value(conn.clone()) {c} else {break 'conn_test;};
+                            let output_port = connection.port;
+                            let start_node = connection.node_index;
+                            self.nodes[target_node].borrow_mut().link_from(input_port, &self.nodes[start_node], &output_port).unwrap();
+                        }
                     }
                 }
             }
