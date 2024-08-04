@@ -1,9 +1,11 @@
 pub mod constants;
 pub mod errors;
+pub mod node_proxy;
 
 use std::{cell::RefCell, collections::HashMap, error::Error, fmt::{write, Display}, rc::{Rc, Weak}};
 
 use iced::widget::{canvas::{Frame, Path, self,Text}, shader::wgpu::core::identity};
+use padamo_api::calculation_nodes::node::CalculationNodeBox;
 use serde_json::Map;
 
 use crate::nodes_interconnect::NodesRegistry;
@@ -14,6 +16,7 @@ use super::editor_program::EditorCanvasMessage;
 use ordered_hash_map::OrderedHashMap;
 use constants::NodeConstantStorage;
 use errors::NodeError;
+use node_proxy::NodeProxy;
 
 const PORT_SIZE:f32 = 20.0;
 const PORT_INTERVAL:f32 = 5.0;
@@ -157,12 +160,17 @@ impl InputDefinition {
 #[derive(Debug)]
 pub struct GraphNode{
     pub position:iced::Point,
-    pub title:String,
-    pub identifier:String,
+    //pub title:String,
+    //pub identifier:String,
     pub size:iced::Size,
     title_offset:f32,
-    pub inputs:OrderedHashMap<String,InputDefinition>,
-    pub outputs:OrderedHashMap<String,OutputDefinition>,
+    //pub inputs:OrderedHashMap<String,InputDefinition>,
+    //pub outputs:OrderedHashMap<String,OutputDefinition>,
+    pub inputs:OrderedHashMap<String,PortType>,
+    pub outputs:OrderedHashMap<String,PortType>,
+
+    pub represented_node:NodeProxy,
+    pub connections: OrderedHashMap<String,Connection>,
     pub constants:NodeConstantStorage
 }
 
@@ -176,51 +184,86 @@ pub enum NodeMouseHit{
 
 
 impl GraphNode{
-    pub fn new(title:String, identifier:String)->Self{
+    pub fn new(represented_node:CalculationNodeBox)->Self{
+        let represented_node = NodeProxy(represented_node);
         let mut res = Self {
             position: iced::Point::new(0.0,0.0),
-            title,
+            //title,
             size:iced::Size::new(0.0, 0.0),
-            inputs: OrderedHashMap::new(),
-            outputs: OrderedHashMap::new(),
+            inputs:represented_node.inputs(),
+            outputs:represented_node.outputs(),
+            represented_node,
+            //inputs: OrderedHashMap::new(),
+            //outputs: OrderedHashMap::new(),
             constants: NodeConstantStorage::new(),
+            connections:OrderedHashMap::new(),
             title_offset:0.0,
-            identifier
+            //identifier
         };
         res.reestimate_size();
         res
     }
 
     pub fn clone_without_links(&self)->Self{
-        let mut inputs = OrderedHashMap::new();
-        for (key,value) in self.inputs.iter(){
-            inputs.insert(key.clone(), InputDefinition::new(value.port_type));
-        }
+        // let mut inputs = OrderedHashMap::new();
+        // for (key,value) in self.inputs.iter(){
+        //     inputs.insert(key.clone(), InputDefinition::new(value.port_type));
+        // }
         Self { position: self.position,
-            title: self.title.clone(), identifier: self.identifier.clone(),
+            //title: self.title.clone(), identifier: self.identifier.clone(),
+            represented_node:self.represented_node.clone(),
             size: self.size, title_offset: self.title_offset,
-            inputs,
-            outputs: self.outputs.clone(), constants: self.constants.clone()
+            connections:OrderedHashMap::new(),
+            inputs:self.inputs.clone(),
+            outputs:self.outputs.clone(),
+            //inputs,
+            //outputs: self.outputs.clone(),
+            constants: self.constants.clone()
 
         }
     }
 
     pub fn remove_dead_connections(&mut self){
-        for (_, port) in self.inputs.iter_mut(){
-            port.remove_dead_connection();
+        // for (_, port) in self.inputs.iter_mut(){
+        //     port.remove_dead_connection();
+        // }
+        let connections_to_remove:Vec<String> = self.connections.iter().filter(|(_,v)| !v.is_valid()).map(|(k,_)| k.to_owned()).collect();
+        for rem in connections_to_remove.iter(){
+            self.connections.remove(rem);
         }
     }
 
     pub fn link_from(&mut self, input_port:&str, dependency: &Rc<RefCell<Self>>, output_port:&str)->Result<(),NodeError>{
-        if let Some(input_portdef) = self.inputs.get_mut(input_port){
-            if let Some(output_portdef) = dependency.borrow().outputs.get(output_port){
-                if output_portdef.port_type==input_portdef.port_type{
-                    input_portdef.connect_to(dependency, output_port);
+        // if let Some(input_portdef) = self.inputs.get_mut(input_port){
+        //     if let Some(output_portdef) = dependency.borrow().outputs.get(output_port){
+        //         if output_portdef.port_type==input_portdef.port_type{
+        //             input_portdef.connect_to(dependency, output_port);
+        //             self.remove_dead_connections();
+        //             Ok(())
+        //         }
+        //         else{
+        //             Err(NodeError::IncompatiblePorts(output_portdef.port_type, input_portdef.port_type))
+        //         }
+        //     }
+        //     else {
+        //         Err(NodeError::NoOutput(output_port.into()))
+        //     }
+        // }
+        // else {
+        //     Err(NodeError::NoInput(input_port.into()))
+        // }
+        let inputs = self.represented_node.inputs();
+        if let Some(input_type) = inputs.get(input_port){
+            let dependency_outputs = &dependency.borrow().outputs;
+            if let Some(output_type) = dependency_outputs.get(output_port){
+                if input_type==output_type{
+                    //input_portdef.connect_to(dependency, output_port);
+                    self.connections.insert(input_port.to_owned(), Connection { node: Rc::downgrade(dependency), port: output_port.to_owned() });
                     self.remove_dead_connections();
                     Ok(())
                 }
                 else{
-                    Err(NodeError::IncompatiblePorts(output_portdef.port_type, input_portdef.port_type))
+                    Err(NodeError::IncompatiblePorts(*output_type, *input_type))
                 }
             }
             else {
@@ -233,27 +276,44 @@ impl GraphNode{
     }
 
     pub fn unlink(&mut self, input_port:&str)->Result<(),NodeError>{
-        if let Some(input_portdef) = self.inputs.get_mut(input_port){
-            input_portdef.disconnect();
-            Ok(())
-        }
-        else {
-            Err(NodeError::NoInput(input_port.into()))
-        }
+        // if let Some(input_portdef) = self.inputs.get_mut(input_port){
+        //     input_portdef.disconnect();
+        //     Ok(())
+        // }
+        // else {
+        //     Err(NodeError::NoInput(input_port.into()))
+        // }
+
+        self.connections.remove(input_port).ok_or(NodeError::NoInput(input_port.into()))?;
+        Ok(())
     }
 
-    pub fn unlink_from(&mut self, source_node:Rc<RefCell<Self>>, output_port: &str){
-        for (_, port) in self.inputs.iter_mut(){
-            //println!("AAA {}", s);
-            if let Some(linked_src) = port.get_linked_node(){
-                //println!("AAA");
-                if Rc::ptr_eq(&linked_src.0, &source_node){
-                    if linked_src.1 == output_port{
-                        port.disconnect();
+    pub fn unlink_from(&mut self, source_node:Rc<RefCell<Self>>, output_port: &str)->Result<(),NodeError>{
+        let disconnects:Vec<String> = self.connections.iter()
+            .filter(|(_,v)|{
+                if let Some(src_node) = v.node.upgrade(){
+                    if Rc::ptr_eq(&src_node, &source_node) && v.port==output_port{
+                        return true;
                     }
                 }
-            }
+                false
+            })
+            .map(|(k,_)| k.to_owned()).collect();
+        for disc in disconnects.iter(){
+            self.unlink(disc)?;
         }
+        // for (_, port) in self.inputs.iter_mut(){
+        //     //println!("AAA {}", s);
+        //     if let Some(linked_src) = port.get_linked_node(){
+        //         //println!("AAA");
+        //         if Rc::ptr_eq(&linked_src.0, &source_node){
+        //             if linked_src.1 == output_port{
+        //                 port.disconnect();
+        //             }
+        //         }
+        //     }
+        // }
+        Ok(())
     }
 
     fn get_y_pos(&self, index:usize)->f32{
@@ -277,7 +337,7 @@ impl GraphNode{
     }
 
     fn max_input_title_size(&self)->usize{
-        self.inputs.iter().map(|x| x.0.len()).max().unwrap_or(0)
+        self.represented_node.inputs().iter().map(|x| x.0.len()).max().unwrap_or(0)
     }
 
     fn max_output_title_size(&self)->usize{
@@ -290,7 +350,7 @@ impl GraphNode{
 
     fn make_text(&self)->Text{
         Text{
-            content:self.title.clone(),
+            content:self.represented_node.title().clone(),
             font:iced::Font{
                 ..Default::default()
             },
@@ -302,86 +362,95 @@ impl GraphNode{
         let txt = self.make_text();
         self.title_offset = txt.line_height.to_absolute(txt.size).0;
         let port_chars:f32 = 3.0*PORT_SIZE+((self.max_input_title_size()+self.max_output_title_size()) as f32) * txt.size.0/2.0;
-        let width = (self.title.len() as f32)*txt.size.0/2.0;
-        let ports_addition = usize::max(self.inputs.len(),self.outputs.len());
+        let width = (self.represented_node.title().len() as f32)*txt.size.0/2.0;
+        let ports_addition = usize::max(self.represented_node.inputs().len(),self.outputs.len());
         let height = self.title_offset+self.get_y_pos(ports_addition)- PORT_SIZE;
         let width = f32::max(width, port_chars);
         self.size = iced::Size::new(width, height);
+        self.inputs = self.represented_node.inputs();
+        self.outputs = self.represented_node.outputs();
     }
 
     pub fn draw_links(&self, frame:&mut Frame){
-        for (i,(_, port)) in self.inputs.iter().enumerate(){
+        for (i,(port_key, _)) in self.inputs.iter().enumerate(){
+            let inputs_len = self.inputs.len();
             let pos = self.get_input_position(i);
 
-            if let Some((src,output_port)) = port.get_linked_node(){
-                let src_imm = src.borrow();
-                if let Some(src_port_id) = src_imm.get_output_index(&output_port){
-                    let src_pos = src_imm.get_center_output_position(src_port_id);
-                    let tgt_pos = pos + PORT_CENTER_OFFSET;
+            if let Some(src_conn) = self.connections.get(port_key){
+                if let Some(src) = src_conn.node.upgrade(){
+
+                    //(src,output_port) =
+                    let output_port = &src_conn.port;
+
+                    let src_imm = src.borrow();
+                    if let Some(src_port_id) = src_imm.get_output_index(&output_port){
+                        let src_pos = src_imm.get_center_output_position(src_port_id);
+                        let tgt_pos = pos + PORT_CENTER_OFFSET;
 
 
 
-                    if tgt_pos.x>=src_pos.x{
-                        //unobscured view
-                        let line = Path::new(|builder|{
-                            let p3 = src_pos + (tgt_pos-src_pos)*0.5;
-                            builder.move_to(src_pos);
-                            let p2 = reflection_point(src_pos, p3, 1.0);
-                            //builder.line_to();
-                            builder.quadratic_curve_to(p2,p3);
-                            //builder.
-                            let p4 = reflection_point(p3, tgt_pos, -1.0);
-                            //builder.line_to();
-                            builder.quadratic_curve_to(p4, tgt_pos);
-                        });
-                        frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
-                    }
-                    else{
-                        //obscured view
-                        let output_dx = 10.0+(src_pos.y-src_imm.get_output_position(0).y);
-                        let input_dx = 20.0+(self.get_input_position(self.inputs.len()-1).y+PORT_CENTER_OFFSET.y-tgt_pos.y);
-                        let (intermediate_y,bypass) = coordinated_y(src_imm.position.y, src_imm.size.height,
-                                                                self.position.y, self.size.height,
-                                                                src_pos.y, tgt_pos.y);
-                        let min_x = self.position.x.min(src_imm.position.x);
-                        let max_x = (self.position.x+self.size.width).max(src_imm.position.x+src_imm.size.width);
-
-                        let first_x = src_pos.x+output_dx;
-                        let first_x = if first_x<max_x+output_dx && bypass{
-                            max_x+output_dx
+                        if tgt_pos.x>=src_pos.x{
+                            //unobscured view
+                            let line = Path::new(|builder|{
+                                let p3 = src_pos + (tgt_pos-src_pos)*0.5;
+                                builder.move_to(src_pos);
+                                let p2 = reflection_point(src_pos, p3, 1.0);
+                                //builder.line_to();
+                                builder.quadratic_curve_to(p2,p3);
+                                //builder.
+                                let p4 = reflection_point(p3, tgt_pos, -1.0);
+                                //builder.line_to();
+                                builder.quadratic_curve_to(p4, tgt_pos);
+                            });
+                            frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
                         }
                         else{
-                            first_x
-                        };
+                            //obscured view
+                            let output_dx = 10.0+(src_pos.y-src_imm.get_output_position(0).y);
+                            let input_dx = 20.0+(self.get_input_position(inputs_len-1).y+PORT_CENTER_OFFSET.y-tgt_pos.y);
+                            let (intermediate_y,bypass) = coordinated_y(src_imm.position.y, src_imm.size.height,
+                                                                    self.position.y, self.size.height,
+                                                                    src_pos.y, tgt_pos.y);
+                            let min_x = self.position.x.min(src_imm.position.x);
+                            let max_x = (self.position.x+self.size.width).max(src_imm.position.x+src_imm.size.width);
 
-                        let last_x = tgt_pos.x-input_dx;
-                        let last_x = if last_x>min_x-input_dx && bypass{
-                            min_x-input_dx
+                            let first_x = src_pos.x+output_dx;
+                            let first_x = if first_x<max_x+output_dx && bypass{
+                                max_x+output_dx
+                            }
+                            else{
+                                first_x
+                            };
+
+                            let last_x = tgt_pos.x-input_dx;
+                            let last_x = if last_x>min_x-input_dx && bypass{
+                                min_x-input_dx
+                            }
+                            else{
+                                last_x
+                            };
+
+                            let line = Path::new(|builder|{
+                                let mut p1 = src_pos;
+                                builder.move_to(p1);
+                                p1.x = first_x;
+                                builder.line_to(p1);
+
+                                p1.y = intermediate_y;
+                                builder.line_to(p1);
+
+                                p1.x = last_x;
+                                builder.line_to(p1);
+                                p1.y = tgt_pos.y;
+                                builder.line_to(p1);
+                                builder.line_to(tgt_pos);
+                            });
+
+                            frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
                         }
-                        else{
-                            last_x
-                        };
-
-                        let line = Path::new(|builder|{
-                            let mut p1 = src_pos;
-                            builder.move_to(p1);
-                            p1.x = first_x;
-                            builder.line_to(p1);
-
-                            p1.y = intermediate_y;
-                            builder.line_to(p1);
-
-                            p1.x = last_x;
-                            builder.line_to(p1);
-                            p1.y = tgt_pos.y;
-                            builder.line_to(p1);
-                            builder.line_to(tgt_pos);
-                        });
-
-                        frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
+                        // let line = Path::line(src_pos, tgt_pos);
+                        // frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
                     }
-                    // let line = Path::line(src_pos, tgt_pos);
-                    // frame.stroke(&line, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
                 }
             }
         }
@@ -402,23 +471,23 @@ impl GraphNode{
         frame.fill(&main_rect, iced::Color::WHITE);
         frame.fill_text(txt);
         let port_size = iced::Size::new(PORT_SIZE, PORT_SIZE);
-        for (i,(title, port)) in self.inputs.iter().enumerate(){
+        for (i,(title, port_type)) in self.inputs.iter().enumerate(){
             let pos = self.get_input_position(i);
             let port_rect = Path::rectangle(pos, port_size);
 
             frame.stroke(&port_rect, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
-            let color:iced::Color = make_iced_color(port.port_type.get_color());
+            let color:iced::Color = make_iced_color(port_type.get_color());
             frame.fill(&port_rect, color);
 
             let label = Text{content:title.into(), position: pos+iced::Vector::new(PORT_SIZE, 0.0), ..Default::default()};
             frame.fill_text(label);
         }
 
-        for (i,(title, port)) in self.outputs.iter().enumerate(){
+        for (i,(title, port_type)) in self.outputs.iter().enumerate(){
             let pos = self.get_output_position(i);
             let port_rect = Path::rectangle(pos, port_size);
             frame.stroke(&port_rect, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
-            frame.fill(&port_rect, make_iced_color(port.port_type.get_color()));
+            frame.fill(&port_rect, make_iced_color(port_type.get_color()));
             let label = Text{content:title.into(), position:pos,horizontal_alignment:iced::alignment::Horizontal::Right, ..Default::default()};
             frame.fill_text(label);
         }
@@ -427,13 +496,13 @@ impl GraphNode{
     pub fn mouse_event(&self, point:iced::Point)->Option<NodeMouseHit>{
         if is_inside(point, self.position, self.size){
             let port_size = iced::Size::new(PORT_SIZE, PORT_SIZE);
-            for (i,(title, port)) in self.inputs.iter().enumerate(){
+            for (i,(title, port_type)) in self.inputs.iter().enumerate(){
                 let pos = self.get_input_position(i);
                 if is_inside(point, pos, port_size){
                     return Some(NodeMouseHit::Input(title.clone(),self.get_input_position(i)+PORT_CENTER_OFFSET));
                 }
             }
-            for (i,(title, port)) in self.outputs.iter().enumerate(){
+            for (i,(title, port_type)) in self.outputs.iter().enumerate(){
                 let pos = self.get_output_position(i);
                 if is_inside(point, pos, port_size){
                     return Some(NodeMouseHit::Output(title.clone(),self.get_output_position(i)+PORT_CENTER_OFFSET));
@@ -444,17 +513,17 @@ impl GraphNode{
         None
     }
 
-    pub fn add_input(&mut self, name:&str, port_type:PortType){
-        let def = InputDefinition::new(port_type);
-        self.inputs.insert(name.into(), def);
-        self.reestimate_size();
-    }
-
-    pub fn add_output(&mut self, name:&str, port_type:PortType){
-        let def = OutputDefinition::new(port_type);
-        self.outputs.insert(name.into(), def);
-        self.reestimate_size();
-    }
+    // pub fn add_input(&mut self, name:&str, port_type:PortType){
+    //     let def = InputDefinition::new(port_type);
+    //     self.inputs.insert(name.into(), def);
+    //     self.reestimate_size();
+    // }
+    //
+    // pub fn add_output(&mut self, name:&str, port_type:PortType){
+    //     let def = OutputDefinition::new(port_type);
+    //     self.outputs.insert(name.into(), def);
+    //     self.reestimate_size();
+    // }
 
     pub fn add_constant(&mut self, key:&str, value: constants::NodeConstantContent){
         self.constants.add_constant(key,value)
@@ -618,10 +687,11 @@ impl GraphNodeStorage{
         }
 
         let mut conn_mapping = HashMap::new();
+
         for (src_i,tgt_i) in mapping.iter(){
             let src_node = &self.nodes[*src_i];
-            for (input_key,input_value) in src_node.borrow().inputs.iter(){
-                if let Some(conn) = &input_value.connection{
+            for (input_key,_) in src_node.borrow().inputs.iter(){
+                if let Some(conn) = src_node.borrow().connections.get(input_key){ //&input_value.connection{
                     if let Some(conn_node) = conn.node.upgrade(){
                         if let Some(conn_i) = self.lookup_node(&conn_node){
                             if let Some(tgt_conn) = mapping.get(&conn_i){
@@ -1007,11 +1077,11 @@ impl GraphNodeStorage{
             let pos:SerdePoint = node_ref.position.into();
 
             entry.insert("position".into(), serde_json::to_value(pos).unwrap());
-            entry.insert("identifier".into(), node_ref.identifier.clone().into());
+            entry.insert("identifier".into(), node_ref.represented_node.identifier().clone().into());
 
             let mut conns = serde_json::Map::new();
-            for (inp_port,inp_def) in node_ref.inputs.iter(){
-                let value = if let Some(conn) = &inp_def.connection{
+            for (inp_port,inp_type) in node_ref.inputs.iter(){
+                let value = if let Some(conn) =node_ref.connections.get(inp_port){ // &inp_def.connection{
                     if let Some(conn_rc) = conn.node.upgrade(){
                         if let Some(node_index) = self.lookup_node(&conn_rc){
 

@@ -104,20 +104,25 @@ impl NodesRegistry{
             for (name,con) in node_ref.constants.constants.iter(){
                 const_storage.0.insert(name.clone().into(), con.content.clone().into());
             }
-            let calc_node = CalculationNodeObject::new(self.nodes[&node_ref.identifier].clone(),Some(const_storage));
+            let calc_node = CalculationNodeObject::new(node_ref.represented_node.0.clone(),Some(const_storage));
 
 
             compute_graph.nodes.push(calc_node);
         }
         for (end_i,node) in template.nodes.iter().enumerate(){
             let node_ref = node.borrow();
-            for (input_port,port) in node_ref.inputs.iter(){
-                if let Some((src_node,output_port)) = &port.get_linked_node(){
-                    if let Some(start_i) = template.lookup_node(src_node){
-                        compute_graph.link_fromto(start_i, end_i, &output_port, &input_port);
-                        println!("{}.{}->{}.{}",start_i,input_port,end_i,output_port);
+            for (input_port,_) in node_ref.inputs.iter(){
+                if let Some(conn) = node_ref.connections.get(input_port){
+                    if let Some(src_node) = conn.node.upgrade(){
+                        let output_port = &conn.port;
+                        if let Some(start_i) = template.lookup_node(&src_node){
+                            compute_graph.link_fromto(start_i, end_i, &output_port, &input_port);
+                            println!("{}.{}->{}.{}",start_i,input_port,end_i,output_port);
+                        }
                     }
                 }
+
+
             }
         }
         //println!("{:?}",compute_graph.nodes);
@@ -139,15 +144,15 @@ impl NodesRegistry{
 
         let entry = &self.nodes[&identifier];
         let display_name = entry.name();
-        let mut res = GraphNode::new(display_name.into(), identifier);
-        let inputs = entry.inputs();
-        for input in inputs.iter(){
-            res.add_input(&input.name.to_string(), input.port_type);
-        }
-        let outputs = entry.outputs();
-        for output in outputs.iter(){
-            res.add_output(&output.name.to_string(), output.port_type);
-        }
+        let mut res = GraphNode::new(entry.clone());
+        // let inputs = entry.inputs();
+        // for input in inputs.iter(){
+        //     res.add_input(&input.name.to_string(), input.port_type);
+        // }
+        // let outputs = entry.outputs();
+        // for output in outputs.iter(){
+        //     res.add_output(&output.name.to_string(), output.port_type);
+        // }
         let constants = entry.constants();
         for con in constants.iter(){
             res.add_constant(&con.name.to_string(), con.default_value.clone().into());
