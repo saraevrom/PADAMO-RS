@@ -95,6 +95,7 @@ impl NodesRegistry{
             //println!("Insert node {} as{:?}", node.identifier(), path);
             tree.parse_path(path, Some(node.identifier().into()));
         }
+        tree.sort_nodes();
         tree
     }
 

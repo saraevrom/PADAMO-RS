@@ -150,7 +150,7 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
 
 #[derive(Debug)]
 pub struct Tree<T:std::fmt::Debug+Clone>{
-    nodes:BTreeMap<String,Rc<RefCell<TreeNode<T>>>>,
+    nodes:Vec<Rc<RefCell<TreeNode<T>>>>,
     last_height:RefCell<f32>
 }
 
@@ -160,26 +160,41 @@ fn new_node<T:std::fmt::Debug+Clone>(name:&str, parent:Weak<RefCell<TreeNode<T>>
 
 impl<T:std::fmt::Debug+Clone> Tree<T>{
     pub fn new()->Self{
-        Self { nodes: BTreeMap::new(), last_height:RefCell::new(1.0)}
+        Self { nodes: Vec::new(), last_height:RefCell::new(1.0)}
     }
 
 
 
-    fn insert_node(&mut self, name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>,key:&str)->Rc<RefCell<TreeNode<T>>>{
+    fn insert_node(&mut self, name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>)->Rc<RefCell<TreeNode<T>>>{
         let newnode = Rc::new(RefCell::new(TreeNode::new(name.to_string(),parent,metadata)));
-        self.nodes.insert(key.to_string(),newnode.clone());
+        // if self.nodes.insert(key.to_string(),newnode.clone()).is_some(){
+        //     panic!("overwritten a node!");
+        // };
+        self.nodes.push(newnode.clone());
+
+
         newnode
     }
 
-    fn parse_path_in(&mut self, node:Rc<RefCell<TreeNode<T>>>, mut path:Vec<&str>, metadata:Option<T>, prev:String){
+    pub fn sort_nodes(&mut self){
+        for i in 0..self.nodes.len(){
+            for j in (1..i).rev(){
+                let needs_swap = {self.nodes[j].borrow().name<self.nodes[j-1].borrow().name};
+                if needs_swap{
+                    self.nodes.swap(j-1, j);
+                }
+            }
+        }
+    }
+
+    fn parse_path_in(&mut self, node:Rc<RefCell<TreeNode<T>>>, mut path:Vec<&str>, metadata:Option<T>){
         let mut node_mut = node.borrow_mut();
         let mut splitter = path.drain(..);
         if let Some(category) = splitter.next(){
-            let key = format!("{}/{}",prev,category);
-            let entry = node_mut.content.entry(category.to_string()).or_insert_with(|| Rc::downgrade(&self.insert_node(category,Rc::downgrade(&node),metadata.clone(),&key)));
+            let entry = node_mut.content.entry(category.to_string()).or_insert_with(|| Rc::downgrade(&self.insert_node(category,Rc::downgrade(&node),metadata.clone())));
             let rest:Vec<&str> = splitter.collect();
             if let Some(next_node) = Weak::upgrade(entry){
-                self.parse_path_in(next_node,rest,metadata,key);
+                self.parse_path_in(next_node,rest,metadata);
             }
             else {
                 panic!("Invalid plot detected. Investigate this problem");
@@ -187,14 +202,29 @@ impl<T:std::fmt::Debug+Clone> Tree<T>{
         }
     }
 
+    fn find_root_with_name(&self, name:&str)->Option<Rc<RefCell<TreeNode<T>>>>{
+        for node in self.nodes.iter(){
+            if node.borrow().name==name && node.borrow().is_top(){
+                return Some(node.clone());
+            }
+        }
+        None
+    }
+
     pub fn parse_path(&mut self, mut path:Vec<&str>, metadata:Option<T>){
         //println!("Parse path {}", path);
         let mut splitter = path.drain(..);
         if let Some(category) = splitter.next(){
-            let entry = self.nodes.entry(category.to_string()).or_insert_with(|| new_node(category,Weak::new(),metadata.clone()));
+            let found = self.find_root_with_name(category);
+            let entry = if let Some(v) = found{
+                v
+            }
+            else{
+                self.insert_node(category, Weak::new(), metadata.clone())
+            };
             let entry = entry.clone();
             let rest = splitter.collect();
-            self.parse_path_in(entry,rest,metadata,category.to_owned());
+            self.parse_path_in(entry,rest,metadata);
         }
     }
 
@@ -214,7 +244,7 @@ impl<T:std::fmt::Debug+Clone> Tree<T>{
     ){
         let bounds = layout.bounds();
         let mut y:f32 = bounds.y;
-        for (_,node) in self.nodes.iter(){
+        for node in self.nodes.iter(){
             let node_ref = node.borrow();
             if node_ref.is_top(){
                 y = node_ref.draw(state, renderer, theme, style, layout, cursor, viewport, 0.0, y);
@@ -296,7 +326,7 @@ where
         _viewport: &iced::Rectangle,
     ) -> iced::event::Status {
         if let iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) = event{
-            for (_,node) in self.tree.nodes.iter(){
+            for node in self.tree.nodes.iter(){
                 if let Some(pos) = cursor.position(){
                     let mut node_ref = node.borrow_mut();
                     if node_ref.contains_point(pos){
