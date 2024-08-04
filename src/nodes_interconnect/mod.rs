@@ -143,7 +143,7 @@ impl NodesRegistry{
         let identifier = true_id;
 
         let entry = &self.nodes[&identifier];
-        let display_name = entry.name();
+        //let display_name = entry.name();
         let mut res = GraphNode::new(entry.clone());
         // let inputs = entry.inputs();
         // for input in inputs.iter(){

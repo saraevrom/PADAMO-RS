@@ -19,8 +19,8 @@ pub enum NodeConstantMessageContent{
 
 #[derive(Clone,Debug,PartialEq)]
 pub struct NodeConstantMessage{
-    key:String,
-    value:NodeConstantMessageContent
+    pub key:String,
+    pub value:NodeConstantMessageContent
 
 }
 

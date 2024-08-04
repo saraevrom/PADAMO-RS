@@ -10,7 +10,7 @@ use serde_json::Map;
 
 use crate::nodes_interconnect::NodesRegistry;
 
-use self::constants::NodeConstantMessage;
+use self::constants::{NodeConstantMessage, NodeConstantMessageContent};
 
 use super::editor_program::EditorCanvasMessage;
 use ordered_hash_map::OrderedHashMap;
@@ -190,8 +190,8 @@ impl GraphNode{
             position: iced::Point::new(0.0,0.0),
             //title,
             size:iced::Size::new(0.0, 0.0),
-            inputs:represented_node.inputs(),
-            outputs:represented_node.outputs(),
+            inputs:OrderedHashMap::new(),
+            outputs:OrderedHashMap::new(),
             represented_node,
             //inputs: OrderedHashMap::new(),
             //outputs: OrderedHashMap::new(),
@@ -360,6 +360,8 @@ impl GraphNode{
 
     pub fn reestimate_size(&mut self){
         let txt = self.make_text();
+        self.inputs = self.represented_node.inputs();
+        self.outputs = self.represented_node.outputs();
         self.title_offset = txt.line_height.to_absolute(txt.size).0;
         let port_chars:f32 = 3.0*PORT_SIZE+((self.max_input_title_size()+self.max_output_title_size()) as f32) * txt.size.0/2.0;
         let width = (self.represented_node.title().len() as f32)*txt.size.0/2.0;
@@ -367,8 +369,6 @@ impl GraphNode{
         let height = self.title_offset+self.get_y_pos(ports_addition)- PORT_SIZE;
         let width = f32::max(width, port_chars);
         self.size = iced::Size::new(width, height);
-        self.inputs = self.represented_node.inputs();
-        self.outputs = self.represented_node.outputs();
     }
 
     pub fn draw_links(&self, frame:&mut Frame){
@@ -916,6 +916,9 @@ impl GraphNodeStorage{
                 if let Some(x) = self.selection.get_solitary_node(){
                     let mut selected = x.borrow_mut();
                     selected.modify_constant(v.clone()).unwrap();
+                    if let NodeConstantMessageContent::ToggleExternal(_) = v.value{
+                        selected.reestimate_size();
+                    }
                 }
             }
             EditorCanvasMessage::CancelPaste=>(),
