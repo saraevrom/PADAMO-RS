@@ -8,8 +8,11 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 pub mod ensquared_energy;
 pub mod lightcurves;
 pub mod tracks_2d;
+pub mod tracks_3d;
 pub mod legacy;
 pub mod background;
+pub mod requesters;
+
 
 mod shape_parser;
 
@@ -23,6 +26,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     let mut res = nodes_vec!();
 
     res.extend(tracks_2d::nodes());
+    res.extend(tracks_3d::nodes());
     res.extend(background::nodes());
     res.extend(lightcurves::nodes());
     res.extend(legacy::nodes());
