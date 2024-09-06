@@ -43,6 +43,12 @@ impl Into<CalculationIO> for (&str,ContentType){
     }
 }
 
+impl Into<CalculationIO> for (&str,&str,ContentType){
+    fn into(self) -> CalculationIO {
+        CalculationIO::new_named(self.0, self.1.into(), self.2)
+    }
+}
+
 #[repr(C)]
 #[derive(StableAbi,Clone,Debug)]
 pub struct CalculationConstant{
@@ -57,6 +63,15 @@ where
 {
     fn into(self) -> CalculationConstant {
         CalculationConstant::new(self.0, self.1.into())
+    }
+}
+
+impl<T> Into<CalculationConstant> for (&str, &str, T)
+where
+    T: Into<ConstantContent>
+{
+    fn into(self) -> CalculationConstant {
+        CalculationConstant::new_named(self.0, self.1.into(), self.2.into())
     }
 }
 
