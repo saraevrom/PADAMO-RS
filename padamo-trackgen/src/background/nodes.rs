@@ -53,6 +53,7 @@ impl BlankDataNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError> {
         let length = request_usize("length",&constants)?;
         let time_offset = constants.request_float("time_offset")?;
+        let time_step = constants.request_float("time_step")?;
 
         //let shape = constants.request_string("shape")?;
         //let shape = crate::shape_parser::parse_usize_vec(&shape).ok_or_else(|| ExecutionError::OtherError(format!("Cannot parse shape {}",&shape).into()))?;
@@ -60,7 +61,7 @@ impl BlankDataNode{
         let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let shape = detector.compat_shape.clone();
 
-        let temporal = super::ops::ArtificialTime::new(length, time_offset);
+        let temporal = super::ops::ArtificialTime::new(length, time_offset,time_step);
         let spatial = super::ops::ArtificialBlankSignal::new(length, shape);
 
         let signal:LazyTriSignal = (make_lao_box(spatial),make_lao_box(temporal),ROption::RNone).into();
@@ -109,7 +110,8 @@ impl CalculationNode for BlankDataNode{
     fn constants(&self,) -> RVec<CalculationConstant> {
         constants![
             ("length",100),
-            ("time_offset",0.0)
+            ("time_offset",0.0),
+            ("time_step",1.0),
         ]
     }
 

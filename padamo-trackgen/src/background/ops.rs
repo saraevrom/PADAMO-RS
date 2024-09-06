@@ -16,11 +16,12 @@ use statrs::distribution::Normal;
 pub struct ArtificialTime{
     length:usize,
     base:f64,
+    period_multiplier:f64
 }
 
 impl ArtificialTime {
-    pub fn new(length: usize, base:f64) -> Self {
-        Self { length, base }
+    pub fn new(length: usize, base:f64, period_multiplier:f64) -> Self {
+        Self { length, base, period_multiplier }
     }
 }
 
@@ -32,7 +33,7 @@ impl LazyArrayOperation<RVec<f64>> for ArtificialTime{
 
     #[allow(clippy::let_and_return)]
     fn request_range(&self,start:usize,end:usize,) -> RVec<f64> where {
-        (start..end).map(|x| x as f64 + self.base).collect()
+        (start..end).map(|x| (x as f64)*self.period_multiplier + self.base).collect()
     }
 
 }
