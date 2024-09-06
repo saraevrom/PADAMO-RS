@@ -2,7 +2,7 @@ use std::default;
 
 use abi_stable::std_types::ROption::RSome;
 use padamo_api::lazy_array_operations::LazyTriSignal;
-use padamo_api::{constants, ports, prelude::*};
+use padamo_api::{constants, nodes_vec, ports, prelude::*};
 use abi_stable::std_types::{ROption, RResult, RString, RVec, Tuple3};
 use abi_stable::rvec;
 use serde_json::value;
@@ -77,7 +77,7 @@ impl BasicLinearTrackGeneratorNodeOld{
 
         let mut signal = inputs.request_detectorfulldata("Background")?;
         //let signal =
-        signal.0 = padamo_api::lazy_array_operations::make_lao_box(crate::ops::LazyTriangularE0Track{
+        signal.0 = padamo_api::lazy_array_operations::make_lao_box(super::ops_rev1::LazyTriangularE0Track{
             data: signal.0,
             detector,pivot_frame,attack_frames,sustain_frames,decay_frames,v0,a0,phi0,x0,y0,e_min,e_max,sigma_x,sigma_y,motion_blur_steps
         });
@@ -183,7 +183,7 @@ impl AnyLCLinearTrackGeneratorNodeOld{
 
         let mut signal = inputs.request_detectorfulldata("Background")?;
         //let signal =
-        signal.0 = padamo_api::lazy_array_operations::make_lao_box(crate::ops::LazyAnyLCGaussTrack{
+        signal.0 = padamo_api::lazy_array_operations::make_lao_box(super::ops_rev1::LazyAnyLCGaussTrack{
             data: signal.0,
             lc,
             detector,pivot_frame,v0,a0,phi0,x0,y0,sigma_x,sigma_y,motion_blur_steps
@@ -288,7 +288,7 @@ impl AnyLCLinearTrackGeneratorDynamicGaussNodeOld{
 
         let mut signal = inputs.request_detectorfulldata("Background")?;
         //let signal =
-        signal.0 = padamo_api::lazy_array_operations::make_lao_box(crate::ops::LazyAnyLCGaussTrack{
+        signal.0 = padamo_api::lazy_array_operations::make_lao_box(super::ops_rev1::LazyAnyLCGaussTrack{
             data: signal.0,
             lc,
             detector,pivot_frame,v0,a0,phi0,x0,y0,sigma_x,sigma_y,motion_blur_steps
@@ -398,7 +398,7 @@ impl AnyLCLinearTrackGeneratorDynamicMoffatNodeOld{
 
         let mut signal = inputs.request_detectorfulldata("Background")?;
         //let signal =
-        signal.0 = padamo_api::lazy_array_operations::make_lao_box(crate::ops::LazyAnyLCMoffatTrack{
+        signal.0 = padamo_api::lazy_array_operations::make_lao_box(super::ops_rev1::LazyAnyLCMoffatTrack{
             data: signal.0,
             lc,
             detector,pivot_frame,v0,a0,phi0,x0,y0,alpha,beta,motion_blur_steps,normalize
@@ -492,7 +492,7 @@ impl AdditiveNormalNoiseNodeOld{
         let seed = inputs.request_integer("seed")?;
         let mut signal = inputs.request_detectorfulldata("Background")?;
         signal.2 = ROption::RNone;
-        signal.0 = make_lao_box(crate::ops::LazyAdditiveNormalNoise::new(signal.0, seed, sigma));
+        signal.0 = make_lao_box(super::ops_rev1::LazyAdditiveNormalNoise::new(signal.0, seed, sigma));
         outputs.set_value("Signal", signal.into())
     }
 }
@@ -546,4 +546,14 @@ impl CalculationNode for AdditiveNormalNoiseNodeOld{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError> {
         self.calculate(inputs, outputs, constants, environment).into()
     }
+}
+
+pub fn nodes()->RVec<CalculationNodeBox>{
+    nodes_vec!(
+        BasicLinearTrackGeneratorNodeOld,
+        AnyLCLinearTrackGeneratorNodeOld,
+        AnyLCLinearTrackGeneratorDynamicGaussNodeOld,
+        AnyLCLinearTrackGeneratorDynamicMoffatNodeOld,
+        AdditiveNormalNoiseNodeOld,
+    )
 }

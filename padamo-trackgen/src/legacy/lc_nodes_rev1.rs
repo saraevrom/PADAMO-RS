@@ -1,8 +1,8 @@
 use abi_stable::rvec;
 use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::{ROption, RResult, RString, RVec};
-use padamo_api::function_operator::{DoubleFunctionOperator,DoubleFunctionOperatorBox, make_function_box};
-use padamo_api::{constants, ports, prelude::*};
+use padamo_api::function_operator::{DoubleFunctionOperatorBox, make_function_box};
+use padamo_api::{constants, nodes_vec, ports, prelude::*};
 
 fn category() -> RVec<RString>where {
     rvec!["Legacy".into(), "Functions".into(), "LC".into()]
@@ -207,4 +207,13 @@ impl CalculationNode for MultiplyByFloatNodeOld{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
         self.calculate(inputs, outputs, constants, environment).into()
     }
+}
+
+pub fn nodes()->RVec<CalculationNodeBox>{
+    nodes_vec!(
+        LinearLCNodeOld,
+        ExponentLCNodeOld,
+        MultiplyByFloatNodeOld,
+
+    )
 }
