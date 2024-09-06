@@ -179,6 +179,7 @@ pub enum EditorProgramState{
         index:usize,
         start_position:iced::Point,
         cursor_start_position:Point,
+        can_delete:bool,
         size:iced::Size
     },
     Linking{
@@ -233,14 +234,21 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let background = Path::rectangle(Point::new(0., 0.), bounds.size());
         frame.fill(&background, iced::Color::new(0.5, 0.5, 0.5, 1.0));
-
-        if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, size:_ }=state{
+        if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, size:_ , can_delete}=state{
             //let deletion_ghost = Path::rectangle(iced::Point::new(self.editor_state.scroll_offset.x, self.editor_state.scroll_offset.y),iced::Size::new(100., 100.));
             let rect= self.deletion_box();
-            let label = iced::widget::canvas::Text{content:"Move here\nto delete".into(), position: rect.position(), ..Default::default()};
+            let position = rect.position();
             let rect = Path::rectangle(rect.position(),rect.size());
-            frame.fill(&rect, iced::Color::new(0.8, 0.4, 0.4, 1.0));
-            frame.fill_text(label);
+            if *can_delete{
+                let label = iced::widget::canvas::Text{content:"Move here\nto delete".into(), position, ..Default::default()};
+                frame.fill(&rect, iced::Color::new(0.8, 0.4, 0.4, 1.0));
+                frame.fill_text(label);
+            }
+            else{
+                let label = iced::widget::canvas::Text{content:"Deletion safe".into(), position, ..Default::default()};
+                frame.fill(&rect, iced::Color::new(0.8, 0.8, 0.8, 1.0));
+                frame.fill_text(label);
+            }
         }
 
 
@@ -249,7 +257,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
             let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
             match state{
                 EditorProgramState::Idle=>(),
-                EditorProgramState::Dragging { index: _, start_position,cursor_start_position, size }=>{
+                EditorProgramState::Dragging { index: _, start_position,cursor_start_position, size, can_delete:_ }=>{
                     let ghost_pos:iced::Point = *start_position+(curpos-*cursor_start_position);
                     let ghost = Path::rectangle(ghost_pos,*size);
                     frame.fill(&ghost, iced::Color::new(0.9, 0.9, 0.9, 1.0));
@@ -321,12 +329,26 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                     // Event::Mouse(iced::mouse::Event::CursorLeft)=>{
                     //     println!("Cursor left the area");
                     // },
+                    Event::Mouse(iced::mouse::Event::CursorMoved { position })=>{
+                        if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, can_delete, size:_ } = state{
+                            if ! *can_delete{
+                                let deletion_rect = self.deletion_box();
+                                if !deletion_rect.contains(curpos){
+                                    *can_delete = true;
+                                }
+                            }
+                        }
+                    }
+
                     Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
                         if let Some((i,pos,size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
                             msg = Some(EditorCanvasMessage::Select(i));
+
                             match mouse_status{
                                 super::nodes::NodeMouseHit::MainRect=>{
-                                    *state = EditorProgramState::Dragging { index: i, start_position: pos, cursor_start_position:curpos, size };
+                                    let deletion_rect = self.deletion_box();
+                                    let delete_enable = !deletion_rect.contains(curpos);
+                                    *state = EditorProgramState::Dragging { index: i, start_position: pos, cursor_start_position:curpos, size, can_delete:delete_enable };
                                 },
                                 super::nodes::NodeMouseHit::Output(port,center)=>{
                                     let linkage = Some((i,center,port));
@@ -389,9 +411,9 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                         }
                     },
                     Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{
-                        if let EditorProgramState::Dragging { index, start_position,cursor_start_position, size: _ } = state{
+                        if let EditorProgramState::Dragging { index, start_position,cursor_start_position, size: _, can_delete } = state{
                             let delete_bounds = self.deletion_box();
-                            if delete_bounds.contains(curpos){
+                            if delete_bounds.contains(curpos) && *can_delete{
                                 println!("Released LMB inside deleter");
                                 msg = Some(EditorCanvasMessage::DeleteSelectedNode)
                             }
