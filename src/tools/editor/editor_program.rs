@@ -21,13 +21,14 @@ pub struct EditorState{
     pub nodes: super::nodes::GraphNodeStorage,
     pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
     pub pending_paste:RefCell<Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>>,
+    pub divider_position: Option<u16>,
 }
 
 
 impl EditorState{
     pub fn new()->Self{
         let nodes = super::nodes::GraphNodeStorage::new();
-        Self { nodes, copied_data:None, pending_paste:RefCell::new(None)}
+        Self { nodes, copied_data:None, pending_paste:RefCell::new(None), divider_position:None}
     }
 
     pub fn request_paste(&mut self){
@@ -102,7 +103,7 @@ impl EditorState{
         //         constcol = constcol.push(c.view_editor(key))
         //     }
         // }
-        let constcol_container = iced::widget::Container::new(constcol).width(200);
+        let constcol_container = iced::widget::Container::new(constcol);
         let constcol_elem:iced::Element<'_,super::nodes::constants::NodeConstantMessage> = constcol_container.into();
 
         // iced_aw::Split::new(
@@ -112,8 +113,8 @@ impl EditorState{
         //     iced_aw::split::Axis::Vertical,
         //     EditorMessage::ConstantSplitPositionSet
         // ).into()
-        iced::widget::row!{
-            iced::widget::scrollable(canv)
+
+        let first_part = iced::widget::scrollable(canv)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .direction(scrollable::Direction::Both{
@@ -122,19 +123,12 @@ impl EditorState{
                     horizontal:
                     Properties::new()
                         .scroller_width(20),
-                })
-                .id(SCROLLABLE_ID.clone()),
-            iced::widget::scrollable(constcol_elem.map(EditorCanvasMessage::ConstantEdit))
-                .width(200)
-                .height(Length::Fill)
-                // .direction(scrollable::Direction::Both{
-                //     vertical: Properties::new()
-                //         .scroller_width(20),
-                //     horizontal:
-                //     Properties::new()
-                //         .scroller_width(20),
-                // })
-            ,
+                });
+        let second_part = iced::widget::scrollable(constcol_elem.map(EditorCanvasMessage::ConstantEdit))
+                .width(300)
+                .height(Length::Fill);
+        iced::widget::row!{
+            first_part,second_part
         }.into()
     }
 

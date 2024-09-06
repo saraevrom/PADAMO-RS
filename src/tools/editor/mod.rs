@@ -11,6 +11,8 @@ use crate::messages::PadamoAppMessage;
 use crate::custom_widgets::treeview::Tree;
 use crate::tools::editor::nodes::{GraphNodeCloneBuffer, GraphNodeStorage};
 
+use self::messages::EditorMessage;
+
 use super::PadamoTool;
 use abi_stable::traits::IntoOwned;
 use iced::Length;
@@ -50,23 +52,24 @@ impl PadamoEditor{
 
 impl PadamoTool for PadamoEditor{
     fn view<'a>(&'a self)->iced::Element<'a, PadamoAppMessage> {
-        let first:iced::Element<'_,PadamoAppMessage> = scrollable(
-                iced::Element::new(self.tree.view(Some(|x| PadamoAppMessage::EditorMessage(messages::EditorMessage::NodeListClicked(x))))),
+        let first:iced::Element<'_,EditorMessage> = scrollable(
+                iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x)))),
             ).id(SCROLLABLE_ID.clone())
             .width(Length::Fill)
             .height(Length::Fill)
             .direction(scrollable::Direction::Vertical(scrollable::Properties::new().width(10).alignment(scrollable::Alignment::Start)))
-            .on_scroll(|x| PadamoAppMessage::EditorMessage(messages::EditorMessage::EditorScroll(x))).into()
+            .on_scroll(|x| messages::EditorMessage::EditorScroll(x)).into()
             ;
 
-        let second:iced::Element<'_,PadamoAppMessage> = self.state.view(self.hor_divider_position).map(messages::EditorMessage::CanvasMessage).map(PadamoAppMessage::EditorMessage);
+        let second:iced::Element<'_,EditorMessage> = self.state.view(self.hor_divider_position).map(messages::EditorMessage::CanvasMessage);//.map(PadamoAppMessage::EditorMessage);
 
-        iced_aw::Split::new(
+        let split:iced::Element<'a, EditorMessage> = iced_aw::Split::new(
             first,second,
             Some(self.hor_divider_position),
             iced_aw::split::Axis::Vertical,
-            PadamoAppMessage::editor_split_position()
-        ).into()
+            EditorMessage::TreeSplitPositionSet
+        ).into();
+        split.map(PadamoAppMessage::EditorMessage)
         // iced::widget::row!(
         //     iced::Element::new(self.tree.view(Some(crate::messages::PadamoAppMessage::NodeListClicked))),
         //     self.state.view().map(crate::messages::PadamoAppMessage::EditorMessage)

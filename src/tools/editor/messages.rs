@@ -16,7 +16,6 @@ pub enum EditorCanvasMessage{
     ConstantEdit(super::nodes::constants::NodeConstantMessage),
     CancelPaste,
     CommitPaste(iced::Point),
-    //TreeSplitPositionSet(u16)
 }
 
 #[derive(Debug, Clone)]
