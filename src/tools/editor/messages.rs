@@ -16,6 +16,7 @@ pub enum EditorCanvasMessage{
     ConstantEdit(super::nodes::constants::NodeConstantMessage),
     CancelPaste,
     CommitPaste(iced::Point),
+    CanvasScroll(scrollable::Viewport),
 }
 
 #[derive(Debug, Clone)]

@@ -58,7 +58,7 @@ impl PadamoTool for PadamoEditor{
             .width(Length::Fill)
             .height(Length::Fill)
             .direction(scrollable::Direction::Vertical(scrollable::Properties::new().width(10).alignment(scrollable::Alignment::Start)))
-            .on_scroll(|x| messages::EditorMessage::EditorScroll(x)).into()
+            .on_scroll(messages::EditorMessage::EditorScroll).into()
             ;
 
         let second:iced::Element<'_,EditorMessage> = self.state.view(self.hor_divider_position).map(messages::EditorMessage::CanvasMessage);//.map(PadamoAppMessage::EditorMessage);
@@ -102,7 +102,12 @@ impl PadamoTool for PadamoEditor{
                         }
                         println!("Clicked node {:?}", identifier);
                     },
-                    messages::EditorMessage::EditorScroll(view) => {self.current_scroll_offset = view.relative_offset()},
+                    messages::EditorMessage::EditorScroll(view) => {
+                        let off = view.relative_offset();
+                        self.current_scroll_offset = off;
+                        //self.state.scroll_offset = off;
+                        //view.relative_offset().x
+                    },
                 }
             },
             crate::messages::PadamoAppMessage::Run=>{

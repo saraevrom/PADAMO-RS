@@ -15,20 +15,20 @@ pub use super::messages::EditorCanvasMessage;
 use super::nodes::constants::{NodeConstantBuffer, NodeConstantContent, NodeConstantMessage, NodeConstantMessageContent, NodeConstantStorage};
 
 
-static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
 pub struct EditorState{
     pub nodes: super::nodes::GraphNodeStorage,
     pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
     pub pending_paste:RefCell<Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>>,
     pub divider_position: Option<u16>,
+    pub scroll_offset: scrollable::AbsoluteOffset
 }
 
 
 impl EditorState{
     pub fn new()->Self{
         let nodes = super::nodes::GraphNodeStorage::new();
-        Self { nodes, copied_data:None, pending_paste:RefCell::new(None), divider_position:None}
+        Self { nodes, copied_data:None, pending_paste:RefCell::new(None), divider_position:None, scroll_offset:scrollable::AbsoluteOffset{x:0.0, y:0.}}
     }
 
     pub fn request_paste(&mut self){
@@ -123,7 +123,8 @@ impl EditorState{
                     horizontal:
                     Properties::new()
                         .scroller_width(20),
-                });
+                })
+                .on_scroll(EditorCanvasMessage::CanvasScroll);
         let second_part = iced::widget::scrollable(constcol_elem.map(EditorCanvasMessage::ConstantEdit))
                 .width(300)
                 .height(Length::Fill);
@@ -137,30 +138,35 @@ impl EditorState{
     }
 
     pub fn handle_message(&mut self,msg:&EditorCanvasMessage){
-        if let EditorCanvasMessage::CancelPaste = msg{
-            *self.pending_paste.borrow_mut() = None;
-            println!("Paste cancelled");
-        }
-        else if let EditorCanvasMessage::CommitPaste(point) = msg{
-            let mut newstate = None;
+        match msg{
+            EditorCanvasMessage::CancelPaste=>{
+                *self.pending_paste.borrow_mut() = None;
+                println!("Paste cancelled");
+            },
+            EditorCanvasMessage::CommitPaste(point) =>{
+                let mut newstate = None;
 
-            if let Some(buf) = self.pending_paste.take(){
-                if self.nodes.shift_mod{
-                    if let Some(storage)= buf.clone_whole_for_repeating_copy(){
-                        newstate = Some(std::rc::Rc::new(storage));
+                if let Some(buf) = self.pending_paste.take(){
+                    if self.nodes.shift_mod{
+                        if let Some(storage)= buf.clone_whole_for_repeating_copy(){
+                            newstate = Some(std::rc::Rc::new(storage));
+                        }
                     }
+                    self.nodes.instantiate(buf.as_ref(), *point);
                 }
-                self.nodes.instantiate(buf.as_ref(), *point);
+                if newstate.is_some(){
+                    *self.pending_paste.borrow_mut() = newstate;
+                    println!("Starting new paste");
+                }
+                //self.paste_buffer(*point);
+                println!("Pasted");
+            },
+            EditorCanvasMessage::CanvasScroll(v)=>{
+                self.scroll_offset = v.absolute_offset();
             }
-            if newstate.is_some(){
-                *self.pending_paste.borrow_mut() = newstate;
-                println!("Starting new paste");
+            _=>{
+                self.nodes.handle_message(msg)
             }
-            //self.paste_buffer(*point);
-            println!("Pasted");
-        }
-        else{
-            self.nodes.handle_message(msg)
         }
     }
 }
@@ -205,6 +211,12 @@ impl<'a> EditorProgram<'a>{
             editor_state
         }
     }
+
+    pub fn deletion_box(&self)->iced::Rectangle{
+        let tl = iced::Point::new(self.editor_state.scroll_offset.x, self.editor_state.scroll_offset.y);
+        let size = iced::Size::new(100., 100.);
+        iced::Rectangle::new(tl,size)
+    }
 }
 
 impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
@@ -221,6 +233,17 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let background = Path::rectangle(Point::new(0., 0.), bounds.size());
         frame.fill(&background, iced::Color::new(0.5, 0.5, 0.5, 1.0));
+
+        if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, size:_ }=state{
+            //let deletion_ghost = Path::rectangle(iced::Point::new(self.editor_state.scroll_offset.x, self.editor_state.scroll_offset.y),iced::Size::new(100., 100.));
+            let rect= self.deletion_box();
+            let label = iced::widget::canvas::Text{content:"Move here\nto delete".into(), position: rect.position(), ..Default::default()};
+            let rect = Path::rectangle(rect.position(),rect.size());
+            frame.fill(&rect, iced::Color::new(0.8, 0.4, 0.4, 1.0));
+            frame.fill_text(label);
+        }
+
+
         self.editor_state.draw(&mut frame);
         if let Some(curpos) = cursor.position(){
             let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
@@ -230,6 +253,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                     let ghost_pos:iced::Point = *start_position+(curpos-*cursor_start_position);
                     let ghost = Path::rectangle(ghost_pos,*size);
                     frame.fill(&ghost, iced::Color::new(0.9, 0.9, 0.9, 1.0));
+
                 }
                 EditorProgramState::Linking { from, to }=>{
                     if let Some((_,p,_)) = from {
@@ -260,6 +284,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                     }
                 }
             }
+
         }
 
         vec![frame.into_geometry()]
@@ -285,12 +310,17 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
 
             let mut msg:Option<EditorCanvasMessage> = None;
             if let Some(curpos) = cursor.position(){
-                if !bounds.contains(curpos){
-                    return (event::Status::Ignored, None);
-                }
+                // if !bounds.contains(curpos){
+                //     return (event::Status::Ignored, None);
+                // }
+                let curpos_origin = curpos;
                 let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
 
                 match event{
+
+                    // Event::Mouse(iced::mouse::Event::CursorLeft)=>{
+                    //     println!("Cursor left the area");
+                    // },
                     Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
                         if let Some((i,pos,size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
                             msg = Some(EditorCanvasMessage::Select(i));
@@ -358,9 +388,17 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                             }
                         }
                     },
-                    Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left)) | Event::Mouse(iced::mouse::Event::CursorLeft)=>{
+                    Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{
                         if let EditorProgramState::Dragging { index, start_position,cursor_start_position, size: _ } = state{
-                             msg = Some(EditorCanvasMessage::MoveNode { index:*index, position: *start_position+(curpos-*cursor_start_position) });
+                            let delete_bounds = self.deletion_box();
+                            if delete_bounds.contains(curpos){
+                                println!("Released LMB inside deleter");
+                                msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+                            }
+                            else{
+                                msg = Some(EditorCanvasMessage::MoveNode { index:*index, position: *start_position+(curpos-*cursor_start_position) });
+                            }
+
                             *state = EditorProgramState::Idle;
                         }
                         else if let EditorProgramState::Selecting { start_position } = state{
@@ -371,9 +409,10 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
 
                     Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_,text:_ })=>{
                         match pressed_key{
-                            iced::keyboard::key::Named::Delete=>{
-                                msg = Some(EditorCanvasMessage::DeleteSelectedNode)
-                            }
+                            // This code turned out to be evil
+                            // iced::keyboard::key::Named::Delete=>{
+                            //     msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+                            // }
                             iced::keyboard::key::Named::Shift=>{
                                 msg = Some(EditorCanvasMessage::SetShift(true))
                             }

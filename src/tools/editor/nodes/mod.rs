@@ -858,6 +858,7 @@ impl GraphNodeStorage{
             }
             EditorCanvasMessage::CancelPaste=>(),
             EditorCanvasMessage::CommitPaste(_)=>(),
+            EditorCanvasMessage::CanvasScroll(_)=>()
             //_=>(),
         }
     }
