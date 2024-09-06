@@ -67,7 +67,7 @@ impl EditorState{
                 //let check = NodeConstantMessage::check(key.into());
 
                 let mut constant_row:iced::widget::Column<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Column::new().padding(10);
-                constant_row = constant_row.push(iced::widget::Text::new(format!("{}:",key)));
+                constant_row = constant_row.push(iced::widget::Text::new(format!("{}:",&c.display_name)));
 
                 let external_toggle:iced::widget::Checkbox<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Checkbox::new("External", c.use_external).on_toggle(NodeConstantMessage::external_toggle(key.into())).into();
                 constant_row = constant_row.push(external_toggle);

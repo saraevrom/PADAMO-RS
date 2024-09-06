@@ -158,7 +158,7 @@ impl NodesRegistry{
         // }
         let constants = entry.constants();
         for con in constants.iter(){
-            res.add_constant(&con.name.to_string(), con.default_value.clone().into());
+            res.add_constant(&con.name.to_string(), con.default_value.clone().into(),con.display_name.to_string());
         }
         Some(res)
     }

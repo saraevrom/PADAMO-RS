@@ -110,13 +110,14 @@ pub struct NodeConstant{
     pub ok:bool,
     pub content:NodeConstantContent,
     pub default_value:NodeConstantContent,
+    pub display_name:String,
     pub use_external:bool
 }
 
 
 impl NodeConstant{
-    pub fn new(content:NodeConstantContent)->Self{
-        Self { buffer: content.clone().into(),default_value:content.clone(), content, ok:true, use_external:false  }
+    pub fn new(content:NodeConstantContent,display_name:String)->Self{
+        Self { buffer: content.clone().into(),default_value:content.clone(), content, ok:true, use_external:false, display_name  }
     }
 
     pub fn update_buffer(&mut self){
@@ -200,8 +201,8 @@ impl NodeConstantStorage{
         Self { constants: OrderedHashMap::new() }
     }
 
-    pub fn add_constant(&mut self, key:&str, value:NodeConstantContent){
-        self.constants.insert(key.into(),value.into());
+    pub fn add_constant(&mut self, key:&str, value:NodeConstantContent, display_name:String){
+        self.constants.insert(key.into(),NodeConstant::new(value, display_name));
     }
 
     pub fn modify_constant(&mut self, msg:NodeConstantMessage)->Result<(),NodeError>{
@@ -221,16 +222,20 @@ impl NodeConstantStorage{
         }
     }
 
-    pub fn additional_inputs(&self)->OrderedHashMap<String,padamo_api::prelude::ContentType>{
+    pub fn additional_inputs(&self)->OrderedHashMap<String,super::PortData>{
         self.constants.iter()
             .filter(|(_,x)| x.use_external)
             .map(|(k,x)|{
                 let k = format!("constant_{}",k);
-                let v = match x.default_value {
+                let ty = match x.default_value {
                     NodeConstantContent::Boolean(_)=>ContentType::Boolean,
                     NodeConstantContent::Text(_)=>ContentType::String,
                     NodeConstantContent::Integer(_)=>ContentType::Integer,
                     NodeConstantContent::Real(_)=>ContentType::Float
+                };
+                let v = super::PortData{
+                    port_type:ty,
+                    display_name:format!("Constant: {}",x.display_name)
                 };
                 (k,v)
             })
@@ -268,13 +273,6 @@ impl Into<NodeConstantContent> for bool{
         NodeConstantContent::Boolean(self)
     }
 }
-
-impl Into<NodeConstant> for NodeConstantContent{
-    fn into(self) -> NodeConstant {
-        NodeConstant::new(self)
-    }
-}
-
 
 
 impl Into<String> for NodeConstantContent{

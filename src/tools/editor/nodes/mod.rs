@@ -116,46 +116,11 @@ pub struct SerdeConnection{
 }
 
 
-
-#[derive(Debug)]
-pub struct InputDefinition{
-    //pub name:String,
+#[derive(Debug, Clone, PartialEq)]
+pub struct PortData{
     pub port_type:PortType,
-    pub connection: Option<Connection>
+    pub display_name:String,
 }
-
-impl InputDefinition {
-    pub fn new(port_type:PortType)->Self{
-        Self { port_type , connection:None}
-    }
-
-    pub fn get_linked_node(&self)->Option<(Rc<RefCell<GraphNode>>,String)>{
-        if let Some(conn) = &self.connection{
-            return conn.node.upgrade().map(|x| (x,conn.port.clone()));
-        }
-        None
-    }
-
-    pub fn remove_dead_connection(&mut self){
-        let mut remove = false;
-        if let Some(conn) = &self.connection{
-            remove = !conn.is_valid();
-        }
-        if remove{
-            self.connection = None
-        }
-    }
-
-    pub fn disconnect(&mut self){
-        self.connection = None;
-    }
-
-    pub fn connect_to(&mut self, node:&Rc<RefCell<GraphNode>>,output_port:&str){
-        let conn = Connection{node: Rc::downgrade(node), port:output_port.into()};
-        self.connection = Some(conn);
-    }
-}
-
 
 #[derive(Debug)]
 pub struct GraphNode{
@@ -166,8 +131,8 @@ pub struct GraphNode{
     title_offset:f32,
     //pub inputs:OrderedHashMap<String,InputDefinition>,
     //pub outputs:OrderedHashMap<String,OutputDefinition>,
-    pub inputs:OrderedHashMap<String,PortType>,
-    pub outputs:OrderedHashMap<String,PortType>,
+    pub inputs:OrderedHashMap<String,PortData>,
+    pub outputs:OrderedHashMap<String,PortData>,
 
     pub represented_node:NodeProxy,
     pub connections: OrderedHashMap<String,Connection>,
@@ -180,6 +145,7 @@ pub enum NodeMouseHit{
     Input(String, iced::Point),
     Output(String, iced::Point)
 }
+
 
 
 
@@ -234,28 +200,12 @@ impl GraphNode{
     }
 
     pub fn link_from(&mut self, input_port:&str, dependency: &Rc<RefCell<Self>>, output_port:&str)->Result<(),NodeError>{
-        // if let Some(input_portdef) = self.inputs.get_mut(input_port){
-        //     if let Some(output_portdef) = dependency.borrow().outputs.get(output_port){
-        //         if output_portdef.port_type==input_portdef.port_type{
-        //             input_portdef.connect_to(dependency, output_port);
-        //             self.remove_dead_connections();
-        //             Ok(())
-        //         }
-        //         else{
-        //             Err(NodeError::IncompatiblePorts(output_portdef.port_type, input_portdef.port_type))
-        //         }
-        //     }
-        //     else {
-        //         Err(NodeError::NoOutput(output_port.into()))
-        //     }
-        // }
-        // else {
-        //     Err(NodeError::NoInput(input_port.into()))
-        // }
         let inputs = &self.inputs;
-        if let Some(input_type) = inputs.get(input_port){
+        if let Some(input_data) = inputs.get(input_port){
             let dependency_outputs = &dependency.borrow().outputs;
-            if let Some(output_type) = dependency_outputs.get(output_port){
+            if let Some(output_data) = dependency_outputs.get(output_port){
+                let input_type = input_data.port_type;
+                let output_type = output_data.port_type;
                 if input_type==output_type{
                     //input_portdef.connect_to(dependency, output_port);
                     self.connections.insert(input_port.to_owned(), Connection { node: Rc::downgrade(dependency), port: output_port.to_owned() });
@@ -263,7 +213,7 @@ impl GraphNode{
                     Ok(())
                 }
                 else{
-                    Err(NodeError::IncompatiblePorts(*output_type, *input_type))
+                    Err(NodeError::IncompatiblePorts(output_type, input_type))
                 }
             }
             else {
@@ -276,13 +226,6 @@ impl GraphNode{
     }
 
     pub fn unlink(&mut self, input_port:&str)->Result<(),NodeError>{
-        // if let Some(input_portdef) = self.inputs.get_mut(input_port){
-        //     input_portdef.disconnect();
-        //     Ok(())
-        // }
-        // else {
-        //     Err(NodeError::NoInput(input_port.into()))
-        // }
 
         self.connections.remove(input_port).ok_or(NodeError::NoInput(input_port.into()))?;
         Ok(())
@@ -302,17 +245,6 @@ impl GraphNode{
         for disc in disconnects.iter(){
             self.unlink(disc)?;
         }
-        // for (_, port) in self.inputs.iter_mut(){
-        //     //println!("AAA {}", s);
-        //     if let Some(linked_src) = port.get_linked_node(){
-        //         //println!("AAA");
-        //         if Rc::ptr_eq(&linked_src.0, &source_node){
-        //             if linked_src.1 == output_port{
-        //                 port.disconnect();
-        //             }
-        //         }
-        //     }
-        // }
         Ok(())
     }
 
@@ -337,11 +269,11 @@ impl GraphNode{
     }
 
     fn max_input_title_size(&self)->usize{
-        self.inputs.iter().map(|x| x.0.len()).max().unwrap_or(0)
+        self.inputs.iter().map(|x| x.1.display_name.len()).max().unwrap_or(0)
     }
 
     fn max_output_title_size(&self)->usize{
-        self.outputs.iter().map(|x| x.0.len()).max().unwrap_or(0)
+        self.outputs.iter().map(|x| x.1.display_name.len()).max().unwrap_or(0)
     }
 
     fn get_output_index(&self, name:&str)->Option<usize>{
@@ -465,6 +397,9 @@ impl GraphNode{
     pub fn draw(&self, frame:&mut Frame, highlight:bool){
 
         //let txt = Text{content:self.title.clone(),position:self.position,..Default::default()};
+
+
+        // Drawing main rectangle with title
         let mut txt = self.make_text();
         txt.position = self.position;
         let main_rect = Path::rectangle(self.position,self.size);
@@ -473,24 +408,28 @@ impl GraphNode{
         frame.fill(&main_rect, iced::Color::WHITE);
         frame.fill_text(txt);
         let port_size = iced::Size::new(PORT_SIZE, PORT_SIZE);
-        for (i,(title, port_type)) in self.inputs.iter().enumerate(){
+
+        // Drawing inputs
+        for (i,(_, port_data)) in self.inputs.iter().enumerate(){
             let pos = self.get_input_position(i);
             let port_rect = Path::rectangle(pos, port_size);
 
             frame.stroke(&port_rect, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
-            let color:iced::Color = make_iced_color(port_type.get_color());
+            let color:iced::Color = make_iced_color(port_data.port_type.get_color());
             frame.fill(&port_rect, color);
 
-            let label = Text{content:title.into(), position: pos+iced::Vector::new(PORT_SIZE, 0.0), ..Default::default()};
+            let label = Text{content:port_data.display_name.clone(), position: pos+iced::Vector::new(PORT_SIZE, 0.0), ..Default::default()};
             frame.fill_text(label);
         }
 
-        for (i,(title, port_type)) in self.outputs.iter().enumerate(){
+
+        // Drawing outputs
+        for (i,(_, port_data)) in self.outputs.iter().enumerate(){
             let pos = self.get_output_position(i);
             let port_rect = Path::rectangle(pos, port_size);
             frame.stroke(&port_rect, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
-            frame.fill(&port_rect, make_iced_color(port_type.get_color()));
-            let label = Text{content:title.into(), position:pos,horizontal_alignment:iced::alignment::Horizontal::Right, ..Default::default()};
+            frame.fill(&port_rect, make_iced_color(port_data.port_type.get_color()));
+            let label = Text{content:port_data.display_name.clone(), position:pos,horizontal_alignment:iced::alignment::Horizontal::Right, ..Default::default()};
             frame.fill_text(label);
         }
     }
@@ -498,13 +437,13 @@ impl GraphNode{
     pub fn mouse_event(&self, point:iced::Point)->Option<NodeMouseHit>{
         if is_inside(point, self.position, self.size){
             let port_size = iced::Size::new(PORT_SIZE, PORT_SIZE);
-            for (i,(title, port_type)) in self.inputs.iter().enumerate(){
+            for (i,(title, port_data)) in self.inputs.iter().enumerate(){
                 let pos = self.get_input_position(i);
                 if is_inside(point, pos, port_size){
                     return Some(NodeMouseHit::Input(title.clone(),self.get_input_position(i)+PORT_CENTER_OFFSET));
                 }
             }
-            for (i,(title, port_type)) in self.outputs.iter().enumerate(){
+            for (i,(title, port_data)) in self.outputs.iter().enumerate(){
                 let pos = self.get_output_position(i);
                 if is_inside(point, pos, port_size){
                     return Some(NodeMouseHit::Output(title.clone(),self.get_output_position(i)+PORT_CENTER_OFFSET));
@@ -527,8 +466,8 @@ impl GraphNode{
     //     self.reestimate_size();
     // }
 
-    pub fn add_constant(&mut self, key:&str, value: constants::NodeConstantContent){
-        self.constants.add_constant(key,value)
+    pub fn add_constant(&mut self, key:&str, value: constants::NodeConstantContent, display_name:String){
+        self.constants.add_constant(key,value,display_name)
     }
 
     pub fn modify_constant(&mut self, msg:constants::NodeConstantMessage)->Result<(),NodeError>{
@@ -798,13 +737,7 @@ impl GraphNodeStorage{
                     let old_position = {
                         node.borrow().position
                     };
-                    let mut target_position = *position;
-                    // if target_position.x<=0.0{
-                    //     target_position.x = 0.0;
-                    // }
-                    // if target_position.y<=0.0{
-                    //     target_position.y = 0.0;
-                    // }
+                    let target_position = *position;
 
                     let mut delta = target_position-old_position;
 
