@@ -5,19 +5,12 @@ use padamo_api::nodes_vec;
 use abi_stable::sabi_extern_fn;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 
-
-//pub mod ops;
 pub mod ensquared_energy;
-//pub mod nodes;
-//pub mod nodes_old;
 pub mod lightcurves;
 pub mod tracks_2d;
 pub mod legacy;
-//pub mod lc_nodes_old;
-
 pub mod background;
 
-//mod datetime_parser;
 mod shape_parser;
 
 #[export_root_module]
