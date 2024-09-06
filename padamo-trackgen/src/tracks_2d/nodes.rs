@@ -123,14 +123,14 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicGaussNode{
     fn constants(&self,) -> RVec<CalculationConstant> {
         constants![
             ("motion_blur_steps","Motion blur steps",5),
-            ("pivot_frame","Zero frame", 0.0),
-            ("v0","U0",1.0),
-            ("a0","A0",0.0),
-            ("phi0","Phi0",0.0),
-            ("x0","X0",0.0),
-            ("y0","Y0",0.0),
-            ("sigma_x","Sigma X",1.0),
-            ("sigma_y","Sigma Y",1.0)
+            ("pivot_frame","Zero frame [fr]", 0.0),
+            ("v0","U0 [mm/fr]",1.0),
+            ("a0","A0 [mm/fr^2]",0.0),
+            ("phi0","Phi0 [deg]",0.0),
+            ("x0","X0 [mm]",0.0),
+            ("y0","Y0 [mm]",0.0),
+            ("sigma_x","Sigma X [mm]",1.0),
+            ("sigma_y","Sigma Y [mm]",1.0)
         ]
     }
 
@@ -227,12 +227,12 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicMoffatNode{
         constants![
 
             ("motion_blur_steps","Motion blur steps",5),
-            ("pivot_frame","Zero frame", 0.0),
-            ("v0","U0",1.0),
-            ("a0","A0",0.0),
-            ("phi0","Phi0",0.0),
-            ("x0","X0",0.0),
-            ("y0","Y0",0.0),
+            ("pivot_frame","Zero frame [fr]", 0.0),
+            ("v0","U0 [mm/fr]",1.0),
+            ("a0","A0 [mm/fr^2]",0.0),
+            ("phi0","Phi0 [deg]",0.0),
+            ("x0","X0 [mm]",0.0),
+            ("y0","Y0 [mm]",0.0),
 
             ("alpha",1.0),
             ("beta",4.765)
