@@ -17,6 +17,6 @@ ndarray = "0.15.6"
 thiserror = "1.0.61"
 #openblas-src = { version = "0.10.9", features = ["static"] }
 
-ort = { version = "2.0.0-rc.2", features = ["cuda", "load-dynamic"] }
-ort-sys = { version = "2.0.0-rc.2", features = ["cuda", "load-dynamic"] }
+ort = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic"], rev = "733b7fa" }
+ort-sys = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic"], rev = "733b7fa" }
 libloading = "0.8.3"
