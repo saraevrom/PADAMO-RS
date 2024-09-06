@@ -124,7 +124,7 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicGaussNode{
         constants![
             ("motion_blur_steps","Motion blur steps",5),
             ("pivot_frame","Zero frame", 0.0),
-            ("v0","U0",0.1),
+            ("v0","U0",1.0),
             ("a0","A0",0.0),
             ("phi0","Phi0",0.0),
             ("x0","X0",0.0),
@@ -228,7 +228,7 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicMoffatNode{
 
             ("motion_blur_steps","Motion blur steps",5),
             ("pivot_frame","Zero frame", 0.0),
-            ("v0","U0",0.1),
+            ("v0","U0",1.0),
             ("a0","A0",0.0),
             ("phi0","Phi0",0.0),
             ("x0","X0",0.0),
