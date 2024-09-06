@@ -15,6 +15,7 @@ use crate::rng::RandomState;
 #[derive(StableAbi,Clone,Debug)]
 pub struct CalculationIO{
     pub name: RString,
+    pub display_name: RString,
     pub port_type: ContentType,
 }
 
@@ -22,6 +23,15 @@ impl CalculationIO{
     pub fn new(name:&str, port_type: ContentType)->Self{
         Self{
             name: name.into(),
+            display_name: name.into(),
+            port_type
+        }
+    }
+
+    pub fn new_named(name:&str, display_name:&str, port_type: ContentType)->Self{
+        Self{
+            name: name.into(),
+            display_name: display_name.into(),
             port_type
         }
     }
@@ -38,6 +48,7 @@ impl Into<CalculationIO> for (&str,ContentType){
 pub struct CalculationConstant{
     pub name: RString,
     pub default_value:ConstantContent,
+    pub display_name:RString,
 }
 
 impl<T> Into<CalculationConstant> for (&str, T)
@@ -54,6 +65,15 @@ impl CalculationConstant{
     pub fn new(name:&str, default_value:ConstantContent)->Self{
         Self{
             name:name.into(),
+            display_name:name.into(),
+            default_value
+        }
+    }
+
+    pub fn new_named(name:&str, display_name:&str, default_value:ConstantContent)->Self{
+        Self{
+            name:name.into(),
+            display_name:display_name.into(),
             default_value
         }
     }
