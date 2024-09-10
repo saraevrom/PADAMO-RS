@@ -236,7 +236,8 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicMoffatNode{
             ("y0","Y0 [mm]",0.0),
 
             ("alpha",1.0),
-            ("beta",4.765)
+            ("beta",4.765),
+            ("normalize","Normalize",true)
         ]
     }
 
