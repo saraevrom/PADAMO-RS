@@ -628,21 +628,21 @@ impl PadamoTool for PadamoViewer{
                             let settings = self.export_parameters.clone();
                             println!("{:?}",settings);
                             if settings.spatialfield.is_empty(){
-                                eprintln!("Signal field is not specified");
+                                padamo.show_error("Signal field is not specified");
                                 return;
                             }
                             if settings.temporalfield.is_empty(){
-                                eprintln!("Time field is not specified");
+                                padamo.show_error("Time field is not specified");
                                 return;
                             }
 
                             if settings.temporalfield==settings.spatialfield{
-                                eprintln!("Signal and time must be different");
+                                padamo.show_error("Signal and time must be different");
                                 return;
                             }
 
                             if settings.rampart>=1.0 || settings.rampart<=0.0{
-                                eprintln!("Ram part must be in (0,1) interval");
+                                padamo.show_error("Ram part must be in (0,1) interval");
                                 return;
                             }
 
@@ -652,7 +652,7 @@ impl PadamoTool for PadamoViewer{
                             let allowed_memory = ((sys.total_memory() as f64)*settings.rampart) as usize;
                             println!("Allowed usage of {} bytes",allowed_memory);
                             if allowed_memory==0{
-                                eprintln!("No memory available");
+                                padamo.show_error("No memory available");
                                 return;
                             }
 
