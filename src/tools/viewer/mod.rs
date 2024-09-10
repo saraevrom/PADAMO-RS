@@ -622,7 +622,8 @@ impl PadamoTool for PadamoViewer{
                             let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
                             let start = self.start;
                             let end = self.end+1;
-                            let testframe = spatial.request_range(0,1).squeeze();
+                            let mut testframe = spatial.request_range(0,1);
+                            testframe.shape.drain(0..1); //Remove time axis
                             let frame_shape = testframe.shape;
                             let settings = self.export_parameters.clone();
                             println!("{:?}",settings);
