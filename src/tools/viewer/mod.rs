@@ -827,7 +827,8 @@ impl PadamoTool for PadamoViewer{
 
                                             //let time_start = Instant::now();
 
-                                        let frame = spatial.request_range(i,i+1).squeeze();
+                                        let mut frame = spatial.request_range(i,i+1);
+                                        frame.shape.drain(0..1);
                                         let tim = temporal.request_range(i,i+1)[0];
 
                                         root.fill(&WHITE).unwrap();
