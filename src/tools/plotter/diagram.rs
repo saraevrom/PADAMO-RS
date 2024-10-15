@@ -79,6 +79,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
 
     #[inline]
     fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, Shift>) {
+        root.fill(&plotters::prelude::WHITE).unwrap();
         let builder = ChartBuilder::on(&root);
         self.build_chart(state, builder);
         if self.plotter_data.channelmap_show{
