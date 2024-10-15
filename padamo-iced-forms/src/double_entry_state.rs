@@ -4,7 +4,7 @@ use iced::widget::row;
 pub fn errored_text(disp:&str,is_ok:bool)->iced::widget::Text<'_,iced::theme::Theme>{
     let mut txt:iced::widget::Text<'_,iced::theme::Theme> = iced::widget::text(disp);
     if !is_ok{
-        txt = txt.style(iced::theme::Text::Color(iced::Color { r: 1.0, g: 0.0, b: 0.0, a: 1.0}));
+        txt = txt.style(|_| iced::widget::text::Style{color: Some(iced::Color { r: 1.0, g: 0.0, b: 0.0, a: 1.0})});
     }
     txt
 }

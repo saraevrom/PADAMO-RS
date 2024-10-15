@@ -1,5 +1,5 @@
 use iced::{widget, Font};
-use iced_aw::{card, SelectionListStyles, SelectionList};
+use iced_aw::{card, SelectionList};
 use super::sparse_intervals::{self, Interval};
 use super::messages::{SelectionMessage,TriggerMessage};
 
@@ -45,7 +45,7 @@ impl IntervalSelectionDialog{
             SelectionMessage::IntervalSelected,
             12.0,
             5.0,
-            SelectionListStyles::Default,
+            iced_aw::style::selection_list::primary,
             self.manual_select,
             Font::default(),
         );

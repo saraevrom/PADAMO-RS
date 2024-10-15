@@ -4,28 +4,38 @@ use super::PadamoTool;
 use crate::messages::PadamoAppMessage;
 use iced::widget;
 pub mod messages;
-use padamo_detectors::{Detector,DetectorChart,};
+use padamo_detectors::Detector;
 use padamo_detectors::polygon::DetectorContent;
-use iced_aw::split::Split;
+use iced::widget::pane_grid;
 
 use messages::DetectorManagerMessage;
+
+#[derive(Clone, Copy)]
+pub enum Pane{
+    DetectorView,
+    SourceCode
+}
 
 pub struct PadamoDetectorManager{
     chart:Detector<DetectorManagerMessage>,
     source:widget::text_editor::Content,
     is_dirty:bool,
-    split_pos:Option<u16>,
+    //split_pos:Option<u16>,
+    panes: pane_grid::State<Pane>,
 }
 
 impl PadamoDetectorManager {
     pub fn new()->Self{
         //let source = widget::text_editor::Content::with_text(&DetectorContent::default_vtl().into_src(Some(1)));
         let source = widget::text_editor::Content::with_text(include_str!("tuloma_source.dsrc"));
+        let (mut panes, start) = pane_grid::State::new(Pane::DetectorView);
+        panes.split(pane_grid::Axis::Vertical, start, Pane::SourceCode);
         Self {
             source,
             chart:Detector::default_vtl(),
             is_dirty:false,
-            split_pos:None
+            //split_pos:None,
+            panes
         }
     }
 }
@@ -37,20 +47,40 @@ impl PadamoTool for PadamoDetectorManager{
 
     fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage> {
         let action:Option<fn(Vec<usize>)->DetectorManagerMessage> = None;
+        // let frame:iced::Element<DetectorManagerMessage> = widget::row![
+        //         Split::new(
+        //             widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill),
+        //             widget::container(widget::text_editor(&self.source).on_action(DetectorManagerMessage::EditorActionPerformed)).width(iced::Length::Fill),
+        //             self.split_pos,
+        //             iced_aw::split::Axis::Vertical,
+        //             DetectorManagerMessage::SetSplitPosition
+        //         ),
+        //         widget::column![
+        //             widget::button("Rebuild").on_press(DetectorManagerMessage::Rebuild),
+        //             widget::button("Export").on_press(DetectorManagerMessage::Export),
+        //         ],
+        //
+        // ].into();
+        //todo!()
+        let subframe = iced::widget::PaneGrid::new(&self.panes,|id, pane, is_maximized| {
+            match pane{
+                Pane::DetectorView=>{
+                    widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill).into()
+                }
+                Pane::SourceCode=>{
+                    widget::container(widget::text_editor(&self.source).on_action(DetectorManagerMessage::EditorActionPerformed)).width(iced::Length::Fill).into()
+                }
+            }
+        }).on_drag(DetectorManagerMessage::PaneDrag).on_resize(10, DetectorManagerMessage::PaneResize);
         let frame:iced::Element<DetectorManagerMessage> = widget::row![
-                Split::new(
-                    widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill),
-                    widget::container(widget::text_editor(&self.source).on_action(DetectorManagerMessage::EditorActionPerformed)).width(iced::Length::Fill),
-                    self.split_pos,
-                    iced_aw::split::Axis::Vertical,
-                    DetectorManagerMessage::SetSplitPosition
-                ),
+                subframe,
                 widget::column![
                     widget::button("Rebuild").on_press(DetectorManagerMessage::Rebuild),
                     widget::button("Export").on_press(DetectorManagerMessage::Export),
                 ],
 
         ].into();
+        //todo!()
         frame.map(PadamoAppMessage::DetectorManagerMessage)
     }
 
@@ -65,9 +95,15 @@ impl PadamoTool for PadamoDetectorManager{
                         self.is_dirty = self.is_dirty || action.is_edit();
                         self.source.perform(action.clone());
                     },
-                    DetectorManagerMessage::SetSplitPosition(v)=>{
-                        self.split_pos = Some(*v);
-                    },
+                    // DetectorManagerMessage::SetSplitPosition(v)=>{
+                    //     self.split_pos = Some(*v);
+                    // },
+                    DetectorManagerMessage::PaneDrag(pane_grid::DragEvent::Dropped {pane, target})=>{
+                        self.panes.drop(*pane, *target);
+                    }
+                    DetectorManagerMessage::PaneResize(pane_grid::ResizeEvent { split, ratio }) => {
+                        self.panes.resize(*split, *ratio);
+                    }
                     DetectorManagerMessage::Rebuild=>{
                         match DetectorContent::from_specs(&self.source.text()) {
                             Ok(detector)=>{
@@ -96,6 +132,7 @@ impl PadamoTool for PadamoDetectorManager{
                             //}
                         }
                     },
+                    _=>(),
                 }
             }
 

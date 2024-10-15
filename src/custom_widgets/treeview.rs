@@ -124,18 +124,21 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
         let new_textrect = iced::Rectangle{x,y,width,height};
         let mut textrect = self.last_rect.borrow_mut();
         *textrect = Some(new_textrect);
+        //let font = renderer.default_font();
+
         renderer.fill_text(iced::advanced::Text{
-            content:&label,
+            content:label,
             bounds:bounds.size(),
             size:20.into(),
+            wrapping: iced::widget::text::Wrapping::None,
             line_height: iced::advanced::text::LineHeight::Absolute(iced::Pixels(HEIGHT)),
-            //color: iced::Color::BLACK,
+            // //color: iced::Color::BLACK,
             font: renderer.default_font(),
             horizontal_alignment: iced::alignment::Horizontal::Left,
             vertical_alignment: iced::alignment::Vertical::Top,
             shaping: Default::default(),
 
-        }, iced::Point { x, y},iced::Color::BLACK,new_textrect);
+        }, iced::Point { x, y},style.text_color,new_textrect);
 
         let mut y_last = y+STEP;
         for (_,node) in self.content.iter(){

@@ -20,8 +20,7 @@ use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use iced::widget::canvas::Cache;
 use super::viewer::ViewerMessage;
 use super::viewer::make_player_pad;
-use padamo_workspace::PadamoWorkspace;
-use iced_aw::{modal,card};
+// use padamo_workspace::PadamoWorkspace;
 use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
 
 use padamo_iced_forms::double_entry_state::{EntryState,errored_text};

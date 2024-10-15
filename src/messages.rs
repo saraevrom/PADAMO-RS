@@ -34,8 +34,3 @@ pub enum PadamoAppMessage{
     ResetWorkspace
 }
 
-impl PadamoAppMessage{
-    pub fn editor_split_position()-> impl Fn(u16)->Self  {
-        move |x| Self::EditorMessage(EditorMessage::TreeSplitPositionSet(x))
-    }
-}

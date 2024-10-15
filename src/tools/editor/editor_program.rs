@@ -6,7 +6,7 @@ use iced::mouse;
 use iced::widget::canvas::event::{self, Event};
 use iced::widget::canvas::{self, Canvas, Frame, Geometry, Path, Stroke};
 use iced::{Element, Length, Point, Rectangle, Renderer, Theme};
-use iced::widget::scrollable::{self, Properties};
+use iced::widget::scrollable;
 use once_cell::sync::Lazy;
 use crate::tools::editor::nodes::GraphNodeCloneBuffer;
 
@@ -51,7 +51,7 @@ impl EditorState{
         }
     }
 
-    pub fn view(&self, offset:u16)->iced::Element<'_, EditorCanvasMessage> {
+    pub fn view(&self)->(iced::Element<'_, EditorCanvasMessage>,iced::Element<'_, EditorCanvasMessage>) {
 
         let scale = self.nodes.full_size();
         let canv_width = (scale.width+200.0).max(1000.0);
@@ -81,7 +81,7 @@ impl EditorState{
                         NodeConstantBuffer::Text(x) => {
                             let mut label = iced::widget::Text::new("Value");
                             if !c.ok{
-                                label = label.style(iced::theme::Text::Color(iced::Color::new(1.0, 0.0, 0.0, 1.0)));
+                                label = label.style(|_| iced::widget::text::Style{color:Some(iced::Color::new(1.0, 0.0, 0.0, 1.0))});
                             }
                             let editor = iced::widget::TextInput::new("", x).on_input(NodeConstantMessage::text(key.into()));
                             iced::widget::row!(
@@ -114,23 +114,24 @@ impl EditorState{
         //     EditorMessage::ConstantSplitPositionSet
         // ).into()
 
+        let scrollbar = scrollable::Scrollbar::new()
+                        .scroller_width(20);
+
         let first_part = iced::widget::scrollable(canv)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .direction(scrollable::Direction::Both{
-                    vertical: Properties::new()
-                        .scroller_width(20),
-                    horizontal:
-                    Properties::new()
-                        .scroller_width(20),
+                    vertical: scrollbar,
+                    horizontal: scrollbar,
                 })
                 .on_scroll(EditorCanvasMessage::CanvasScroll);
         let second_part = iced::widget::scrollable(constcol_elem.map(EditorCanvasMessage::ConstantEdit))
                 .width(300)
                 .height(Length::Fill);
-        iced::widget::row!{
-            first_part,second_part
-        }.into()
+        // iced::widget::row!{
+        //     first_part,second_part
+        // }.into()
+        (first_part.into(), second_part.into())
     }
 
     pub fn draw(&self,frame: &mut canvas::Frame){
@@ -429,7 +430,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                         }
                     },
 
-                    Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_,text:_ })=>{
+                    Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), ..})=>{
                         match pressed_key{
                             // This code turned out to be evil
                             // iced::keyboard::key::Named::Delete=>{

@@ -126,6 +126,7 @@ impl<Message> Detector<Message>{
     }
 
     pub fn build_chart_generic<DB: DrawingBackend>(&self,root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&Option<(& ArrayND<f64>,f64)>, scale:Scaling, state:&Option<((f64,f64),(i32,i32))>) {
+        root.fill(&plotters::prelude::WHITE).unwrap();
         let ((min_x, min_y), (max_x, max_y)) = self.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
 

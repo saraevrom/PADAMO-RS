@@ -33,7 +33,7 @@ pub fn make_player_pad<'a>()->iced::widget::Container<'a, ViewerMessage>{
         ],
 
 
-    ).center_x().center_y().width(iced::Length::Fill)
+    ).center_x(iced::Length::Shrink).center_y(iced::Length::Shrink).width(iced::Length::Fill)
 }
 
 #[derive(Clone,Copy,Debug)]
@@ -348,12 +348,12 @@ impl PadamoTool for PadamoViewer{
             row![
                 iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(ViewerMessage::SetAutoscale),
                 iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
-                iced::widget::text("-").horizontal_alignment(iced::alignment::Horizontal::Center).width(100),
+                iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
                 iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
             ],
             iced::widget::Container::new(
                 iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
-            ).center_x().center_y().width(iced::Length::Fill).height(100),
+            ).center_x(iced::Length::Shrink).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(100),
 
             iced::widget::container(
                 column![
@@ -386,7 +386,7 @@ impl PadamoTool for PadamoViewer{
                     ],
                 ]
 
-            ).center_x().center_y().width(iced::Length::Fill),
+            ).center_x(iced::Length::Shrink).center_y(iced::Length::Shrink).width(iced::Length::Fill),
             make_player_pad(),
         ].into();
         let lower_col = lower_col.map(crate::messages::PadamoAppMessage::ViewerMessage);

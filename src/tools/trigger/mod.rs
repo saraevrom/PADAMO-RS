@@ -10,7 +10,6 @@ use padamo_api::lazy_array_operations::ArrayND;
 use padamo_detectors::Detector;
 pub mod messages;
 use messages::{TriggerMessage,SelectionMessage};
-use iced_aw::{modal, SelectionListStyles};
 //use padamo_iced_forms::IcedForm;
 
 pub mod sparse_intervals;
@@ -209,7 +208,7 @@ impl PadamoTool for PadamoTrigger{
                     TriggerMessage::SelectPositive,
                     12.0,
                     5.0,
-                    SelectionListStyles::Default,
+                    iced_aw::style::selection_list::primary,
                     positive_select,
                     Font::default(),
                 )).height(iced::Length::FillPortion(2)).width(iced::Length::Fill),
@@ -218,7 +217,7 @@ impl PadamoTool for PadamoTrigger{
                     TriggerMessage::SelectNegative,
                     12.0,
                     5.0,
-                    SelectionListStyles::Default,
+                    iced_aw::style::selection_list::primary,
                     negative_select,
                     Font::default(),
                 )).height(iced::Length::FillPortion(2)).width(iced::Length::Fill)
@@ -244,17 +243,23 @@ impl PadamoTool for PadamoTrigger{
         ].into();
 
         //let underlay:iced::Element<'a, TriggerMessage> = ;
-        let overlay =  if let Some(modal_data) = &self.trigger_interval_selector{
-            Some(modal_data.overlay())
+        // let overlay =  if let Some(modal_data) = &self.trigger_interval_selector{
+        //     Some(modal_data.overlay())
+        // }
+        // else{
+        //     None
+        // };
+        // let res:iced::Element<'a, TriggerMessage> = modal(underlay, overlay)
+        //     .backdrop(TriggerMessage::CancelChoseTrigger)
+        //     .on_esc(TriggerMessage::CancelChoseTrigger)
+        //     .align_y(alignment::Vertical::Center)
+        //     .into();
+        let res = if let Some(modal_data) = &self.trigger_interval_selector{
+            modal_data.overlay()
         }
         else{
-            None
+            underlay
         };
-        let res:iced::Element<'a, TriggerMessage> = modal(underlay, overlay)
-            .backdrop(TriggerMessage::CancelChoseTrigger)
-            .on_esc(TriggerMessage::CancelChoseTrigger)
-            .align_y(alignment::Vertical::Center)
-            .into();
 
 
         res.map(PadamoAppMessage::TriggerMessage)

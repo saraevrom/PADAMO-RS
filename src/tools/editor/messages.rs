@@ -22,7 +22,9 @@ pub enum EditorCanvasMessage{
 #[derive(Debug, Clone)]
 pub enum EditorMessage{
     CanvasMessage(EditorCanvasMessage),
-    TreeSplitPositionSet(u16),
+    //TreeSplitPositionSet(u16),
+    PaneDrag(iced::widget::pane_grid::DragEvent),
+    PaneResize(iced::widget::pane_grid::ResizeEvent),
     NodeListClicked(String),
     EditorScroll(scrollable::Viewport),
 }

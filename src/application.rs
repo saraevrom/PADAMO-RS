@@ -1,24 +1,19 @@
-use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::fs;
 use std::rc::Rc;
 
-use iced::advanced::graphics::core::SmolStr;
-use iced::{ Application, Theme, Command};
-use iced::widget::{row, button};
+use iced::widget::button;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
-use crate::tools::{self as ctools, PadamoTool};
+use crate::tools::{self as ctools};
 use crate::builtin_nodes;
 
-use iced_aw::{menu_bar, menu_items, menu, Tabs};
-use iced_aw::menu::{Menu,Item, MenuBar, StyleSheet};
-use iced_aw::modal;
+use iced_aw::Tabs;
+use iced_aw::menu::{primary, Item, Menu, MenuBar};
 use crate::popup_message::MessageList;
 use crate::popup_message::PadamoPopupMessageType;
 // use iced_aw::{menu_bar, menu_items};
 
-use iced_aw::style::MenuBarStyle;
 use std::path::Path;
 use padamo_iced_forms::double_entry_state::EntryState;
 
@@ -32,8 +27,6 @@ fn menu_button(action:&str, msg:PadamoAppMessage)->iced::widget::Button<'_,Padam
 fn title_menu_button(action:&str)->iced::widget::Button<'_,PadamoAppMessage>{
     button(action).on_press(PadamoAppMessage::Noop)
 }
-
-
 
 
 pub struct Padamo{
@@ -171,13 +164,15 @@ fn register_nodes(nodes:&mut NodesRegistry, seekdir:&Path, look_in_directories:b
     }
 }
 
-impl Application for Padamo{
-    type Executor = iced::executor::Default;
-    type Message = PadamoAppMessage;
-    type Theme = Theme;
-    type Flags = ();
+type Message = PadamoAppMessage;
 
-    fn new(_flags: ())->(Self, iced::Command<PadamoAppMessage>){
+impl Padamo{
+    // type Executor = iced::executor::Default;
+    // type Message = PadamoAppMessage;
+    // type Theme = Theme;
+    // type Flags = ();
+
+    fn new()->Self{
         let mut nodes = crate::nodes_interconnect::NodesRegistry::new();
 
         nodes.register_node(builtin_nodes::viewer::LoadedFileNode).unwrap();
@@ -231,19 +226,19 @@ impl Application for Padamo{
             popup_messages:MessageList::new(),
         };
 
-        (
-            Self {
-                //current_page: 0,
-                tools,
-                state,
-                //popup_messages:Rc::new(RefCell::new(MessageList::new())),
-            },
-            iced::font::load(iced_aw::BOOTSTRAP_FONT_BYTES).map(PadamoAppMessage::FontLoaded)
-        )
+
+        Self {
+            //current_page: 0,
+            tools,
+            state,
+            //popup_messages:Rc::new(RefCell::new(MessageList::new())),
+        }
+            //,
+            // iced::font::load(iced_aw::BOOTSTRAP_FONT_BYTES).map(PadamoAppMessage::FontLoaded)
     }
 
 
-    fn update(&mut self, msg: PadamoAppMessage)->Command<PadamoAppMessage>{
+    pub fn update(&mut self, msg: PadamoAppMessage){
         match msg{
             PadamoAppMessage::TabSelect(tab)=> {
                 //println!("Tab select {}", tab);
@@ -261,12 +256,12 @@ impl Application for Padamo{
                 if let Some(path) = self.state.workspace.workspace("detectors").open_dialog(vec![("Detector",vec!["json"])]){
                     let s = match std::fs::read_to_string(path) {
                         Ok(v)=>{v},
-                        Err(e)=> {self.state.show_error(format!("{:?}",e)); return Command::none();}
+                        Err(e)=> {self.state.show_error(format!("{:?}",e)); return;}
                     };
                     let detector = serde_json::from_str(&s);
                     let detector = match detector{
                         Ok(v)=>{v},
-                        Err(e)=> {self.state.show_error(format!("{:?}",e)); return Command::none();}
+                        Err(e)=> {self.state.show_error(format!("{:?}",e)); return;}
                     };
                     self.state.compute_graph.environment.0.insert("detector".into(), padamo_api::calculation_nodes::content::Content::String(s.into()));
                     let msg = PadamoAppMessage::SetDetector(detector);
@@ -277,15 +272,14 @@ impl Application for Padamo{
                 self.update_tools_loop(Rc::new(other));
             }
         };
-        Command::none()
     }
 
 
-    fn title(&self) -> String {
-        "Padamo".into()
-    }
+    // fn title(&self) -> String {
+    //     "Padamo".into()
+    // }
 
-    fn view(&self) -> iced::Element<'_, Self::Message> {
+    pub fn view(&self) -> iced::Element<'_, Message> {
         let mut vlist = iced::widget::Column::new();
         vlist = vlist.spacing(10);
 
@@ -314,12 +308,12 @@ impl Application for Padamo{
 
         let menu_bar = MenuBar::new(vec![file_menu,edit_menu,run_menu,settings_menu])
             .draw_path(iced_aw::menu::DrawPath::Backdrop)
-            .style(|theme:&iced::Theme| iced_aw::menu::Appearance{
+            .style(|theme:&iced::Theme, status| iced_aw::menu::Style{
                     path_border: iced::Border{
-                    radius: [6.0; 4].into(),
-                    ..Default::default()
-                },
-                ..theme.appearance(&MenuBarStyle::Default)
+                        radius: iced::border::Radius::new(6.0),
+                        ..Default::default()
+                    },
+                ..primary(theme, status)
             });
         vlist = vlist.push(menu_bar);
 
@@ -339,20 +333,20 @@ impl Application for Padamo{
         vlist = vlist.push(tabs);
 
         //vlist.into()
-        let underlay:iced::Element<'_,Self::Message> = vlist.into();
+        let underlay:iced::Element<'_,Message> = vlist.into();
         //let overlay:Option<iced::Element<'_,Self::Message>> = None;
-        let overlay:Option<iced::Element<'_,Self::Message>> = if let Some(msg) = self.state.popup_messages.oldest_message(){
-            Some(msg.view())
+        if let Some(msg) = self.state.popup_messages.oldest_message(){
+            msg.view()
         }
         else{
-            None
-        };
-        let popup_window = modal(underlay,overlay).align_x(iced::alignment::Horizontal::Center);
-        popup_window.into()
+            underlay
+        }
+        //let popup_window = modal(underlay,overlay).align_x(iced::alignment::Horizontal::Center);
+        //popup_window.into()
 
     }
 
-    fn subscription(&self) -> iced::Subscription<Self::Message> {
+    pub fn subscription(&self) -> iced::Subscription<Message> {
 
         iced::Subscription::batch(vec![
             iced::time::every(std::time::Duration::from_millis(33+self.state.add_delay_ms)).map(|_| {
@@ -380,5 +374,11 @@ impl Application for Padamo{
 
             })
         ])
+    }
+}
+
+impl Default for Padamo{
+    fn default() -> Self {
+        Self::new()
     }
 }

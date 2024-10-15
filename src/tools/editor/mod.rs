@@ -16,25 +16,35 @@ use self::messages::EditorMessage;
 use super::PadamoTool;
 use abi_stable::traits::IntoOwned;
 use iced::Length;
-use iced::widget::scrollable;
+use iced::widget::scrollable::{self, Scrollbar};
 use once_cell::sync::Lazy;
+use iced::widget::pane_grid;
 pub mod messages;
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
+pub enum Pane{
+    NodeTree,
+    CanvasEditor,
+    ConstantEditor
+}
 
 pub struct PadamoEditor{
     state: editor_program::EditorState,
     tree: Tree<String>,
-    hor_divider_position: u16,
+    //hor_divider_position: u16,
+    panes: pane_grid::State<Pane>,
     current_scroll_offset: scrollable::RelativeOffset,
 }
 
 impl PadamoEditor{
     pub fn new(tree:Tree<String>)->Self{
+        let (mut panes,pane1) = pane_grid::State::new(Pane::NodeTree);
+        let (pane2,_) = panes.split(pane_grid::Axis::Vertical, pane1, Pane::CanvasEditor).unwrap();
+        panes.split(pane_grid::Axis::Vertical, pane2, Pane::ConstantEditor);
 
         //println!("{:?}",tree);
-        Self{state: editor_program::EditorState::new(), tree, hor_divider_position:200, current_scroll_offset: scrollable::RelativeOffset::START}
+        Self{state: editor_program::EditorState::new(), tree, panes, current_scroll_offset: scrollable::RelativeOffset::START}
     }
 
     fn run(&self,padamo:&mut PadamoState){
@@ -52,23 +62,47 @@ impl PadamoEditor{
 
 impl PadamoTool for PadamoEditor{
     fn view<'a>(&'a self)->iced::Element<'a, PadamoAppMessage> {
-        let first:iced::Element<'_,EditorMessage> = scrollable(
-                iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x)))),
-            ).id(SCROLLABLE_ID.clone())
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .direction(scrollable::Direction::Vertical(scrollable::Properties::new().width(10).alignment(scrollable::Alignment::Start)))
-            .on_scroll(messages::EditorMessage::EditorScroll).into()
-            ;
+        // let first:iced::Element<'_,EditorMessage> = scrollable::Scrollable::new(
+        //         iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x)))),
+        //     ).id(SCROLLABLE_ID.clone())
+        //     .width(Length::Fill)
+        //     .height(Length::Fill)
+        //     .direction(scrollable::Direction::Vertical(Scrollbar::new().width(10).anchor(scrollable::Anchor::Start)))
+        //     .on_scroll(messages::EditorMessage::EditorScroll).into()
+        //     ;
 
-        let second:iced::Element<'_,EditorMessage> = self.state.view(self.hor_divider_position).map(messages::EditorMessage::CanvasMessage);//.map(PadamoAppMessage::EditorMessage);
 
-        let split:iced::Element<'a, EditorMessage> = iced_aw::Split::new(
-            first,second,
-            Some(self.hor_divider_position),
-            iced_aw::split::Axis::Vertical,
-            EditorMessage::TreeSplitPositionSet
-        ).into();
+
+
+        // let split:iced::Element<'a, EditorMessage> = iced_aw::Split::new(
+        //     first,second,
+        //     Some(self.hor_divider_position),
+        //     iced_aw::split::Axis::Vertical,
+        //     EditorMessage::TreeSplitPositionSet
+        // ).into();
+        let split:iced::Element<'a, EditorMessage> = pane_grid::PaneGrid::new(&self.panes, |id, pane, maximized|{
+            let first:iced::Element<'_,EditorMessage> = scrollable::Scrollable::new(
+                iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x))))
+            )
+                .id(SCROLLABLE_ID.clone())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .direction(scrollable::Direction::Vertical(Scrollbar::new().width(10).anchor(scrollable::Anchor::Start)))
+                .on_scroll(messages::EditorMessage::EditorScroll)
+                .into();
+            let (second, third) = self.state.view();
+            let second = second.map(messages::EditorMessage::CanvasMessage);
+            let third = third.map(messages::EditorMessage::CanvasMessage);
+            match  pane{
+                Pane::NodeTree=>first.into(),
+                Pane::CanvasEditor=>second.into(),
+                Pane::ConstantEditor=>third.into()
+            }
+        })
+        .on_drag(EditorMessage::PaneDrag)
+        .on_resize(10, EditorMessage::PaneResize)
+        .into();
+
         split.map(PadamoAppMessage::EditorMessage)
         // iced::widget::row!(
         //     iced::Element::new(self.tree.view(Some(crate::messages::PadamoAppMessage::NodeListClicked))),
@@ -87,7 +121,15 @@ impl PadamoTool for PadamoEditor{
                         self.state.handle_message(msg)
 
                     },
-                    messages::EditorMessage::TreeSplitPositionSet(pos)=>{self.hor_divider_position = *pos},
+
+                    messages::EditorMessage::PaneDrag(pane_grid::DragEvent::Dropped {pane, target})=>{
+                        self.panes.drop(*pane, *target);
+                    }
+                    messages::EditorMessage::PaneResize(pane_grid::ResizeEvent { split, ratio }) => {
+                        self.panes.resize(*split, *ratio);
+                    }
+
+                    //messages::EditorMessage::TreeSplitPositionSet(pos)=>{self.hor_divider_position = *pos},
                     messages::EditorMessage::NodeListClicked(identifier)=>{
                         // let path = p.join("/");
                         let node = padamo.nodes.create_calculation_node(identifier.into_owned());
@@ -108,6 +150,7 @@ impl PadamoTool for PadamoEditor{
                         //self.state.scroll_offset = off;
                         //view.relative_offset().x
                     },
+                    _=>()
                 }
             },
             crate::messages::PadamoAppMessage::Run=>{

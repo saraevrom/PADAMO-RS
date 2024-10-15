@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 chrono = "0.4.34"
-iced = "0.12.0"
+iced = { version = "0.13", features = ["canvas"] }
 plotters = "0.3.5"
-plotters-iced = "0.10.0"
+plotters-iced = "0.11"
 plotters-layout = "0.1.0"
 serde = { version = "1.0.196", features = ["derive"] }
 padamo-api = { path = "../padamo-api" }

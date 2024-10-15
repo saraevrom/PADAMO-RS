@@ -12,8 +12,12 @@ mod time_search;
 mod popup_message;
 
 fn main() -> iced::Result{
-    application::Padamo::run(Settings {
-        antialiasing: true,
-        ..Settings::default()
-    })
+    // application::Padamo::run(Settings {
+    //     antialiasing: true,
+    //     ..Settings::default()
+    // })
+    iced::application("PADAMO",application::Padamo::update, application::Padamo::view)
+        .subscription(application::Padamo::subscription)
+        .exit_on_close_request(true)
+        .run()
 }
