@@ -40,8 +40,10 @@ pub struct PadamoEditor{
 impl PadamoEditor{
     pub fn new(tree:Tree<String>)->Self{
         let (mut panes,pane1) = pane_grid::State::new(Pane::NodeTree);
-        let (pane2,_) = panes.split(pane_grid::Axis::Vertical, pane1, Pane::CanvasEditor).unwrap();
-        panes.split(pane_grid::Axis::Vertical, pane2, Pane::ConstantEditor);
+        let (pane2,split1) = panes.split(pane_grid::Axis::Vertical, pane1, Pane::CanvasEditor).unwrap();
+        let (pane3, split2) = panes.split(pane_grid::Axis::Vertical, pane2, Pane::ConstantEditor).unwrap();
+        panes.resize(split1, 0.25);
+        panes.resize(split2, 0.75);
 
         //println!("{:?}",tree);
         Self{state: editor_program::EditorState::new(), tree, panes, current_scroll_offset: scrollable::RelativeOffset::START}
