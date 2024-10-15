@@ -33,7 +33,8 @@ impl PadamoPopupMessage{
     }
 
     pub fn view<'a>(&'a self)->iced::Element<'a, PadamoAppMessage>{
-        card::Card::new(widget::text(self.message_type.title()), widget::text(&self.message))
+
+        iced::widget::container(card::Card::new(widget::text(self.message_type.title()), widget::text(&self.message))
             .foot(
                 widget::container(
                     widget::button("OK").width(100).on_press(PadamoAppMessage::PopupMessageClick)
@@ -42,7 +43,13 @@ impl PadamoPopupMessage{
             .on_close(PadamoAppMessage::PopupMessageClick)
             .max_width(500.0)
             .max_height(250.0)
-            .into()
+        )
+        .width(iced::Length::Fill)
+        .height(iced::Length::Fill)
+        .padding(10)
+        .center_x(iced::Length::Fill)
+        .center_y(iced::Length::Fill)
+        .into()
     }
 }
 
