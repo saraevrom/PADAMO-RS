@@ -126,7 +126,7 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
         *textrect = Some(new_textrect);
         //let font = renderer.default_font();
 
-        renderer.fill_text(iced::advanced::Text{
+        let text_to_render = iced::advanced::Text{
             content:label,
             bounds:bounds.size(),
             size:20.into(),
@@ -138,7 +138,8 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
             vertical_alignment: iced::alignment::Vertical::Top,
             shaping: Default::default(),
 
-        }, iced::Point { x, y},style.text_color,new_textrect);
+        };
+        renderer.fill_text(text_to_render, iced::Point { x, y},style.text_color,new_textrect);
 
         let mut y_last = y+STEP;
         for (_,node) in self.content.iter(){
