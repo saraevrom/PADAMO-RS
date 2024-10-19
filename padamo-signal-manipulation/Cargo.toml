@@ -14,9 +14,9 @@ crate-type = ["dylib"]
 [dependencies]
 # For things to work
 abi_stable = "0.11.3"
-ndarray = { version = "0.15.6", features = ["rayon"] }
-ndarray-stats = "0.5.1"
+ndarray = { version = "0.16.1", features = ["rayon"] }
+ndarray-stats = "0.6.0"
 num_cpus = "1.16.0"
 # Main padamo api
 padamo-api = { path = "../padamo-api" }
-rayon = "1.8.1"
+rayon = "1.10.0"
