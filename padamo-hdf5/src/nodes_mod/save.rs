@@ -2,6 +2,7 @@ use abi_stable::rvec;
 use abi_stable::std_types::ROption::{self, RSome};
 use abi_stable::std_types::{RVec, RString, RResult};
 use padamo_api::{constants, ports, prelude::*};
+use crate::compat::arraynd_to_ndarray;
 
 #[derive(Clone,Debug)]
 pub struct SaveHDF5Node;
@@ -34,7 +35,7 @@ impl SaveHDF5Node{
             space_ds = space_ds.deflate(deflate_level);
         }
         let space_ds = space_ds.create(spatial_name.as_str()).map_err(ExecutionError::from_error)?;
-        space_ds.write(&spatial.to_ndarray()).map_err(ExecutionError::from_error)?;
+        space_ds.write(&arraynd_to_ndarray(spatial)).map_err(ExecutionError::from_error)?;
 
         let temporal = signal.1.request_range(0,signal.0.length());
 
@@ -135,7 +136,7 @@ impl SaveHDF5ArrayNode{
             space_ds = space_ds.deflate(deflate_level);
         }
         let space_ds = space_ds.create(spatial_name.as_str()).map_err(ExecutionError::from_error)?;
-        space_ds.write(&spatial.to_ndarray()).map_err(ExecutionError::from_error)?;
+        space_ds.write(&arraynd_to_ndarray(spatial)).map_err(ExecutionError::from_error)?;
 
         Ok(())
     }

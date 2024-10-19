@@ -5,6 +5,7 @@ use padamo_api::nodes_vec;
 use abi_stable::sabi_extern_fn;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 
+pub mod compat;
 pub mod nodes_mod;
 pub mod ops;
 
