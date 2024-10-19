@@ -4,7 +4,6 @@ use padamo_api::{make_node_box, prelude::*};
 use abi_stable::{std_types::RVec, export_root_module, prefix_type::PrefixTypeTrait};
 use padamo_api::nodes_vec;
 use abi_stable::sabi_extern_fn;
-use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub mod nodes;
 pub mod ops;
@@ -25,7 +24,7 @@ pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
         .with_execution_providers([CUDAExecutionProvider::default().build(),CPUExecutionProvider::default().build()])
         .commit()
     {
-        Ok(())=>{
+        Ok(_)=>{
             match nodes::ANN3DNode::new("ANN trigger Model A", &format!("{}/model_A.onnx",library_dir), (128,16,16), "concatenate".into(),
                                         "model_a","ANN trigger Model A"){
                 Ok(v)=>res.push(make_node_box(v)),
