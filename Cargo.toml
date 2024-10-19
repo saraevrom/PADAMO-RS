@@ -36,5 +36,5 @@ sysinfo = "0.30.7"
 rand = "0.8.5"
 
 [workspace]
-members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms"]
+members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft"]
 resolver = "2"
