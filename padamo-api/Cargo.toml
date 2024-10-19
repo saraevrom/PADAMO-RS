@@ -1,6 +1,6 @@
 [package]
 name = "padamo-api"
-version = "4.0.0"
+version = "4.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -10,10 +10,14 @@ abi_stable = "0.11.3"
 topo_sort = "0.4.0"
 padamo-api-macros-internal = { path = "./padamo-api-macros-internal" }
 #iced = "0.12.0"
-ndarray = "0.15.6"
+ndarray = { version = "0.16.1", optional = true }
 paste = "1.0.14"
 serde = { version = "1.0.196", features = ["derive"] }
 ndarray-linalg = "0.16.0"
 atomic_refcell = "0.1.13"
 nom = "7.1.3"
 thiserror = "1.0.61"
+
+[features]
+default = ["ndarray"]
+ndarray = ["dep:ndarray"]
