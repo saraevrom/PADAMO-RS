@@ -14,7 +14,7 @@ impl MatReadNode{
         if let Some(d) = mat_file.find_by_name(&field){
 
             let data:ndarray::ArrayD<f64> = d.try_into().map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
-            let data:padamo_api::lazy_array_operations::ArrayND<f64> = data.into();
+            let data:padamo_api::lazy_array_operations::ArrayND<f64> = crate::compat::ndarray_to_arraynd(data);
 
             let data:ConstantArray<f64> = ops::ConstantArray::new(data);
             outputs.set_value("Array", Content::DetectorSignal(make_lao_box(data)))?;

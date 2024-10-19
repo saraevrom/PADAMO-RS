@@ -17,5 +17,5 @@ crate-type = ["dylib"]
 abi_stable = "0.11.3"
 num_cpus = "1.16.0"
 # Main padamo api
-padamo-api = { path = "../padamo-api" }
+padamo-api = { path = "../padamo-api", features = [] } # No need for ndarray
 regex = "1.10.5"

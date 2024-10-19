@@ -10,7 +10,6 @@ use padamo_detectors::Detector;
 use plotters::coord::{cartesian::Cartesian2d, types::RangedCoordf64};
 use plotters_iced::Chart;
 use crate::{application::PadamoState, messages::PadamoAppMessage};
-//use ndarray_stats::QuantileExt;
 //use super::viewer::ViewerMessage;
 pub mod messages;
 pub mod diagram;

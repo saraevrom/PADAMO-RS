@@ -1,5 +1,8 @@
 use abi_stable::{StableAbi, std_types::{RVec, Tuple2, ROption}, rvec};
+
+#[cfg(feature = "ndarray")]
 use ndarray::{IxDyn, OwnedRepr};
+
 //use ndarray::{IxDyn, OwnedRepr};
 use std::ops::{Add, IndexMut, Index};
 //use ndarray::prelude::*;
@@ -121,6 +124,8 @@ where
         self.flat_data[index_flat] = value;
     }
 
+
+    #[cfg(feature = "ndarray")]
     pub fn to_ndarray(self)->ndarray::ArrayBase<OwnedRepr<T>,IxDyn>{
         let shape = IxDyn(&self.shape.to_vec());
         //println!("CONV {:?} {:?}",self.shape,&self.flat_data.len());
@@ -178,6 +183,7 @@ where
 }
 
 
+#[cfg(feature = "ndarray")]
 impl<T,D> From<ndarray::ArrayBase<OwnedRepr<T>,D>> for ArrayND<T>
 where
     T: Clone+StableAbi,
@@ -185,9 +191,16 @@ where
 {
     fn from(value: ndarray::ArrayBase<OwnedRepr<T>,D>) -> Self {
         let shape:Vec<usize> = value.shape().into();
-        let flat_data:Vec<T> = value.into_raw_vec();
+        let (flat_data,offset) = value.into_raw_vec_and_offset();
+        if let Some(off) = offset{
+            let mut flat_data = flat_data;
+            flat_data.drain(..off);
+            Self { flat_data:flat_data.into(), shape: shape.into() }
+        }
+        else{
+            Self { flat_data:flat_data.into(), shape: shape.into() }
+        }
 
-        Self { flat_data:flat_data.into(), shape: shape.into() }
     }
 }
 
