@@ -7,6 +7,7 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub mod ops;
 pub mod nodes;
+pub mod compat;
 
 
 #[export_root_module]
