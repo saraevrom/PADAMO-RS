@@ -34,15 +34,17 @@ impl SlidingQuantileNode{
 
         let bg = LazySlidingQuantile::new(source.0.clone(), window, quantile);
         let bg = LazyArrayOperationBox::from_value(bg, TD_Opaque);
+        let bg = crate::padding::make_padding(bg, window/2, window-window/2-1);
         let bg = bg.cached();
 
-        let cut_signal = LazySkipper::new(source.0, window);
+        //let cut_signal = LazySkipper::new(source.0, window);
+        let cut_signal = source.0.clone();
         let cut_signal = LazyArrayOperationBox::from_value(cut_signal, TD_Opaque);
         let detail = LazySubtractor::new(cut_signal, bg.clone());
         let detail = LazyArrayOperationBox::from_value(detail, TD_Opaque);
         let detail = detail.cached();
 
-        let time = LazyArrayOperationBox::from_value(LazySkipper::new(source.1, window), TD_Opaque);
+        let time = source.1;//LazyArrayOperationBox::from_value(LazySkipper::new(source.1, window), TD_Opaque);
         let trisignal:LazyTriSignal = (detail,time.clone(),trigger.clone()).into();
         let bg_out:LazyTriSignal = (bg,time,trigger).into();
         //
@@ -120,11 +122,11 @@ impl SlidingQuantileNodeNormalizer{
         }
 
         let norm = LazySlidingQuantileNormalize::new(source.0.clone(), window, quantile,gauss, variance);
-        let norm = LazyArrayOperationBox::from_value(norm, TD_Opaque);
+        let norm = crate::padding::make_padding(make_lao_box(norm), window/2, window-window/2-1);
         let norm = norm.cached();
 
 
-        let time = LazyArrayOperationBox::from_value(LazySkipper::new(source.1, window), TD_Opaque);
+        let time = source.1;//LazyArrayOperationBox::from_value(LazySkipper::new(source.1, window), TD_Opaque);
         let trisignal:LazyTriSignal = (norm,time,trigger).into();
         //
         outputs.set_value("Normalized", Content::DetectorFullData(trisignal))?;

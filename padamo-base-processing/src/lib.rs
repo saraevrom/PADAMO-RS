@@ -3,6 +3,7 @@ pub mod ops_median;
 pub mod moving_median;
 pub mod node_reg;
 pub mod node_reg_mm;
+pub mod padding;
 //pub mod fast_mm;
 use abi_stable::prefix_type::PrefixTypeTrait;
 use padamo_api::prelude::*;
