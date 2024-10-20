@@ -13,6 +13,9 @@ impl STFTNode{
         if window<0{
             return Err(ExecutionError::OtherError("STFT window must not be negative".into()));
         }
+        if window as usize > signal_in.0.length(){
+            return Err(ExecutionError::OtherError("STFT window is bigger than signal".into()));
+        }
         let window = window as usize;
         let time_length:usize = signal_in.1.length();
         let time_length = time_length.min(1000);
