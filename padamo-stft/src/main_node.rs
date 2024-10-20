@@ -17,10 +17,11 @@ impl STFTNode{
         let time_length:usize = signal_in.1.length();
         let time_length = time_length.min(1000);
         let time_test:Vec<f64> = signal_in.1.request_range(0,time_length).to_vec();
-        let sample_rate:f64 = time_test.windows(2).map(|vs| {
+        let sample_period:f64 = time_test.windows(2).map(|vs| {
             let [x, y] = vs else { unreachable!() };
             y - x
         }).fold(0.0, |a,b| a+b)/(time_length as f64);
+        let sample_rate = 1.0/sample_period;
         signal_in.0 = make_lao_box(FilterOp::new(signal_in.0, filter, window, sample_rate));
         outputs.set_value("Signal", signal_in.into())?;
         Ok(())

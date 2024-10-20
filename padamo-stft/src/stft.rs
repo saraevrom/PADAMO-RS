@@ -66,20 +66,11 @@ impl STFTConverter{
         Self { window }
     }
 
+//     pub fn print_frequencies(&self, sampling_rate:f64){
+//
+//     }
+
     fn stft(&self, signal:&[f64], plan:Arc<dyn Fft<f64>>, window_number:usize)->Vec<Complex<f64>>{
-        // let full_len = signal.len();
-        // let short_len = full_len - self.window + 1;
-        // let mut res:ndarray::Array2<rustfft::num_complex::Complex<f64>> = ndarray::Array2::zeros((0,self.window));
-        // res.reserve_rows(short_len).unwrap();
-        // //res.reserve_columns(self.window).unwrap();
-        //let plan = planner.plan_fft_forward(self.window);
-        // for i in 0..short_len{
-        //     let mut data:Vec<_> = (0..self.window).map(|j|rustfft::num_complex::Complex{re:signal[i+j]*window_func(j as i64, self.window as i64), im:0.0}).collect();
-        //     plan.process(&mut data);
-        //     res.push_row(ndarray::Array1::from_vec(data).view()).unwrap();
-        // }
-        // res
-        // let full_len = signal.len();
         let n_full = self.window as i64;
         let window_start = window_number*(self.window/2);
         let mut s: Vec<Complex<f64>> = (window_start..window_start+self.window).map(|n| Complex{re:signal[n]*window_func(n as i64 - window_start as i64, n_full ), im:0.0}).collect();
@@ -89,34 +80,6 @@ impl STFTConverter{
 
     fn istft(&self, spectrum:Vec<Complex<f64>>, plan:Arc<dyn Fft<f64>>, window_number:usize, target_array:&mut Vec<f64>){
 
-        // let shape = spectra.shape();
-        // let short_length = shape[0];
-        // let window = shape[1];
-        // let full_length = short_length + window - 1;
-        //
-        // let mut res = vec![0.0; full_length];
-        // let mut windowed_signals: ndarray::Array2<rustfft::num_complex::Complex<f64>> = ndarray::Array2::zeros((0,self.window));
-        // windowed_signals.reserve_rows(full_length).unwrap();
-        // //windowed_signals.reserve_columns(self.window).unwrap();
-        // let plan = planner.plan_fft_inverse(window);
-        // // Let's make ifft first
-        // for i in 0..short_length{
-        //     let mut data = spectra.row(i).to_vec();
-        //     plan.process(&mut data);
-        //     data.iter_mut().for_each(|x| *x = *x/(window as f64)); // Normalizing items
-        //     windowed_signals.push_row(ndarray::Array1::from_vec(data).view()).unwrap();
-        // }
-        //
-        //
-        // for n in 0..window{
-        // for m in 0..short_length{
-        //     let mut v = 0.0;
-        //         v += windowed_signals.row(m)[j].re*window_func(i as i64 - ((j*window) as i64)/2, window as i64);
-        //     }
-        //     res[i] = v ;
-        // }
-        //
-        // res
         let window = spectrum.len();
         // let m = window_number as i64;
         let n_full = self.window as i64;

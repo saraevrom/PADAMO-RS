@@ -27,8 +27,8 @@ impl LazyArrayOperation<ArrayND<f64>> for FilterOp{
     fn length(&self,) -> usize{
         let src_len = self.source.length();
         let step = self.stft.window/2;
-        let windows_amount = (src_len-self.stft.window)/step + 1;
-        windows_amount*step+self.stft.window
+        let last_window = (src_len-self.stft.window)/step;
+        last_window*step+self.stft.window
     }
 
     fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
