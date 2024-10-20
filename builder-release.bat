@@ -32,6 +32,7 @@ move padamocore.dll                  plugins
 move padamohdf5.dll                  plugins
 move padamotrackgen.dll              plugins
 move padamorandom.dll                plugins
+move padamostft.dll                plugins
 
 move /Y padamo-neuraltrigger plugins\padamo-neuraltrigger
 
