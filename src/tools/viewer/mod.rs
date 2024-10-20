@@ -171,6 +171,7 @@ pub struct PadamoViewer{
     export_status:String,
 
     stop_on_trigger:bool,
+    file_changed:bool,
     //animation_resolution:(u32,u32),
     //animation_resolution_str:(String,String),
 }
@@ -197,6 +198,7 @@ impl PadamoViewer{
             is_autoscale:true,
             plot_scale:padamo_detectors::Scaling::Autoscale,
             plotter_needs_reset:false,
+            file_changed:true,
             animation_fields:AnimationParametersInterface::new(&animation_params),
             animation_parameters: animation_params,
 
@@ -221,7 +223,10 @@ impl PadamoViewer{
             self.signal = Some(signal.clone());
             //self.signal = Some((signal_w.0,signal_w.1,signal_w.2.into()));
             self.length = signal.0.length()-1;
-            self.end = self.length;
+            if self.file_changed{
+                self.end = self.length;
+                self.file_changed = false;
+            }
             self.clamp();
             self.update_buffer(Some(padamo));
             self.fill_strings();
@@ -1000,6 +1005,7 @@ impl PadamoTool for PadamoViewer{
                 let open_res = padamo.workspace.workspace("viewed_hdf5_data").open_dialog(vec![("HDF5 data",vec!["h5"]),("MATLAB 7.3 data",vec!["mat"]),("Cern ROOT data",vec!["root"])]);
                 if let Some(file_path) = open_res{
                     padamo.compute_graph.environment.0.insert(crate::builtin_nodes::viewer::VIEWER_FILENAME_VAR.into(), file_path.into());
+                    self.file_changed = true;
                 }
             },
             _=>()
