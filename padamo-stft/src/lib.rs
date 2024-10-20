@@ -1,16 +1,22 @@
-pub mod stft;
+use abi_stable::std_types::RString;
+use padamo_api::prelude::*;
+use abi_stable::{std_types::RVec, export_root_module, prefix_type::PrefixTypeTrait};
+use abi_stable::sabi_extern_fn;
 
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+
+
+pub mod stft;
+pub mod ops;
+pub mod main_node;
+
+#[export_root_module]
+pub fn plugin_root()->PadamoModule_Ref{
+    PadamoModule{nodes}.leak_into_prefix()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+#[sabi_extern_fn]
+pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
+    let mut node_list: RVec<CalculationNodeBox> = RVec::new();
+    node_list.extend(main_node::nodes());
+    node_list
 }

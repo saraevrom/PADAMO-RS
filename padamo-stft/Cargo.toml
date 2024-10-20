@@ -4,13 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "padamosfft"
+name = "padamostft"
 crate-type = ["dylib"]
 
 
 [dependencies]
 abi_stable = "0.11.3"
 padamo-api = { path = "../padamo-api" }
-rayon = "1.8.1"
-ndarray = { version = "0.15.6", features = ["rayon"] }
+rayon = "1.10.0"
+ndarray = { version = "0.16.1", features = ["rayon"] }
 rustfft = "6.2.0"
+num_cpus = "1.16.0"
+num = "0.4.3"
