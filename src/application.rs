@@ -162,7 +162,12 @@ impl Padamo{
 
     fn try_load_detector(&mut self){
         if let Some(s) = self.state.persistent_state.read("detector"){
-            self.set_detector(s, false);
+            println!("Loading persistent detector");
+            // self.set_detector(s, false);
+            if let Some(detector) = self.set_detector(s, false){
+                let msg = PadamoAppMessage::SetDetector(detector);
+                self.update_tools_sequence(Rc::new(msg));
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ pub mod polygon;
 pub mod parser;
 pub mod colors;
 pub mod selector_chart;
+pub mod transformer;
 
 pub use selector_chart::DetectorChartMap;
 
