@@ -77,6 +77,7 @@ impl TimeAxisFormat{
             Self::GTU => TimeAxisRangeFormat::GTU
         }
     }
+
 }
 
 //type DataCache = (Vec<f64>,ArrayND<f64>, Vec<f64>, usize);
@@ -376,6 +377,15 @@ impl Plotter{
         }
     }
 
+    fn save_chart<T:plotters::backend::DrawingBackend>(&self, plotter:T, path:&std::path::Path){
+        use plotters::prelude::*;
+        let root_area = plotter.into_drawing_area();
+        root_area.fill(&WHITE).unwrap();
+        //let cc = ChartBuilder::on(&root_area);
+        let charter = diagram::PlotterChart::new(&self);
+        charter.draw_chart(&(), root_area);
+    }
+
 }
 
 impl PadamoTool for Plotter{
@@ -657,26 +667,24 @@ impl PadamoTool for Plotter{
                     }
                     PlotterMessage::SavePlot=>{
                         //diagram::PlotterChart::new(&self).
-
                         let result = padamo.workspace.workspace("plots").save_dialog(vec![("Portable net graphics", vec!["png"]),("Scalar vector graphics", vec!["svg"])]);
                         if let Some(v) = result{
                             use plotters::prelude::*;
-                            let charter = diagram::PlotterChart::new(&self);
                             let out_shape = (self.out_shape.0.parsed_value, self.out_shape.1.parsed_value);
-                            if v.ends_with(".svg"){
-                                let root_area = SVGBackend::new(&v, out_shape).into_drawing_area();
-                                root_area.fill(&WHITE).unwrap();
-                                let cc = ChartBuilder::on(&root_area);
-                                charter.build_chart(&(), cc);
-                            }
-                            else if v.ends_with(".png"){
-                                let root_area = BitMapBackend::new(&v, out_shape).into_drawing_area();
-                                root_area.fill(&WHITE).unwrap();
-                                let cc = ChartBuilder::on(&root_area);
-                                charter.build_chart(&(), cc);
+                            let filename = std::path::Path::new(&v);
+                            let ext:Option<&str> = if let Some(e) = filename.extension(){
+                                e.to_str()
                             }
                             else{
-                                println!("Cannot determine backend for {}", v);
+                                None
+                            };
+
+                            match ext{
+                                Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape), filename)},
+                                Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
+                                _=>{
+                                    println!("Cannot determine backend for {}", v);
+                                }
                             }
                         }
                         will_replot=false;
@@ -732,6 +740,7 @@ impl PadamoTool for Plotter{
         }
 
     }
+
 
     fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
         if let PadamoAppMessage::PlotterMessage(PlotterMessage::PlotXClicked(f)) = msg.as_ref(){
