@@ -19,9 +19,16 @@ use iced::Length;
 use iced::widget::scrollable::{self, Scrollbar};
 use once_cell::sync::Lazy;
 use iced::widget::pane_grid;
+use padamo_workspace::PadamoWorkspace;
 pub mod messages;
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
+
+fn make_workspace(workspace:&PadamoWorkspace)->padamo_workspace::PadamoSubWorkspace{
+    workspace
+    .workspace("graphs-rs")
+    .with_action(crate::assets::copy_asset_action("default.json"))
+}
 
 pub enum Pane{
     NodeTree,
@@ -169,7 +176,7 @@ impl PadamoTool for PadamoEditor{
     fn context_update(&mut self, msg: Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
         match msg.as_ref() {
             crate::messages::PadamoAppMessage::Save =>{
-                if let Some(file_path) = padamo.workspace.workspace("graphs-rs").save_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
+                if let Some(file_path) = make_workspace(&padamo.workspace).save_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
                     let jsd = self.state.nodes.serialize();
                     if let Ok(s) = serde_json::to_string_pretty(&jsd){
                         if let Ok(_) = std::fs::write(file_path, s){
@@ -179,7 +186,7 @@ impl PadamoTool for PadamoEditor{
                 }
             },
             crate::messages::PadamoAppMessage::Open =>{
-                if let Some(file_path) = padamo.workspace.workspace("graphs-rs").open_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
+                if let Some(file_path) = make_workspace(&padamo.workspace).open_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
                     if let Ok(mut f) = std::fs::File::open(file_path){
                         let mut buf:String = String::new();
                         if let Ok(_) = f.read_to_string(&mut buf){

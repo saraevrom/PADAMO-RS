@@ -122,7 +122,7 @@ impl<'a> PadamoSubWorkspace<'a>{
                 println!("Created dir {:?}",p.to_str());
             }
             for action in self.default_operations.iter(){
-                action(&p);
+                action(&p)
             }
             Some(p)
         }
