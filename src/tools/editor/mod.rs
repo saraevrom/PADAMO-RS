@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::rc::Rc;
 use std::str::FromStr;
-use crate::application::PadamoState;
+use crate::application::{PadamoState, PadamoStateRef};
 //use crate::custom_widgets::treeview::TreeView;
 use crate::messages::PadamoAppMessage;
 
@@ -65,6 +65,20 @@ impl PadamoEditor{
         }
         else{
             println!("Execution success");
+        }
+    }
+
+    fn try_open(&mut self, padamo: PadamoStateRef, filename:&str){
+        if let Ok(mut f) = std::fs::File::open(filename){
+            let mut buf:String = String::new();
+            if let Ok(_) = f.read_to_string(&mut buf){
+                if let Ok(jsd) = serde_json::Value::from_str(&buf){
+                    if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
+                        padamo.show_error(format!("{}",e));
+                        self.state.nodes.clear();
+                    }
+                }
+            }
         }
     }
 }
@@ -187,17 +201,18 @@ impl PadamoTool for PadamoEditor{
             },
             crate::messages::PadamoAppMessage::Open =>{
                 if let Some(file_path) = make_workspace(&padamo.workspace).open_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
-                    if let Ok(mut f) = std::fs::File::open(file_path){
-                        let mut buf:String = String::new();
-                        if let Ok(_) = f.read_to_string(&mut buf){
-                            if let Ok(jsd) = serde_json::Value::from_str(&buf){
-                                if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
-                                    padamo.show_error(format!("{}",e));
-                                    self.state.nodes.clear();
-                                }
-                            }
-                        }
-                    }
+                    // if let Ok(mut f) = std::fs::File::open(file_path){
+                    //     let mut buf:String = String::new();
+                    //     if let Ok(_) = f.read_to_string(&mut buf){
+                    //         if let Ok(jsd) = serde_json::Value::from_str(&buf){
+                    //             if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
+                    //                 padamo.show_error(format!("{}",e));
+                    //                 self.state.nodes.clear();
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                    self.try_open(padamo, &file_path);
                 }
             },
             crate::messages::PadamoAppMessage::Copy => {

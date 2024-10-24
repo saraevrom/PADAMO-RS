@@ -13,6 +13,11 @@ pub trait PadamoTool{
 
     fn tab_name(&self)->String;
     fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage>;
+
+    fn initialize(&mut self, padamo:crate::application::PadamoStateRef){
+
+    }
+
     fn update(&mut self, msg: Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef){
 
     }

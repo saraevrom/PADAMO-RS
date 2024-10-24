@@ -210,7 +210,6 @@ impl Padamo{
             Box::new(ctools::Plotter::new()),
             Box::new(ctools::PadamoDetectorManager::new())
         ];
-
         let mut compute_graph = padamo_api::calculation_nodes::graph::CalculationSequenceStorage::new();
 
         let det = serde_json::to_string(&padamo_detectors::polygon::DetectorContent::default_vtl()).unwrap();
@@ -227,16 +226,24 @@ impl Padamo{
         };
 
 
-        Self {
+        let mut res = Self {
             //current_page: 0,
             tools,
             state,
             //popup_messages:Rc::new(RefCell::new(MessageList::new())),
-        }
+        };
             //,
             // iced::font::load(iced_aw::BOOTSTRAP_FONT_BYTES).map(PadamoAppMessage::FontLoaded)
+
+        res.initialize_tools();
+        res
     }
 
+    pub fn initialize_tools(&mut self){
+        for tool in self.tools.iter_mut(){
+            tool.initialize(&mut self.state);
+        }
+    }
 
     pub fn update(&mut self, msg: PadamoAppMessage){
         match msg{
