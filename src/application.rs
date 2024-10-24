@@ -41,6 +41,7 @@ pub struct PadamoState{
     pub add_delay_ms:u64,
     pub current_page:usize,
     pub current_seed:EntryState<u64>,
+    pub persistent_state:padamo_state_persistence::PersistentState,
     popup_messages:MessageList,
 }
 
@@ -223,6 +224,7 @@ impl Padamo{
             current_page: 0,
             current_seed: EntryState::new(0),
             popup_messages:MessageList::new(),
+            persistent_state: Default::default()
         };
 
 
