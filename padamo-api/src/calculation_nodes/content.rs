@@ -1,6 +1,8 @@
 use abi_stable::{StableAbi, std_types::{RString, RStr, RVec, Tuple3}};
 use std::array::IntoIter;
 use crate::function_operator::DoubleFunctionOperatorBox;
+
+#[cfg(feature = "serde")]
 use serde::{Serialize,Deserialize};
 
 use super::errors::ExecutionError;
@@ -89,7 +91,8 @@ impl ContentType{
 }
 
 #[repr(C)]
-#[derive(StableAbi,Clone,Debug,Serialize,Deserialize)]
+#[derive(StableAbi,Clone,Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[impl_content]
 pub enum ConstantContent{
     Integer(i64),
@@ -141,7 +144,8 @@ impl Into<ContentType> for ConstantContentType{
 }
 
 #[repr(C)]
-#[derive(abi_stable::StableAbi,Clone,Debug,Serialize,Deserialize)]
+#[derive(abi_stable::StableAbi,Clone,Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ConstantContentContainer(pub RHashMap<RString,ConstantContent>);
 
 impl ConstantContentContainer{

@@ -215,11 +215,11 @@ pub struct ButtleworthLowPassFilter;
 impl ButtleworthLowPassFilter{
     fn calculate(&self, inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
         let freq = constants.request_float("frequency")?;
-        let omega_cutoff = freq*2.*std::f64::consts::PI;
+        let f_cutoff = freq;
         let power = constants.request_float("power")?;
         let output:DoubleFunctionOperatorBox = (move |x:f64| {
-            let omega = x.abs()*2.*std::f64::consts::PI;
-            1./(1.+(omega/omega_cutoff).powf(2.*power)).sqrt()
+            let f = x.abs();
+            1./(1.+(f/f_cutoff).powf(2.*power)).sqrt()
         }).into();
         outputs.set_value("Filter", output.into())?;
         Ok(())

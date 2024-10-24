@@ -219,6 +219,20 @@ impl NegNode{
 }
 
 
+#[derive(Clone,Debug)]
+pub struct InvNode;
+
+impl InvNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
+        let f0 = inputs.request_function("F")?;
+        let f = f0.map(|x| if x==0.0 {0.0} else {1.0/x});
+        //let f = make_function_box(crate::ops::Log(f0));
+        outputs.set_value("F", f.into())?;
+        Ok(())
+    }
+}
+
+
 fn category() -> RVec<RString>where {
     rvec!["Functions".into(), "Generic".into()]
 }
@@ -393,6 +407,7 @@ implement_unary_combinator!(ExponentNode, "Exponent", category,"exp","Exponent")
 implement_unary_combinator!(LogNode, "Log", category,"log","Log");
 implement_unary_combinator!(AbsNode, "Abs", category,"abs","Abs");
 implement_unary_combinator!(NegNode, "Negate", category,"neg","Negate");
+implement_unary_combinator!(InvNode, "Invert", category,"inv","Invert");
 
 #[derive(Clone,Debug)]
 pub struct LinearModificationNode;

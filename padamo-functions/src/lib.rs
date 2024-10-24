@@ -34,6 +34,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         MaxNode,
         AbsNode,
         NegNode,
+        InvNode,
         LowerStepNode,
         LinearModificationNode
     )
