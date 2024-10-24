@@ -22,7 +22,7 @@ impl PersistentState{
 
     fn get_path(&self, key:&str)->PathBuf{
         let mut filename = key.to_owned();
-        filename.push_str(".json");
+        filename.push_str(".txt");
         self.state_dir.join(filename)
     }
 

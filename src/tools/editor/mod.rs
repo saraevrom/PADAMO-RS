@@ -68,17 +68,38 @@ impl PadamoEditor{
         }
     }
 
+    fn try_load_from_string(&mut self, buf:&str, padamo: PadamoStateRef){
+        if let Ok(jsd) = serde_json::Value::from_str(&buf){
+            if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
+                padamo.show_error(format!("{}",e));
+                self.state.nodes.clear();
+            }
+        }
+    }
+
+    fn try_save_to_string(&self) ->Option<String>{
+        let jsd = self.state.nodes.serialize();
+        if let Ok(s) = serde_json::to_string_pretty(&jsd){
+            Some(s)
+        }
+        else{
+            None
+        }
+    }
+
+
     fn try_open<P:AsRef<std::path::Path>>(&mut self, padamo: PadamoStateRef, filename:P){
         if let Ok(mut f) = std::fs::File::open(filename){
             let mut buf:String = String::new();
             if let Ok(_) = f.read_to_string(&mut buf){
-                if let Ok(jsd) = serde_json::Value::from_str(&buf){
-                    if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
-                        padamo.show_error(format!("{}",e));
-                        self.state.nodes.clear();
-                    }
-                }
+                self.try_load_from_string(&buf, padamo);
             }
+        }
+    }
+
+    fn snapshot(&self, padamo: PadamoStateRef){
+        if let Some(s) = self.try_save_to_string(){
+            padamo.persistent_state.write("last_graph", &s);
         }
     }
 }
@@ -137,9 +158,16 @@ impl PadamoTool for PadamoEditor{
     }
 
     fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
-        if let Some(subdir) = make_workspace(&padamo.workspace).subdir(){
+        if let Some(v) = padamo.persistent_state.read("last_graph"){
+            self.try_load_from_string(&v, padamo);
+        }
+        else if let Some(subdir) = make_workspace(&padamo.workspace).subdir(){
             let src_file = subdir.join("default.json");
             self.try_open(padamo, &src_file);
+        }
+
+        else{
+            self.state = editor_program::EditorState::new();
         }
     }
 
@@ -148,8 +176,8 @@ impl PadamoTool for PadamoEditor{
             crate::messages::PadamoAppMessage::EditorMessage(emsg) =>{
                 match emsg {
                     messages::EditorMessage::CanvasMessage(msg) => {
-                        self.state.handle_message(msg)
-
+                        self.state.handle_message(msg);
+                        self.snapshot(padamo);
                     },
 
                     messages::EditorMessage::PaneDrag(pane_grid::DragEvent::Dropped {pane, target})=>{
@@ -186,6 +214,9 @@ impl PadamoTool for PadamoEditor{
             crate::messages::PadamoAppMessage::Run=>{
                 self.run(padamo);
             },
+            crate::messages::PadamoAppMessage::ClearState=>{
+                self.initialize(padamo);
+            }
             crate::messages::PadamoAppMessage::RerollRun=>{
                 padamo.reroll();
                 self.run(padamo);
@@ -198,8 +229,13 @@ impl PadamoTool for PadamoEditor{
         match msg.as_ref() {
             crate::messages::PadamoAppMessage::Save =>{
                 if let Some(file_path) = make_workspace(&padamo.workspace).save_dialog(vec![("Padamo RS compute graph",vec!["json"])]){
-                    let jsd = self.state.nodes.serialize();
-                    if let Ok(s) = serde_json::to_string_pretty(&jsd){
+                    // let jsd = self.state.nodes.serialize();
+                    // if let Ok(s) = serde_json::to_string_pretty(&jsd){
+                    //     if let Ok(_) = std::fs::write(file_path, s){
+                    //         println!("Wrote file");
+                    //     }
+                    // }
+                    if let Some(s) = self.try_save_to_string(){
                         if let Ok(_) = std::fs::write(file_path, s){
                             println!("Wrote file");
                         }

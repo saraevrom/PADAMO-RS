@@ -907,7 +907,7 @@ impl PadamoTool for PadamoViewer{
             }
         }
         else if let crate::messages::PadamoAppMessage::ClearState = msg.as_ref(){
-            self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
+            self.initialize(padamo);
         }
         else if let crate::messages::PadamoAppMessage::SetDetector(v) = msg.as_ref(){
             self.chart = Detector::from_cells(v.clone());
@@ -1026,8 +1026,10 @@ impl PadamoTool for PadamoViewer{
             if mask.form_compatible(self.chart.shape()){
                 self.chart.alive_pixels = mask;
                 self.update_pixels(padamo,false);
+                return;
             }
         }
+        self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
     }
 }
 
