@@ -31,6 +31,7 @@ pub enum PadamoAppMessage{
     Paste,
     SelectAll,
     Tick,
+    ClearState,
     ResetWorkspace
 }
 

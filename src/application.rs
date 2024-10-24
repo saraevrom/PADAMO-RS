@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use iced::widget::button;
 use padamo_detectors::polygon::DetectorContent;
+use serde::Serialize;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
 use crate::tools::{self as ctools};
@@ -309,6 +310,12 @@ impl Padamo{
                     // self.update_tools_loop(Rc::new(msg));
                 }
             }
+            PadamoAppMessage::ClearState=>{
+                self.state.persistent_state.clear();
+                let vtl = serde_json::to_string(&DetectorContent::default_vtl()).unwrap();
+                self.set_detector(vtl, false);
+                self.update_tools_loop(Rc::new(PadamoAppMessage::ClearState));
+            }
             other=>{
                 self.update_tools_loop(Rc::new(other));
             }
@@ -328,6 +335,7 @@ impl Padamo{
             Item::new(menu_button("Open", PadamoAppMessage::Open)),
             Item::new(menu_button("Save", PadamoAppMessage::Save)),
             Item::new(menu_button("Choose detector", PadamoAppMessage::ChooseDetector)),
+            Item::new(menu_button("Clean up", PadamoAppMessage::ClearState)),
         ]).max_width(100.0).offset(0.0).spacing(5.0));
 
         let edit_menu = Item::with_menu(title_menu_button("Edit"), Menu::new(vec![

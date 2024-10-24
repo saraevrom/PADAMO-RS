@@ -3,7 +3,7 @@ mod messages;
 use super::PadamoTool;
 use abi_stable::std_types::ROption;
 use padamo_api::calculation_nodes::content::Content;
-use padamo_api::lazy_array_operations::make_lao_box;
+use padamo_api::lazy_array_operations::{make_lao_box, ArrayND};
 use padamo_detectors::Detector;
 use serde::Serialize;
 use crate::application::PadamoState;
@@ -905,6 +905,9 @@ impl PadamoTool for PadamoViewer{
             if request_buffer_fill{
                 self.fill_strings();
             }
+        }
+        else if let crate::messages::PadamoAppMessage::ClearState = msg.as_ref(){
+            self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
         }
         else if let crate::messages::PadamoAppMessage::SetDetector(v) = msg.as_ref(){
             self.chart = Detector::from_cells(v.clone());
