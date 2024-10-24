@@ -75,7 +75,8 @@ impl PadamoWorkspace{
     pub fn workspace<'a>(&'a self, subdir:&'a str)->PadamoSubWorkspace<'a>{
         PadamoSubWorkspace{
             workspace:self,
-            subdir
+            subdir,
+            default_operations:Vec::new()
         }
     }
 
@@ -103,9 +104,11 @@ impl PadamoWorkspace{
     }
 }
 
+
 pub struct PadamoSubWorkspace<'a>{
     workspace:&'a PadamoWorkspace,
-    subdir:&'a str
+    subdir:&'a str,
+    default_operations:Vec<Box<dyn Fn(&PathBuf)->()>>
 }
 
 pub type FilenameFilter = Vec<(&'static str, Vec<&'static str>)>;
@@ -117,6 +120,9 @@ impl<'a> PadamoSubWorkspace<'a>{
             let creation = std::fs::create_dir(&p);
             if let Ok(()) = creation{
                 println!("Created dir {:?}",p.to_str());
+            }
+            for action in self.default_operations.iter(){
+                action(&p);
             }
             Some(p)
         }
@@ -137,7 +143,10 @@ impl<'a> PadamoSubWorkspace<'a>{
         dialog
     }
 
-
+    pub fn with_action<T:Fn(&PathBuf)->()+'static>(mut self, action:T)->Self{
+        self.default_operations.push(Box::new(action));
+        self
+    }
 
     pub fn save_dialog(&self, filter_list: FilenameFilter) ->  Option<String>{
         let dialog = self.make_dialog(filter_list);
