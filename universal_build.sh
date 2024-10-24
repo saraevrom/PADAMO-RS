@@ -34,6 +34,9 @@ case "${BUILD_TARGET}" in
 esac
 cargo build --release --workspace || exit 1
 
+
+cp  -rv "./assets" "./target/${BUILD_TARGET}/"
+
 cd "./target/${BUILD_TARGET}/"
 mkdir -pv plugins
 rm -rvf plugins/*

@@ -2,6 +2,8 @@
 
 cargo build --release --workspace
 
+copy assets target/release/assets
+
 cd target/release
 
 

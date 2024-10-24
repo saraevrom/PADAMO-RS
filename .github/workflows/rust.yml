@@ -21,6 +21,7 @@ jobs:
        mkdir -pv release-linux
        cp target/release/padamo-rs release-linux/
        cp -r target/release/plugins release-linux/
+       cp -r target/release/assets release-linux/
     - name: Archive Release
       uses: thedoctor0/zip-release@0.7.5
       with:
@@ -46,6 +47,7 @@ jobs:
        mkdir -pv release-windows
        cp target/release/padamo-rs.exe release-windows/
        cp -r target/release/plugins release-windows/
+       cp -r target/release/assets release-windows/
     - name: Archive Release
       uses: thedoctor0/zip-release@0.7.5
       with:
