@@ -114,7 +114,7 @@ pub struct PadamoSubWorkspace<'a>{
 pub type FilenameFilter = Vec<(&'static str, Vec<&'static str>)>;
 
 impl<'a> PadamoSubWorkspace<'a>{
-    fn subdir(&self)->Option<PathBuf>{
+    pub fn subdir(&self)->Option<PathBuf>{
         if let Some(p) = &self.workspace.path{
             let p = std::path::Path::new(p).join(self.subdir);
             let creation = std::fs::create_dir(&p);
