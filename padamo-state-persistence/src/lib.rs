@@ -47,6 +47,7 @@ impl PersistentState{
     pub fn serialize<T:serde::Serialize>(&self, key:&str, data:&T){
         if let Ok(v) = serde_json::to_string(data){
             self.write(key, &v);
+            return;
         }
         println!("Error serializing state");
     }
