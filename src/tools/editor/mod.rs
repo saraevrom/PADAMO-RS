@@ -68,7 +68,7 @@ impl PadamoEditor{
         }
     }
 
-    fn try_open(&mut self, padamo: PadamoStateRef, filename:&str){
+    fn try_open<P:AsRef<std::path::Path>>(&mut self, padamo: PadamoStateRef, filename:P){
         if let Ok(mut f) = std::fs::File::open(filename){
             let mut buf:String = String::new();
             if let Ok(_) = f.read_to_string(&mut buf){
@@ -134,6 +134,13 @@ impl PadamoTool for PadamoEditor{
     }
     fn tab_name(&self)->String {
         "Editor".into()
+    }
+
+    fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
+        if let Some(subdir) = make_workspace(&padamo.workspace).subdir(){
+            let src_file = subdir.join("default.json");
+            self.try_open(padamo, &src_file);
+        }
     }
 
     fn update(&mut self, msg: Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef){
