@@ -3,6 +3,7 @@ use std::fs;
 use std::rc::Rc;
 
 use iced::widget::button;
+use padamo_detectors::polygon::DetectorContent;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
 use crate::tools::{self as ctools};
@@ -144,19 +145,18 @@ impl Padamo{
     //     let msg = PadamoAppMessage::SetDetector(detector);
     //     self.update_tools_loop(Rc::new(msg));
     // }
-    fn set_detector(&mut self, s:String, save_state:bool){
+    fn set_detector(&mut self, s:String, save_state:bool)->Option<DetectorContent>{
         let detector = serde_json::from_str(&s);
 
         let detector = match detector{
             Ok(v)=>{v},
-            Err(e)=> {self.state.show_error(format!("{:?}",e)); return;}
+            Err(e)=> {self.state.show_error(format!("{:?}",e)); return None;}
         };
         if save_state{
             self.state.persistent_state.write("detector", &s);
         }
         self.state.compute_graph.environment.0.insert("detector".into(), padamo_api::calculation_nodes::content::Content::String(s.into()));
-        let msg = PadamoAppMessage::SetDetector(detector);
-        self.update_tools_loop(Rc::new(msg));
+        Some(detector)
     }
 
     fn try_load_detector(&mut self){
@@ -263,8 +263,8 @@ impl Padamo{
             //,
             // iced::font::load(iced_aw::BOOTSTRAP_FONT_BYTES).map(PadamoAppMessage::FontLoaded)
 
-        res.initialize_tools();
         res.try_load_detector();
+        res.initialize_tools();
         res
     }
 
@@ -294,7 +294,10 @@ impl Padamo{
                         Ok(v)=>{v},
                         Err(e)=> {self.state.show_error(format!("{:?}",e)); return;}
                     };
-                    self.set_detector(s, true);
+                    if let Some(detector) = self.set_detector(s, true){
+                        let msg = PadamoAppMessage::SetDetector(detector);
+                        self.update_tools_loop(Rc::new(msg));
+                    }
                     // let detector = serde_json::from_str(&s);
                     //
                     // let detector = match detector{

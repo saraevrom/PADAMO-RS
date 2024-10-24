@@ -14,6 +14,7 @@ use super::indexing::ShapeIterator;
 /// FFI safe ndarray-like structure
 #[repr(C)]
 #[derive(Clone,Debug,StableAbi)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ArrayND<T>
 where
     T: Clone + StableAbi

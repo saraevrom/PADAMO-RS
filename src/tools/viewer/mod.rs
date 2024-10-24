@@ -5,6 +5,7 @@ use abi_stable::std_types::ROption;
 use padamo_api::calculation_nodes::content::Content;
 use padamo_api::lazy_array_operations::make_lao_box;
 use padamo_detectors::Detector;
+use serde::Serialize;
 use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -324,8 +325,12 @@ impl PadamoViewer{
         self.export_status = "IDLE".into();
     }
 
-    fn update_pixels(&self, padamo :&mut PadamoState){
+    fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
         padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(self.chart.alive_pixels_mask())));
+        //let arr = self.chart.alive_pixels.clone().to_ndarray();
+        if save{
+            padamo.persistent_state.serialize("viewer_pixels",&self.chart.alive_pixels);
+        }
     }
 }
 
@@ -455,7 +460,7 @@ impl PadamoTool for PadamoViewer{
 
     fn update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
         if let crate::messages::PadamoAppMessage::Run = msg.as_ref(){
-            self.update_pixels(padamo);
+            self.update_pixels(padamo,true);
         }
         else if let crate::messages::PadamoAppMessage::ViewerMessage(view) = msg.as_ref(){
             let mut request_buffer_fill = true;
@@ -615,7 +620,7 @@ impl PadamoTool for PadamoViewer{
                 }
                 ViewerMessage::TogglePixel(pix)=>{
                     self.chart.toggle_pixel(pix);
-                    self.update_pixels(padamo);
+                    self.update_pixels(padamo,true);
                 }
 
                 ViewerMessage::Export=>{
@@ -1012,6 +1017,14 @@ impl PadamoTool for PadamoViewer{
         }
     }
 
-
+    fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
+        let mask_loaded: Option<padamo_api::lazy_array_operations::ArrayND<bool>> = padamo.persistent_state.deserialize("viewer_pixels");
+        if let Some(mask) = mask_loaded{
+            if mask.form_compatible(self.chart.shape()){
+                self.chart.alive_pixels = mask;
+                self.update_pixels(padamo,false);
+            }
+        }
+    }
 }
 
