@@ -60,4 +60,11 @@ impl PersistentState{
         }
         None
     }
+
+    pub fn clear(&self){
+        if self.state_dir.is_dir(){
+            std::fs::remove_dir_all(&self.state_dir).unwrap();
+            std::fs::create_dir(&self.state_dir).unwrap();
+        }
+    }
 }
