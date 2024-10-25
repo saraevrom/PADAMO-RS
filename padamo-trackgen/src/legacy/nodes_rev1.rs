@@ -1,13 +1,9 @@
-use std::default;
 
 use abi_stable::std_types::ROption::RSome;
-use padamo_api::lazy_array_operations::LazyTriSignal;
 use padamo_api::{constants, nodes_vec, ports, prelude::*};
-use abi_stable::std_types::{ROption, RResult, RString, RVec, Tuple3};
+use abi_stable::std_types::{ROption, RResult, RString, RVec};
 use abi_stable::rvec;
-use serde_json::value;
 
-use crate::ensquared_energy::detector;
 
 #[derive(Debug,Clone)]
 pub struct BasicLinearTrackGeneratorNodeOld;

@@ -1,4 +1,4 @@
-use abi_stable::std_types::{ROption, RResult, RString, RVec};
+use abi_stable::std_types::{RResult, RString, RVec};
 use abi_stable::rvec;
 use padamo_api::{constants, nodes_vec, ports, prelude::*};
 use padamo_api::function_operator::DoubleFunctionOperatorBox;

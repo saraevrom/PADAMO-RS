@@ -1,5 +1,4 @@
-use abi_stable::{StableAbi, std_types::{RString, RStr, RVec, Tuple3}};
-use std::array::IntoIter;
+use abi_stable::{StableAbi, std_types::{RString, RVec}};
 use crate::function_operator::DoubleFunctionOperatorBox;
 
 #[cfg(feature = "serde")]

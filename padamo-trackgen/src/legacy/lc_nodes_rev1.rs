@@ -1,7 +1,7 @@
 use abi_stable::rvec;
 use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::{ROption, RResult, RString, RVec};
-use padamo_api::function_operator::{DoubleFunctionOperatorBox, make_function_box};
+use padamo_api::function_operator::DoubleFunctionOperatorBox;
 use padamo_api::{constants, nodes_vec, ports, prelude::*};
 
 fn category() -> RVec<RString>where {

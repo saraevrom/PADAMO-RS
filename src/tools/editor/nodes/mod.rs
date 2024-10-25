@@ -2,15 +2,15 @@ pub mod constants;
 pub mod errors;
 pub mod node_proxy;
 
-use std::{cell::RefCell, collections::HashMap, error::Error, fmt::{write, Display}, rc::{Rc, Weak}};
+use std::{cell::RefCell, collections::HashMap, error::Error, fmt::Display, rc::{Rc, Weak}};
 
-use iced::widget::{canvas::{Frame, Path, self,Text}, shader::wgpu::core::identity};
+use iced::widget::canvas::{Frame, Path, self,Text};
 use padamo_api::calculation_nodes::node::CalculationNodeBox;
 use serde_json::Map;
 
 use crate::nodes_interconnect::NodesRegistry;
 
-use self::constants::{NodeConstantMessage, NodeConstantMessageContent};
+use self::constants::NodeConstantMessageContent;
 
 use super::editor_program::EditorCanvasMessage;
 use ordered_hash_map::OrderedHashMap;

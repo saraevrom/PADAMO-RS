@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::sync::Mutex;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
@@ -8,7 +6,6 @@ use hdf5::{Selection, SliceOrIndex};
 use hdf5::Hyperslab;
 use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyArrayOperationBox};
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
-use std::ops::RangeFull;
 
 fn make_slab(shapelen:usize,indexes:std::ops::Range<usize>)->hdf5::Selection{
     let slab:Vec<SliceOrIndex> = (0..shapelen).map(|i| if i==0 {indexes.clone().into()} else {(..).into()}).collect();

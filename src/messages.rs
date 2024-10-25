@@ -1,6 +1,5 @@
-use iced::widget::scrollable;
 
-use crate::tools::editor::messages::{EditorCanvasMessage,EditorMessage};
+use crate::tools::editor::messages::EditorMessage;
 use crate::tools::viewer::ViewerMessage;
 use crate::tools::plotter::messages::PlotterMessage;
 use crate::tools::trigger::messages::TriggerMessage;

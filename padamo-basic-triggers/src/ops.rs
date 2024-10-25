@@ -1,10 +1,5 @@
-use abi_stable::std_types::RResult;
-use padamo_api::prelude::*;
-use padamo_api::{ports,constants};
-use abi_stable::std_types::{RVec,RString};
-use abi_stable::rvec;
-use abi_stable::sabi_trait::prelude::TD_Opaque;
-use padamo_api::lazy_array_operations::{ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTriSignal, LazyTrigger};
+use abi_stable::std_types::RVec;
+use padamo_api::lazy_array_operations::{ArrayND, LazyArrayOperation, LazyDetectorSignal};
 use padamo_api::lazy_array_operations::ndim_array;
 use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
 use ndarray::{SliceInfo,SliceInfoElem};

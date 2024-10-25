@@ -1,4 +1,4 @@
-use super::{errors::NodeError, PortType};
+use super::errors::NodeError;
 use ordered_hash_map::OrderedHashMap;
 use padamo_api::calculation_nodes::content::ContentType;
 use serde::{Serialize,Deserialize};

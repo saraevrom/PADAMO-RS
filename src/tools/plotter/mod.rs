@@ -3,9 +3,8 @@ use std::{cell::RefCell, thread};
 
 use super::PadamoTool;
 //use iced::advanced::Widget;
-use once_cell::sync::Lazy;
 //use padamo_api::lazy_array_operations::ndim_array::ArrayND;
-use iced::{advanced::overlay, widget::{self, row, scrollable}, Length};
+use iced::{widget::{self}, Length};
 use padamo_detectors::Detector;
 use plotters::coord::{cartesian::Cartesian2d, types::RangedCoordf64};
 use plotters_iced::Chart;
@@ -58,7 +57,7 @@ impl TimeAxisFormat{
                 format!("{:.4}", off)
             },
             Self::UnixTime=>{
-                use chrono::{DateTime, TimeZone};
+                use chrono::DateTime;
                 let secs = x.floor();
                 let nsecs = (x - x.floor())*1e9;
                 if let Some(dt) = DateTime::from_timestamp(secs as i64, nsecs as u32){

@@ -4,7 +4,6 @@ use std::rc::Rc;
 
 use iced::widget::button;
 use padamo_detectors::polygon::DetectorContent;
-use serde::Serialize;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
 use crate::tools::{self as ctools};

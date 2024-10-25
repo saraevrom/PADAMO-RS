@@ -1,14 +1,12 @@
 use std::error::Error;
-use std::fmt::{Display,Debug};
+use std::fmt::Debug;
 
-use abi_stable::std_types::RVec;
-use ndarray::{Axis, s};
+use ndarray::Axis;
 use noisy_float::types::n64;
 use padamo_api::lazy_array_operations::{LazyArrayOperation, LazyDetectorSignal, LazyArrayOperationBox};
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use ndarray_stats::QuantileExt;
 use rayon::prelude::*;
-use std::time::Instant;
 
 #[repr(C)]
 #[derive(Clone,Debug, abi_stable::StableAbi)]

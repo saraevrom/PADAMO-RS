@@ -1,11 +1,9 @@
-use nom::multi::{separated_list0, separated_list1};
-use nom::number::complete::{double, };
+use nom::multi::separated_list0;
 use nom::IResult;
-use nom::error::{context, ParseError};
-use nom::bytes::complete::{escaped, tag, tag_no_case, take_while};
-use nom::character::complete::{alphanumeric1 as alphanumeric, char as char_t, digit1, multispace0, one_of};
-use nom::sequence::{delimited, preceded, separated_pair, terminated};
-use nom::combinator::{cut, map_res};
+use nom::bytes::complete::{escaped, tag_no_case};
+use nom::character::complete::{alphanumeric1 as alphanumeric, char as char_t, one_of};
+use nom::sequence::{preceded, separated_pair, terminated};
+use nom::combinator::cut;
 use nom::Parser;
 use nom::branch::alt;
 

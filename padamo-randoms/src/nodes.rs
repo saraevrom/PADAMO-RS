@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}, traits::IntoReprC};
+use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 
 

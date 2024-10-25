@@ -1,16 +1,14 @@
-use std::error::Error;
-use std::fmt::{Display,Debug};
+use std::fmt::Debug;
 
 use abi_stable::std_types::{RString, RVec};
-use ndarray::{Axis, s};
+use ndarray::Axis;
 use noisy_float::types::n64;
 use padamo_api::calculation_nodes::content::ContentType;
 use padamo_api::calculation_nodes::node::CalculationNode;
-use padamo_api::lazy_array_operations::{LazyArrayOperation, LazyDetectorSignal, LazyArrayOperationBox};
+use padamo_api::lazy_array_operations::LazyArrayOperation;
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use padamo_api::{constants, prelude::*};
 use padamo_api::ports;
-use rayon::prelude::*;
 use ndarray_stats::QuantileExt;
 use super::nodes::{category,old_id};
 

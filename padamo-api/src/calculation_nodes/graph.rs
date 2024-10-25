@@ -1,8 +1,6 @@
-use std::borrow::BorrowMut;
 use std::collections::{HashMap, VecDeque};
-use std::fmt::format;
 use abi_stable::StableAbi;
-use abi_stable::std_types::{RString, Tuple2};
+use abi_stable::std_types::RString;
 use topo_sort::{TopoSort,SortResults};
 
 use crate::rng::RandomState;
@@ -113,7 +111,7 @@ impl CalculationSequenceStorage{
     }
 
     pub fn execute(&mut self,random_seed:u64)->Result<(),ExecutionError>{
-        let mut random_state = RandomState::new(random_seed);
+        let random_state = RandomState::new(random_seed);
         //println!("EXEC GRAPH {:?}",self.nodes);
         let mut sorter = TopoSort::with_capacity(self.nodes.len());
         let mut nodes_under_processing:VecDeque<usize> = self.nodes.iter()

@@ -3,7 +3,7 @@ mod messages;
 use super::PadamoTool;
 use abi_stable::std_types::ROption;
 use padamo_api::calculation_nodes::content::Content;
-use padamo_api::lazy_array_operations::{make_lao_box, ArrayND};
+use padamo_api::lazy_array_operations::make_lao_box;
 use padamo_detectors::Detector;
 use serde::Serialize;
 use crate::application::PadamoState;
@@ -16,7 +16,7 @@ use padamo_iced_forms_derive::IcedForm;
 use padamo_iced_forms::IcedFormInterface;
 
 use std::thread;
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::mpsc;
 use sysinfo::{System,RefreshKind,MemoryRefreshKind};
 
 pub use messages::ViewerMessage;

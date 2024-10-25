@@ -1,16 +1,11 @@
 use std::f64::consts::PI;
-use std::hash::DefaultHasher;
-use std::hash::Hasher;
 
-use abi_stable::std_types::RVec;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_api::lazy_array_operations::LazyArrayOperation;
 use padamo_api::lazy_array_operations::LazyDetectorSignal;
-use statrs::distribution::ContinuousCDF;
 use crate::ensquared_energy;
 use crate::ensquared_energy::detector::DetectorWireframe;
 
-use statrs::distribution::Normal;
 
 use padamo_api::function_operator::DoubleFunctionOperatorBox;
 

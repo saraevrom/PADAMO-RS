@@ -1,10 +1,10 @@
-use abi_stable::{StableAbi, std_types::{RVec, Tuple2, ROption}, rvec};
+use abi_stable::{StableAbi, std_types::RVec, rvec};
 
 #[cfg(feature = "ndarray")]
 use ndarray::{IxDyn, OwnedRepr};
 
 //use ndarray::{IxDyn, OwnedRepr};
-use std::ops::{Add, IndexMut, Index};
+use std::ops::{IndexMut, Index};
 //use ndarray::prelude::*;
 use crate::lazy_array_operations::merge::Merge;
 use crate::lazy_array_operations::cache::Cache;

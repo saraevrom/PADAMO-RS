@@ -1,4 +1,3 @@
-use super::ArrayND;
 
 pub struct ShapeIterator{
     source_shape:Vec<usize>,

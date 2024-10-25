@@ -1,5 +1,4 @@
 use fast_mm::DoubleHeap;
-use medians::Medianf64;
 use padamo_api::lazy_array_operations::ArrayND;
 use std::sync::{Arc,Mutex};
 use std::collections::VecDeque;

@@ -1,9 +1,6 @@
-use std::collections::HashMap;
 
-use abi_stable::sabi_types::StaticRef;
-use abi_stable::std_types::map::RefIterInterface;
-use abi_stable::std_types::{RStr,RString,RVec,RBox,RHashMap,RResult, ROption, Tuple2};
-use abi_stable::{StableAbi, DynTrait, rvec};
+use abi_stable::std_types::{RString,RVec,RBox,RHashMap,RResult, ROption, Tuple2};
+use abi_stable::{StableAbi, rvec};
 use super::content::{Content, ContentContainer, ContentType, ConstantContent, ConstantContentContainer};
 use super::errors::ExecutionError;
 use super::graph::PortKey;

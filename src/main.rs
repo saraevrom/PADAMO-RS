@@ -1,4 +1,3 @@
-use iced::{Application, Settings};
 
 mod messages;
 mod application;

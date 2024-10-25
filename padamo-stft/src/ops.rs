@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use padamo_api::lazy_array_operations::cache::Cache;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_api::lazy_array_operations::LazyArrayOperation;

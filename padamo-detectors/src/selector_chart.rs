@@ -1,10 +1,6 @@
 
-use iced::Element;
-use serde::{Serialize,Deserialize};
-use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate}, element::BackendCoordOnly, prelude::*};
-use plotters_iced::{Chart, ChartWidget};
-use plotters_layout::{centering_ranges, ChartLayout};
-use padamo_api::lazy_array_operations::ndim_array::ArrayND;
+use plotters::{coord::ReverseCoordTranslate, prelude::*};
+use plotters_iced::Chart;
 
 
 use crate::{Detector, Margins};

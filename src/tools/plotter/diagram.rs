@@ -2,7 +2,7 @@ use super::{messages::PlotterMessage, TimeAxisFormat};
 //use super::colors::get_color;
 use padamo_detectors::{colors::get_color_indexed, Margins};
 use iced::{
-    widget::canvas::{Cache, Frame, Geometry},
+    widget::canvas::{Frame, Geometry},
     Size,
 };
 
@@ -10,7 +10,7 @@ use plotters_iced::{
     Chart, ChartWidget, Renderer,
 };
 
-use plotters::{coord::{ReverseCoordTranslate, Shift}, style::full_palette::ORANGE};
+use plotters::coord::{ReverseCoordTranslate, Shift};
 use plotters::prelude::*;
 
 

@@ -1,5 +1,5 @@
 use padamo_api::lazy_array_operations::ArrayND;
-use padamo_detectors::polygon::{DetectorContent,DetectorPixel};
+use padamo_detectors::polygon::DetectorContent;
 
 use std::f64::consts::PI;
 

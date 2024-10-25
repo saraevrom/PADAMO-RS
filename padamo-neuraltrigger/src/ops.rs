@@ -1,7 +1,6 @@
 use std::{fmt::Debug, sync::Arc};
 
-use abi_stable::type_level::trait_marker::Display;
-use padamo_api::lazy_array_operations::{cutter::CutError, ndim_array::indexing::ShapeIterator, ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTrigger};
+use padamo_api::lazy_array_operations::{cutter::CutError, ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal};
 // use tract_core::ndarray::{IxDyn, OwnedRepr};
 // use tract_onnx::prelude::*;
 use ndarray::prelude::*;

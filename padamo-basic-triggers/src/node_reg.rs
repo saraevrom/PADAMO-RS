@@ -6,7 +6,7 @@ use abi_stable::std_types::{RVec,RString, ROption};
 use abi_stable::rvec;
 use super::ops::*;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
-use padamo_api::lazy_array_operations::{LazyArrayOperationBox, LazyTriSignal};
+use padamo_api::lazy_array_operations::LazyArrayOperationBox;
 
 #[derive(Clone,Debug)]
 pub struct PixelThresholdTriggerNode;

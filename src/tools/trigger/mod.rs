@@ -1,15 +1,15 @@
-use std::{thread, sync::{mpsc, Arc, Mutex}};
+use std::{thread, sync::mpsc};
 
 use crate::messages::PadamoAppMessage;
 
-use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorage, UnixIntervalStorage};
+use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorage};
 
 use super::PadamoTool;
-use iced::{widget, alignment, Font};
+use iced::{widget, Font};
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_detectors::Detector;
 pub mod messages;
-use messages::{TriggerMessage,SelectionMessage};
+use messages::TriggerMessage;
 //use padamo_iced_forms::IcedForm;
 
 pub mod sparse_intervals;

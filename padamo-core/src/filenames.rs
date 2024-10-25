@@ -3,7 +3,6 @@ use abi_stable::std_types::ROption::RSome;
 use abi_stable::std_types::{RString, RVec, RResult};
 use padamo_api::{prelude::*, constants};
 use padamo_api::{ports,nodes_vec};
-use crate::TD_Opaque;
 
 
 use std::path::Path;

@@ -1,11 +1,11 @@
 use abi_stable::rvec;
 use abi_stable::std_types::ROption::RSome;
-use abi_stable::std_types::{RString,RArc,ROption};
+use abi_stable::std_types::{RString,ROption};
 use padamo_api::prelude::*;
 use padamo_api::{ports, constants};
 use abi_stable::std_types::RVec;
 use crate::ops::{LazyHDF5Reader3D,LazyTimeHDF5Reader};
-use padamo_api::lazy_array_operations::{LazyTriSignal,LazyArrayOperationBox,LazyDetectorSignal,LazyTimeSignal};
+use padamo_api::lazy_array_operations::{LazyTriSignal,LazyDetectorSignal,LazyTimeSignal};
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 use std::fs;
 

@@ -1,4 +1,4 @@
-use abi_stable::std_types::{RBox, RArc, Tuple3, ROption, RVec};
+use abi_stable::std_types::{RBox, Tuple3, ROption, RVec};
 use std::fmt::Debug;
 
 pub mod ndim_array;

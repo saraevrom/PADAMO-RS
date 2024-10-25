@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 use std::clone::Clone;
 use dyn_clone::DynClone;
-use iced::widget::shader::wgpu::naga::proc::index;
 use crate::polygon::DetectorPixel;
 
 pub trait Transformable{

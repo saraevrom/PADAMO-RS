@@ -77,7 +77,7 @@ pub fn get_color(i:usize,j:usize)->(f32,f32,f32){
     if j%2==0 && (i as isize-((j/2) as isize))%2==0{
         gray_shift = 1.0;
     }
-    h_color(shift_id,((j as f32)*180.0/16.0),gray_shift*0.3,gray_shift*0.5)
+    h_color(shift_id,(j as f32)*180.0/16.0,gray_shift*0.3,gray_shift*0.5)
 }
 
 pub fn get_color_indexed(data:&Vec<usize>)->(f32,f32,f32){

@@ -6,7 +6,7 @@ use std::path::Path;
 use abi_stable::std_types::RHashMap;
 use padamo_api::prelude::{CalculationNodeBox, CalculationNode, CalculationNode_TO};
 use padamo_api::PadamoModule_Ref;
-use abi_stable::library::{RootModule, lib_header_from_path};
+use abi_stable::library::lib_header_from_path;
 
 use errors::NodeRegistryError;
 
@@ -14,7 +14,7 @@ use errors::NodeRegistryError;
 use crate::tools::editor::nodes::{GraphNodeStorage, GraphNode};
 use padamo_api::calculation_nodes::graph::CalculationSequenceStorage;
 use padamo_api::calculation_nodes::node::CalculationNodeObject;
-use padamo_api::calculation_nodes::content::{ContentContainer, ConstantContentContainer};
+use padamo_api::calculation_nodes::content::ConstantContentContainer;
 
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 

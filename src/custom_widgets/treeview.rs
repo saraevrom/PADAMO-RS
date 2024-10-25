@@ -1,5 +1,5 @@
-use std::{collections::{HashMap, BTreeMap}, cell::RefCell, rc::{Rc, Weak}};
-use iced::{advanced::Widget, event};
+use std::{collections::BTreeMap, cell::RefCell, rc::{Rc, Weak}};
+use iced::advanced::Widget;
 
 const STEP:f32 = 22.0;
 const HEIGHT:f32 = 20.0;

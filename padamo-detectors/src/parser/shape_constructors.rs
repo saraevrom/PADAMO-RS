@@ -5,17 +5,16 @@ use nom::number::complete::{double, };
 //use nom::number::streaming::double;
 use nom::IResult;
 use nom::error::{ErrorKind, ParseError};
-use nom::bytes::complete::{escaped, tag, tag_no_case, take_while};
-use nom::character::complete::{alphanumeric1 as alphanumeric, char as char_t, digit1, multispace1, one_of};
-use nom::sequence::{delimited, pair, preceded, separated_pair, terminated};
-use nom::combinator::{cut, map_res,};
+use nom::bytes::complete::{tag, tag_no_case};
+use nom::character::complete::multispace1;
+use nom::sequence::{preceded, separated_pair};
+use nom::combinator::cut;
 use nom::branch::alt;
 use nom::Parser;
 
-use crate::polygon::DetectorPixel;
 
 use super::base_parsers::{parse_index,parse_point,sp, parse_grid_point};
-use super::detector_building_data::{PixelGrid, PixelGridError, PolygonArray, SinglePixel, Transformable, TransformablePixelMaker, IndexExtend,IndexExtension};
+use super::detector_building_data::{PixelGrid, PixelGridError, PolygonArray, SinglePixel, Transformable, TransformablePixelMaker, IndexExtend};
 
 #[derive(Clone, Copy)]
 enum RectSpec{
