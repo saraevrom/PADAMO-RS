@@ -65,7 +65,7 @@ impl PadamoTool for PadamoDetectorManager{
         let subframe = iced::widget::PaneGrid::new(&self.panes,|id, pane, is_maximized| {
             match pane{
                 Pane::DetectorView=>{
-                    widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill).into()
+                    widget::container(self.chart.view(None, Default::default(),padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill).into()
                 }
                 Pane::SourceCode=>{
                     widget::container(widget::text_editor(&self.source).on_action(DetectorManagerMessage::EditorActionPerformed)).width(iced::Length::Fill).into()

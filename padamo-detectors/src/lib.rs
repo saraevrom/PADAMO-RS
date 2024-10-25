@@ -16,6 +16,7 @@ pub mod colors;
 pub mod selector_chart;
 pub mod transformer;
 
+pub use transformer::Transform;
 pub use selector_chart::DetectorChartMap;
 
 //use polygon::StableColorMatrix;
@@ -126,7 +127,11 @@ impl<Message> Detector<Message>{
 
     }
 
-    pub fn build_chart_generic<DB: DrawingBackend>(&self,root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&Option<(& ArrayND<f64>,f64)>, scale:Scaling, state:&Option<((f64,f64),(i32,i32))>) {
+    pub fn build_chart_generic<DB: DrawingBackend>(&self,root: &DrawingArea<DB, plotters::coord::Shift>,
+                                                   pixels:&Option<(& ArrayND<f64>,f64)>,
+                                                   scale:Scaling,
+                                                   transform: crate::transformer::Transform,
+                                                   state:&Option<((f64,f64),(i32,i32))>) {
         root.fill(&plotters::prelude::WHITE).unwrap();
         let ((min_x, min_y), (max_x, max_y)) = self.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
@@ -135,10 +140,8 @@ impl<Message> Detector<Message>{
             let ut_s = *ut as i64;
             let ut_ns = ((ut-ut_s as f64)*1e9) as u32;
             //println!("Datetime from {}=>{}; {}",ut,ut_s,ut_ns);
-            let naive = NaiveDateTime::from_timestamp_opt(ut_s,ut_ns).unwrap();
-
-            // Create a normal DateTime from the NaiveDateTime
-            let datetime: DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
+            //Makes datetime skipping naive
+            let datetime = chrono::DateTime::from_timestamp(ut_s,ut_ns).unwrap();
 
             // Format the datetime how you want
             let newdate = datetime.format("%Y-%m-%d %H:%M:%S.%f");
@@ -230,8 +233,12 @@ impl<Message> Detector<Message>{
 
     }
 
-    pub fn view<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, source:Option<(&'a ArrayND<f64>,f64)>, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
-        ChartWidget::new(DetectorChart::new(self,source,scale, lclick_event, rclick_event)).into()
+    pub fn view<'a,F1,F2>(&'a self, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>
+    where
+        F1:'static+Fn(Vec<usize>)->Message,
+        F2:'static+Fn(Vec<usize>)->Message
+    {
+        ChartWidget::new(DetectorChart::new(self,source, transform, scale, lclick_event, rclick_event)).into()
     }
 
     pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
@@ -248,6 +255,7 @@ where
     detector:&'a Detector<Msg>,
     source:Option<(&'a ArrayND<f64>,f64)>,
     scale:Scaling,
+    transform: Transform,
     lclick_event:Option<F1>,
     rclick_event:Option<F2>,
 }
@@ -257,8 +265,8 @@ where
     F1:'static + Fn(Vec<usize>)->Msg,
     F2:'static + Fn(Vec<usize>)->Msg,
 {
-    pub fn new(detector:&'a Detector<Msg>, source:Option<(&'a ArrayND<f64>,f64)>, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->Self{
-        Self { detector ,source, scale, lclick_event, rclick_event}
+    pub fn new(detector:&'a Detector<Msg>, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->Self{
+        Self { detector ,source, scale, lclick_event, rclick_event, transform}
     }
 }
 
@@ -274,7 +282,7 @@ where
     fn build_chart<DB: DrawingBackend>(&self, state: &Self::State, builder: ChartBuilder<DB>) {}
 
     fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
-        self.detector.build_chart_generic(&root, &self.source,self.scale,state);
+        self.detector.build_chart_generic(&root, &self.source,self.scale,self.transform,state);
     }
 
     fn update(

@@ -55,6 +55,7 @@ pub struct PadamoTrigger{
 
     loader:Option<thread::JoinHandle<DataCache>>,
     data:Option<(DataCache,ArrayND<f64>)>,
+    view_transform: padamo_detectors::Transform,
 }
 
 
@@ -79,6 +80,7 @@ impl PadamoTrigger{
         Self {
             chart:Detector::default_vtl(),
             signal:None,
+            view_transform:Default::default(),
             //buffer:None,
             //interval_storage:Arc::new(Mutex::new(IntervalsContainer::new())),
             unmarked_intervals:IntervalStorage::new_full(100),
@@ -224,7 +226,7 @@ impl PadamoTool for PadamoTrigger{
             ].width(250),
 
             //widget::container(
-            self.chart.view(view_content,padamo_detectors::Scaling::Autoscale,action,action),
+            self.chart.view(view_content,self.view_transform,padamo_detectors::Scaling::Autoscale,action,action),
             //).width(iced::Length::Fill),
 
             widget::scrollable(widget::column![

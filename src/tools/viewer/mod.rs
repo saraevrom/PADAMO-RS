@@ -173,6 +173,7 @@ pub struct PadamoViewer{
 
     stop_on_trigger:bool,
     file_changed:bool,
+    view_transform: padamo_detectors::Transform,
     //animation_resolution:(u32,u32),
     //animation_resolution_str:(String,String),
 }
@@ -183,6 +184,7 @@ impl PadamoViewer{
         let export_params = Default::default();
         let mut res = Self{
             chart:Detector::default_vtl(),
+            view_transform:Default::default(),
             length:100,
             pointer:0,
             start:0,
@@ -440,7 +442,7 @@ impl PadamoTool for PadamoViewer{
 
         //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
         let top_row = row![
-            self.chart.view(frame,self.plot_scale,
+            self.chart.view(frame,self.view_transform,self.plot_scale,
                             Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
                             Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
             iced::widget::rule::Rule::vertical(10),
@@ -845,7 +847,7 @@ impl PadamoTool for PadamoViewer{
                                         if let Some((low,high,lc)) = &lc_pair{
                                             let (a,b) = root.split_vertically(animation_parameters.height);
                                             //a.fill(&WHITE).unwrap();
-                                            chart.build_chart_generic(&a,&Some((&frame,tim)),plot_scale,&None);
+                                            chart.build_chart_generic(&a,&Some((&frame,tim)),plot_scale,Default::default(),&None);
 
                                             //b.fill(&WHITE).unwrap();
                                             let mut chart = ChartBuilder::on(&b)
@@ -861,7 +863,7 @@ impl PadamoTool for PadamoViewer{
                                             chart.draw_series(LineSeries::new((0..2).map(|j| ptr[j]), RED)).unwrap();
                                         }
                                         else{
-                                            chart.build_chart_generic(&root,&Some((&frame,tim)),plot_scale,&None);
+                                            chart.build_chart_generic(&root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
                                         }
 
 
