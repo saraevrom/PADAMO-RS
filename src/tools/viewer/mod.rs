@@ -173,7 +173,7 @@ pub struct PadamoViewer{
 
     stop_on_trigger:bool,
     file_changed:bool,
-    view_transform: padamo_detectors::Transform,
+    view_transform: crate::transform_widget::TransformState,
     //animation_resolution:(u32,u32),
     //animation_resolution_str:(String,String),
 }
@@ -362,6 +362,8 @@ impl PadamoTool for PadamoViewer{
                 iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
                 iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
                 iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
+                iced::widget::Space::new(10,10).width(iced::Length::Fill),
+                self.view_transform.view().map(ViewerMessage::PlotZoomMessage)
             ],
             iced::widget::Container::new(
                 iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
@@ -442,7 +444,7 @@ impl PadamoTool for PadamoViewer{
 
         //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
         let top_row = row![
-            self.chart.view(frame,self.view_transform,self.plot_scale,
+            self.chart.view(frame,self.view_transform.transform(),self.plot_scale,
                             Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
                             Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
             iced::widget::rule::Rule::vertical(10),
@@ -900,6 +902,10 @@ impl PadamoTool for PadamoViewer{
                         //self.chart.build_chart_generic
                     }
                     //
+                }
+
+                ViewerMessage::PlotZoomMessage(msg)=>{
+                    self.view_transform.update(msg.to_owned());
                 }
             }
 

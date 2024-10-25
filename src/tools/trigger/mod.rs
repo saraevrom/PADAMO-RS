@@ -55,7 +55,7 @@ pub struct PadamoTrigger{
 
     loader:Option<thread::JoinHandle<DataCache>>,
     data:Option<(DataCache,ArrayND<f64>)>,
-    view_transform: padamo_detectors::Transform,
+    view_transform: crate::transform_widget::TransformState,
 }
 
 
@@ -226,7 +226,7 @@ impl PadamoTool for PadamoTrigger{
             ].width(250),
 
             //widget::container(
-            self.chart.view(view_content,self.view_transform,padamo_detectors::Scaling::Autoscale,action,action),
+            self.chart.view(view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
             //).width(iced::Length::Fill),
 
             widget::scrollable(widget::column![

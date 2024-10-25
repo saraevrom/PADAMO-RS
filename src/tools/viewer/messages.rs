@@ -32,6 +32,7 @@ pub enum ViewerMessage{
     SetMinSignal(String),
     SetMaxSignal(String),
     TogglePixel(Vec<usize>),
+    PlotZoomMessage(crate::transform_widget::TransformMessage),
     //PopupPlot(usize,usize,Vec<usize>)
 }
 

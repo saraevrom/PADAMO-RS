@@ -12,6 +12,7 @@ mod time_search;
 mod popup_message;
 mod compat;
 mod assets;
+mod transform_widget;
 
 fn main() -> iced::Result{
     // application::Padamo::run(Settings {

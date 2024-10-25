@@ -15,8 +15,10 @@ pub mod parser;
 pub mod colors;
 pub mod selector_chart;
 pub mod transformer;
+// pub mod transform_widget;
 
 pub use transformer::Transform;
+// pub use transform_widget::TransformState;
 pub use selector_chart::DetectorChartMap;
 
 //use polygon::StableColorMatrix;
