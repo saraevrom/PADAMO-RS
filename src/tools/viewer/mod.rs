@@ -355,6 +355,7 @@ impl PadamoTool for PadamoViewer{
             }
         }
 
+        let view_transform: iced::Element<'_,_> = self.view_transform.view().width(300).into();
         let lower_col:iced::Element<'a, ViewerMessage> = column![
             //self.chart.view(frame,self.plot_scale, Some(ViewerMessage::plot_pixel(self.start, self.end))),
             row![
@@ -363,7 +364,7 @@ impl PadamoTool for PadamoViewer{
                 iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
                 iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
                 iced::widget::Space::new(10,10).width(iced::Length::Fill),
-                self.view_transform.view().map(ViewerMessage::PlotZoomMessage)
+                view_transform.map(ViewerMessage::PlotZoomMessage),
             ],
             iced::widget::Container::new(
                 iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),

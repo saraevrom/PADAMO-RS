@@ -11,6 +11,7 @@ pub enum TriggerMessage{
     SelectNegative(usize, String),
     ExamineEvent,
     Stop,
+    PlotZoomMessage(crate::transform_widget::TransformMessage),
 }
 
 #[derive(Clone,Debug)]

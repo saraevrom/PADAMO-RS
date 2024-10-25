@@ -42,14 +42,14 @@ impl TransformState{
         }
     }
 
-    pub fn view(&self)->iced::Element<'_, TransformMessage>{
+    pub fn view(&self)->iced::widget::Container<'_, TransformMessage>{
         widget::Container::new(
         widget::row![
             self.delta_x.view_row("X", "X pos", TransformMessage::MoveX),
             self.delta_y.view_row("Y", "Y pos", TransformMessage::MoveY),
             self.zoom.view_row("Z", "Zoom", TransformMessage::SetZoom),
             widget::button("Reset").on_press(TransformMessage::Reset),
-        ]).width(300).into()
+        ])
     }
 
     pub fn transform(&self)->padamo_detectors::Transform{

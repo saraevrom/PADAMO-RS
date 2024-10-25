@@ -203,6 +203,7 @@ impl PadamoTool for PadamoTrigger{
             None
         };
 
+        let view_transform:iced::Element<'_,_> = self.view_transform.view().width(iced::Length::Fill).into();
         let underlay:iced::Element<'_, TriggerMessage> = widget::row![
             widget::column![
                 widget::container(selection_list::SelectionList::new_with(
@@ -226,7 +227,11 @@ impl PadamoTool for PadamoTrigger{
             ].width(250),
 
             //widget::container(
-            self.chart.view(view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+            widget::column![
+                self.chart.view(view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+                view_transform.map(TriggerMessage::PlotZoomMessage)
+            ].width(iced::Length::Fill),
+
             //).width(iced::Length::Fill),
 
             widget::scrollable(widget::column![
@@ -241,7 +246,7 @@ impl PadamoTool for PadamoTrigger{
                     widget::text("Settings"),
                     self.trigger_form_buffer.view().map(TriggerMessage::SettingsMessage),
                 ]
-            ].max_width(250)),
+            ].width(250)),
         ].into();
 
         //let underlay:iced::Element<'a, TriggerMessage> = ;
@@ -306,6 +311,9 @@ impl PadamoTool for PadamoTrigger{
                         self.selection = Some(*i);
                         self.selection_positive = false;
                         self.select_event();
+                    }
+                    TriggerMessage::PlotZoomMessage(msg)=>{
+                        self.view_transform.update(msg.to_owned());
                     }
                     TriggerMessage::ConfirmTrigger=>{
                         if let Some(v) = self.trigger_interval_selector.take(){
