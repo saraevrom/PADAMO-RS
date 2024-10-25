@@ -1031,7 +1031,8 @@ impl PadamoTool for PadamoViewer{
                 return;
             }
         }
-        self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
+        self.chart = Detector::default_vtl();
+        //self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
     }
 }
 
