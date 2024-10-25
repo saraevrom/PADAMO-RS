@@ -45,9 +45,9 @@ impl TransformState{
     pub fn view(&self)->iced::Element<'_, TransformMessage>{
         widget::Container::new(
         widget::row![
-            self.delta_x.view_row("X", "0.0", TransformMessage::MoveX),
-            self.delta_y.view_row("Y", "0.0", TransformMessage::MoveY),
-            self.zoom.view_row("Z", "1.0", TransformMessage::SetZoom),
+            self.delta_x.view_row("X", "X pos", TransformMessage::MoveX),
+            self.delta_y.view_row("Y", "Y pos", TransformMessage::MoveY),
+            self.zoom.view_row("Z", "Zoom", TransformMessage::SetZoom),
             widget::button("Reset").on_press(TransformMessage::Reset),
         ]).width(300).into()
     }
