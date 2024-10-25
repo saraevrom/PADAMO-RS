@@ -22,6 +22,7 @@ pub struct PadamoDetectorManager{
     is_dirty:bool,
     //split_pos:Option<u16>,
     panes: pane_grid::State<Pane>,
+    viewer_transform:crate::transform_widget::TransformState
 }
 
 impl PadamoDetectorManager {
@@ -35,7 +36,8 @@ impl PadamoDetectorManager {
             chart:Detector::default_vtl(),
             is_dirty:false,
             //split_pos:None,
-            panes
+            panes,
+            viewer_transform:Default::default(),
         }
     }
 }
@@ -65,7 +67,11 @@ impl PadamoTool for PadamoDetectorManager{
         let subframe = iced::widget::PaneGrid::new(&self.panes,|id, pane, is_maximized| {
             match pane{
                 Pane::DetectorView=>{
-                    widget::container(self.chart.view(None, Default::default(),padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill).into()
+                    let controls:iced::Element<'_,_> = self.viewer_transform.view().into();
+                    widget::container(iced::widget::column![
+                        self.chart.view(None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+                        controls.map(DetectorManagerMessage::PlotZoomMessage),
+                    ]).width(iced::Length::Fill).into()
                 }
                 Pane::SourceCode=>{
                     widget::container(widget::text_editor(&self.source).on_action(DetectorManagerMessage::EditorActionPerformed)).width(iced::Length::Fill).into()
@@ -132,6 +138,9 @@ impl PadamoTool for PadamoDetectorManager{
                             //}
                         }
                     },
+                    DetectorManagerMessage::PlotZoomMessage(msg)=>{
+                        self.viewer_transform.update(msg.to_owned());
+                    }
                     _=>(),
                 }
             }

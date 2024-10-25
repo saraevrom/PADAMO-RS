@@ -5,6 +5,7 @@ pub enum DetectorManagerMessage{
     //SetSplitPosition(u16),
     PaneDrag(iced::widget::pane_grid::DragEvent),
     PaneResize(iced::widget::pane_grid::ResizeEvent),
+    PlotZoomMessage(crate::transform_widget::TransformMessage),
     Rebuild,
     Export,
 }
