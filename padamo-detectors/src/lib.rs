@@ -171,7 +171,8 @@ impl<Message> Detector<Message>{
 
         let (width, height) = main_builder.estimate_plot_area_size();
         let (x_range, y_range) = centering_ranges(&min_range, &(width as f64, height as f64));
-
+        let x_range = transform.transform_x_range(x_range);
+        let y_range = transform.transform_y_range(y_range);
 
 
         let mut chart = main_builder.build_cartesian_2d(x_range, y_range).unwrap();
