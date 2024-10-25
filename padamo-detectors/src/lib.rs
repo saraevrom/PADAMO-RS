@@ -55,7 +55,9 @@ impl<Message> Detector<Message>{
     }
 
     pub fn toggle_pixel(&mut self, index:&Vec<usize>){
-        self.alive_pixels[index] = !self.alive_pixels[index];
+        if let Some(v) = self.alive_pixels.try_get(index){
+            self.alive_pixels[index] = !v;
+        }
     }
 
     pub fn from_cells(cells:polygon::DetectorContent)->Self{

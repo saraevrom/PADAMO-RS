@@ -262,7 +262,9 @@ impl<'a> RectIterator<'a>{
         // let coords = (coords.0-self.size.0/2.0,coords.1-self.size.1/2.0);
         let poly = &self.detector.content[self.current_index];
 
-        let color = if !self.alive_pixels[&poly.index]{
+        let alive = self.alive_pixels.try_get(&poly.index).map(|x| *x).unwrap_or(true);
+
+        let color = if !alive{
             plotters::style::colors::BLACK.filled()
         }
         else if let Some((arr,_)) = self.source{
