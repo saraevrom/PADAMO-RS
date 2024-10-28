@@ -12,6 +12,8 @@ pub enum TriggerMessage{
     ExamineEvent,
     Stop,
     PlotZoomMessage(crate::transform_widget::TransformMessage),
+    Export,
+    ExportStop,
 }
 
 #[derive(Clone,Debug)]

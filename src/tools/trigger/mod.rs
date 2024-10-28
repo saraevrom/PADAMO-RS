@@ -5,6 +5,7 @@ use crate::messages::PadamoAppMessage;
 use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorage};
 
 use super::PadamoTool;
+use chrono::{Datelike, Timelike};
 use iced::{widget, Font};
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_detectors::Detector;
@@ -30,6 +31,10 @@ pub enum TriggerProcessMessage{
     MarkNegative(sparse_intervals::Interval),
 }
 
+pub enum ExportProcessMessage{
+    Status(String)
+}
+
 pub struct PadamoTrigger{
     chart:Detector<TriggerMessage>,
     signal:Option<padamo_api::lazy_array_operations::LazyTriSignal>,
@@ -52,6 +57,9 @@ pub struct PadamoTrigger{
     trigger_form_buffer:TriggerSettingsFormInterface,
     trigger_process:Option<Worker<TriggerProcessMessage>>,
     trigger_status:String,
+
+    export_process:Option<Worker<ExportProcessMessage>>,
+    export_status:String,
 
     loader:Option<thread::JoinHandle<DataCache>>,
     data:Option<(DataCache,ArrayND<f64>)>,
@@ -97,7 +105,9 @@ impl PadamoTrigger{
             trigger_form_buffer: TriggerSettingsFormInterface::new(&trigger_form),
             trigger_form,
             trigger_process:None,
+            export_process:None,
             trigger_status:"IDLE".into(),
+            export_status:"IDLE".into(),
             loader:None,
             data:None
 
@@ -121,6 +131,13 @@ impl PadamoTrigger{
             a.stop();
         }
         self.trigger_status = "IDLE".into();
+    }
+
+    pub fn stop_export(&mut self){
+        if let Some(mut a) = self.export_process.take(){
+            a.stop();
+        }
+        self.export_status = "IDLE".into();
     }
 
     pub fn mark_positive(&mut self,interval:Interval){
@@ -240,6 +257,9 @@ impl PadamoTool for PadamoTrigger{
                     widget::button("Stop").on_press(TriggerMessage::Stop),
                 ],
                 widget::button("Focus on event").on_press(TriggerMessage::ExamineEvent),
+                widget::button("Export").on_press(TriggerMessage::Export),
+                widget::text(&self.trigger_status),
+                widget::text(&self.export_status),
 
                 widget::column![
                     widget::rule::Rule::horizontal(10),
@@ -387,6 +407,69 @@ impl PadamoTool for PadamoTrigger{
                         //self.stop_animator();
                     }
                     TriggerMessage::ExamineEvent=>(),
+                    TriggerMessage::Export=>{
+                        if let Some(signal_ref) = &self.signal{
+                            if let Some(path) = padamo.workspace.workspace("events_export").choose_dir_dialog(vec![]){
+                                let (tx,rx) = mpsc::channel::<bool>();
+                                let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
+                                let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
+                                self.stop_export();
+
+                                let (tx_status,rx_status) = mpsc::channel::<ExportProcessMessage>();
+                                let intervals = self.positive_intervals.clone();
+
+                                let handle = thread::spawn(move || {
+                                    let total_len = intervals.container.len();
+                                    for (i,interval) in intervals.container.iter().enumerate(){
+                                        if let Ok(v) = rx.try_recv(){
+                                            if v{
+                                                println!("Interrupt requested");
+                                                break;
+                                            }
+                                        }
+
+                                        let frame = crate::compat::arraynd_to_ndarray(spatial.request_range(interval.start,interval.end));
+                                        let tim:Vec<f64> = temporal.request_range(interval.start,interval.end).into();
+                                        let time_of_event = tim[0];
+                                        let time_of_event_secs:i64 = time_of_event as i64;
+                                        let time_of_event_nsecs = ((time_of_event-time_of_event_secs as f64)*1e9) as u32;
+                                        let tim1 = if let Some(v) = chrono::DateTime::from_timestamp(time_of_event_secs, time_of_event_nsecs){
+                                            format!("T{:04}{:02}{:02}-{:02}{:02}{:02}.{:09}",v.year(),v.month(),v.day(),v.hour(), v.minute(), v.second(),v.nanosecond())
+                                        }
+                                        else{
+                                            format!("I{}", interval.start)
+                                        };
+
+                                        let tgt_path = std::path::Path::new(&path);
+                                        let file_path = tgt_path.join(format!("event_{}.h5",tim1));
+                                        if let Ok(file) = hdf5::File::create(file_path){
+                                            let space_ds = file.new_dataset::<f64>()
+                                                .deflate(3)
+                                                .shape(frame.shape());
+                                            let space_ds = space_ds.create("pdm_2d_rot_global").unwrap();
+                                            let time_ds = file.new_dataset::<f64>()
+                                                .deflate(3)
+                                                .shape(vec![tim.len()]);
+                                            let time_ds = time_ds.create("unixtime_dbl_global").unwrap();
+
+                                            space_ds.write(&frame).unwrap();
+                                            time_ds.write(&tim).unwrap();
+                                        }
+
+
+                                        tx_status.send(ExportProcessMessage::Status(format!("{}/{}",i,total_len))).unwrap();
+                                    }
+                                });
+                                self.export_process = Some(Worker::new(handle, tx, rx_status));
+                            }
+                        }
+                    }
+                    TriggerMessage::ExportStop=>{
+                        if let Some(v) = &mut self.export_process{
+                             v.request_stop();
+
+                        }
+                    }
                 }
             }
             _ => (),
@@ -436,6 +519,27 @@ impl PadamoTool for PadamoTrigger{
                 if will_stop{
                     self.stop_worker();
                 }
+
+                will_stop = false;
+                if let Some(exporter) = self.export_process.take(){
+                    if exporter.is_finished(){
+                        will_stop = true;
+                    }
+                    let mut recv_res = exporter.feedback.try_recv();
+                    while let Ok(v) = recv_res{
+                        match v{
+                            ExportProcessMessage::Status(status)=>{self.export_status = status;}
+                        }
+                        recv_res = exporter.feedback.try_recv();
+                    }
+
+                    self.export_process = Some(exporter);
+                }
+
+                if will_stop{
+                    self.stop_export();
+                }
+
 
                 if let Some(worker) = self.loader.take(){
                     if worker.is_finished(){
