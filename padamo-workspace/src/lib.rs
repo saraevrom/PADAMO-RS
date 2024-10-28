@@ -159,4 +159,9 @@ impl<'a> PadamoSubWorkspace<'a>{
         let dialog = self.make_dialog(filter_list);
         rewrap_pathbuf(dialog.pick_file())
     }
+
+    pub fn choose_dir_dialog(&self, filter_list: FilenameFilter) ->  Option<String>{
+        let dialog = self.make_dialog(filter_list);
+        rewrap_pathbuf(dialog.pick_folder())
+    }
 }
