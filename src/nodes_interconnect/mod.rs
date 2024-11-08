@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use abi_stable::std_types::RHashMap;
+use padamo_api::calculation_nodes::immediate::{CompiledGraph, CompiledNode, SmallLink};
 use padamo_api::prelude::{CalculationNodeBox, CalculationNode, CalculationNode_TO};
 use padamo_api::PadamoModule_Ref;
 use abi_stable::library::lib_header_from_path;
@@ -99,8 +100,9 @@ impl NodesRegistry{
         tree
     }
 
-    pub fn make_compute_graph(&self, compute_graph:&mut CalculationSequenceStorage, template:&GraphNodeStorage){
-        compute_graph.clear_graph();
+    pub fn compile_graph(&self, template:&GraphNodeStorage)->CompiledGraph{
+        let mut graph = CompiledGraph::new();
+
         for node in template.nodes.iter(){
             let node_ref = node.borrow();
             let mut const_storage = ConstantContentContainer::new();
@@ -109,9 +111,10 @@ impl NodesRegistry{
                 const_storage.0.insert(name.clone().into(), con.content.clone().into());
                 externals.insert(name.clone().into(), con.use_external);
             }
-            let calc_node = CalculationNodeObject::new(node_ref.represented_node.0.clone(),Some(const_storage),Some(externals));
-            compute_graph.nodes.push(calc_node);
+            let calc_node = CompiledNode::new(const_storage,externals,node_ref.represented_node.identifier());
+            graph.nodes.push(calc_node);
         }
+
         for (end_i,node) in template.nodes.iter().enumerate(){
             let node_ref = node.borrow();
             for (input_port,_) in node_ref.inputs.iter(){
@@ -119,7 +122,12 @@ impl NodesRegistry{
                     if let Some(src_node) = conn.node.upgrade(){
                         let output_port = &conn.port;
                         if let Some(start_i) = template.lookup_node(&src_node){
-                            compute_graph.link_fromto(start_i, end_i, &output_port, &input_port);
+                            graph.nodes[start_i].links.push(SmallLink{
+                                output:output_port.clone(),
+                                target_input:input_port.clone(),
+                                target_index:end_i,
+                            });
+                            //compute_graph.link_fromto(start_i, end_i, &output_port, &input_port);
                             println!("{}.{}->{}.{}",start_i,input_port,end_i,output_port);
                         }
                     }
@@ -128,7 +136,41 @@ impl NodesRegistry{
 
             }
         }
+        graph
+    }
+
+    pub fn make_compute_graph(&self, compute_graph:&mut CalculationSequenceStorage, template:&GraphNodeStorage){
+        // compute_graph.clear_graph();
+        // for node in template.nodes.iter(){
+        //     let node_ref = node.borrow();
+        //     let mut const_storage = ConstantContentContainer::new();
+        //     let mut externals = RHashMap::new();
+        //     for (name,con) in node_ref.constants.constants.iter(){
+        //         const_storage.0.insert(name.clone().into(), con.content.clone().into());
+        //         externals.insert(name.clone().into(), con.use_external);
+        //     }
+        //     let calc_node = CalculationNodeObject::new(node_ref.represented_node.0.clone(),Some(const_storage),Some(externals));
+        //     compute_graph.nodes.push(calc_node);
+        // }
+        // for (end_i,node) in template.nodes.iter().enumerate(){
+        //     let node_ref = node.borrow();
+        //     for (input_port,_) in node_ref.inputs.iter(){
+        //         if let Some(conn) = node_ref.connections.get(input_port){
+        //             if let Some(src_node) = conn.node.upgrade(){
+        //                 let output_port = &conn.port;
+        //                 if let Some(start_i) = template.lookup_node(&src_node){
+        //                     compute_graph.link_fromto(start_i, end_i, &output_port, &input_port);
+        //                     println!("{}.{}->{}.{}",start_i,input_port,end_i,output_port);
+        //                 }
+        //             }
+        //         }
+        //
+        //
+        //     }
+        // }
         //println!("{:?}",compute_graph.nodes);
+        let compiled_graph = self.compile_graph(template);
+        compiled_graph.make_compute_graph(compute_graph, &self.nodes);
     }
 
     pub fn create_calculation_node(&self, identifier:String)->Option<GraphNode>{
