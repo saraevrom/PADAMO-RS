@@ -17,8 +17,10 @@ ndarray-linalg = "0.16.0"
 atomic_refcell = "0.1.13"
 nom = "7.1.3"
 thiserror = "1.0.61"
+anyhow = { version = "1.0.93", optional = true }
 
 [features]
-default = ["ndarray"]
+default = ["ndarray", "headless"]
 ndarray = ["dep:ndarray"]
 serde = ["dep:serde"]
+headless = ["dep:anyhow"]

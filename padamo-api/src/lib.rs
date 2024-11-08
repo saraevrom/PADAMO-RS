@@ -5,6 +5,9 @@ pub mod lazy_array_operations;
 pub mod function_operator;
 pub mod rng;
 
+#[cfg(feature = "headless")]
+pub mod headless_helpers;
+
 use abi_stable::sabi_trait::TD_Opaque;
 use abi_stable::std_types::{RString, RVec};
 use abi_stable::{StableAbi, library::RootModule, package_version_strings, sabi_types::VersionStrings, declare_root_module_statics};
