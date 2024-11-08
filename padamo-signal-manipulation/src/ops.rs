@@ -4,7 +4,7 @@ use abi_stable::std_types::RVec;
 use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTimeSignal};
 use rayon::prelude::*;
 
-fn free_threads(threads: &mut VecDeque<thread::JoinHandle<()>>, threadcount:usize){
+pub fn free_threads(threads: &mut VecDeque<thread::JoinHandle<()>>, threadcount:usize){
     while threads.len()>=threadcount{
         //println!("Working threads: {}",threads.len());
         if let Some(handle)= threads.pop_front() {
