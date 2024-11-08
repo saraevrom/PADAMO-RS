@@ -1,3 +1,4 @@
+use abi_stable::rvec;
 use padamo_api::lazy_array_operations::cache::Cache;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyTrigger};
@@ -120,5 +121,55 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerNegate{
         let mut pre = self.source.request_range(start,end);
         pre.flat_data.iter_mut().for_each(|x| {*x = !*x;});
         pre
+    }
+}
+
+
+#[derive(Clone,Debug)]
+pub struct LazyTriggerAnd{
+    source_a:LazyTrigger,
+    source_b:LazyTrigger,
+}
+
+impl LazyTriggerAnd {
+    pub fn new(source_a: LazyTrigger, source_b: LazyTrigger) -> Self {
+        Self { source_a, source_b }
+    }
+}
+
+fn flatten_trigger(x:ArrayND<bool>)->Vec<bool>{
+    let mut res:Vec<bool> = Vec::with_capacity(x.shape[0]);
+    res.resize(x.shape[0], false);
+    for i in x.enumerate(){
+        res[i[0]] |= x[&i];
+    }
+    res
+}
+
+impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerAnd{
+    fn length(&self)->usize {
+        self.source_a.length()
+    }
+    fn calculate_overhead(&self,start:usize, end:usize)->usize {
+        self.source_a.calculate_overhead(start,end)+self.source_b.calculate_overhead(start,end)
+    }
+
+    fn request_range(&self,start:usize, end:usize)->ArrayND<bool> {
+        let mut result = flatten_trigger(self.source_a.request_range(start,end));
+        let mut start_i:usize = 0;
+        let mut current_state = false;
+        for i in 0..=result.len(){
+            let value = result.get(i).map(|x| *x).unwrap_or(false);
+            if !current_state && value{
+                current_state = true;
+                start_i = i;
+            }
+            if current_state && !value{
+                current_state = false;
+                let aux_interval = flatten_trigger(self.source_b.request_range(start_i,i));
+                (start_i..i).for_each(|j| result[j]|=aux_interval[j-start_i]);
+            }
+        }
+        ArrayND{shape:rvec![result.len()], flat_data:result.into()}
     }
 }

@@ -194,11 +194,141 @@ impl CalculationNode for TriggerNegateNode{
     }
 }
 
+#[derive(Clone,Debug)]
+pub struct TriggerAndNode;
+
+impl TriggerAndNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
+        let mut signal_a = inputs.request_detectorfulldata("Main Signal")?;
+        let signal_b = inputs.request_detectorfulldata("Secondary signal")?;
+
+        if let ROption::RSome(trig_1) = signal_a.2{
+            if let ROption::RSome(trig_2) = signal_b.2{
+                if trig_1.length()!=trig_2.length(){
+                    return Err(ExecutionError::OtherError("Lengths of triggers do not match".into()));
+                }
+
+                let trig = make_lao_box(crate::trigger_ops::LazyTriggerAnd::new(trig_1,trig_2));
+                signal_a.2 = ROption::RSome(trig);
+            }
+            else{
+                signal_a.2 = ROption::RNone;
+            }
+        }
+
+        outputs.set_value("Signal", signal_a.into())
+    }
+}
+
+impl CalculationNode for TriggerAndNode{
+    fn name(&self)->RString {
+        "Trigger AND".into()
+    }
+
+    fn category(&self)->RVec<RString> {
+        category()
+    }
+
+    fn identifier(&self)->RString {
+        "padamocore.trigger_manipulation.and_trigger".into()
+    }
+
+    fn constants(&self)->RVec<CalculationConstant> {
+        constants!()
+    }
+
+    fn inputs(&self)->RVec<CalculationIO> {
+        ports![
+            ("Main Signal",ContentType::DetectorFullData),
+            ("Secondary signal",ContentType::DetectorFullData),
+        ]
+    }
+
+    fn outputs(&self)->RVec<CalculationIO> {
+        ports![
+            ("Signal",ContentType::DetectorFullData),
+        ]
+    }
+
+    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError> {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct TriggerOrNode;
+
+impl TriggerOrNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
+        let mut signal_a = inputs.request_detectorfulldata("Main Signal")?;
+        let signal_b = inputs.request_detectorfulldata("Secondary signal")?;
+
+        if let ROption::RSome(trig_1) = signal_a.2{
+            if let ROption::RSome(trig_2) = signal_b.2{
+                if trig_1.length()!=trig_2.length(){
+                    return Err(ExecutionError::OtherError("Lengths of triggers do not match".into()));
+                }
+
+                // A||B = !(!A && !B)
+                let not_1 = make_lao_box(crate::trigger_ops::LazyTriggerNegate::new(trig_1));
+                let not_2 = make_lao_box(crate::trigger_ops::LazyTriggerNegate::new(trig_2));
+                let and1 = make_lao_box(crate::trigger_ops::LazyTriggerAnd::new(not_1,not_2));
+                let trig = make_lao_box(crate::trigger_ops::LazyTriggerNegate::new(and1));
+                signal_a.2 = ROption::RSome(trig);
+            }
+            else{
+                signal_a.2 = ROption::RNone;
+            }
+        }
+
+        outputs.set_value("Signal", signal_a.into())
+    }
+}
+
+impl CalculationNode for TriggerOrNode{
+    fn name(&self)->RString {
+        "Trigger OR".into()
+    }
+
+    fn category(&self)->RVec<RString> {
+        category()
+    }
+
+    fn identifier(&self)->RString {
+        "padamocore.trigger_manipulation.or_trigger".into()
+    }
+
+    fn constants(&self)->RVec<CalculationConstant> {
+        constants!()
+    }
+
+    fn inputs(&self)->RVec<CalculationIO> {
+        ports![
+            ("Main Signal",ContentType::DetectorFullData),
+            ("Secondary signal",ContentType::DetectorFullData),
+        ]
+    }
+
+    fn outputs(&self)->RVec<CalculationIO> {
+        ports![
+            ("Signal",ContentType::DetectorFullData),
+        ]
+    }
+
+    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError> {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}
+
+
+
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec![
         TriggerExpandNode,
         TriggerExchangeNode,
         TriggerNegateNode,
+        TriggerAndNode,
+        TriggerOrNode
         //StringReplaceRegexNode
     ]
 }
