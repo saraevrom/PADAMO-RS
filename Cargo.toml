@@ -23,7 +23,7 @@ padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive" }
 abi_stable = "0.11.3"
 plotters-layout = "0.1.0"
 # nfd = { git = "https://github.com/saurvs/nfd-rs.git" }
-chrono = "0.4.33"
+chrono = "0.4"
 regex = "1.10.3"
 once_cell = "1.19.0"
 iced_aw = { version = "0.11", features = ["menu", "tabs", "card", "selection_list"] }
