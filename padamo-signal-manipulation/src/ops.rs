@@ -91,7 +91,7 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverter{
                         sum += src.flat_data[j*frame_size+pixel];
                     }
                     if !is_sum{
-                        sum/=frame_size as f64;
+                        sum/=divider as f64;
                     }
                     tgt.lock().unwrap().flat_data[i*frame_size+pixel] = sum;
                 }

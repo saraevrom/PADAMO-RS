@@ -2,6 +2,7 @@ pub mod ops;
 pub mod ops_stretch;
 pub mod node_reg;
 pub mod nodes_stretch;
+pub mod signal_length;
 
 use abi_stable::prefix_type::PrefixTypeTrait;
 use padamo_api::prelude::*;
@@ -15,6 +16,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         node_reg::TimeResolutionReduceNode,
         node_reg::CutterNode,
         nodes_stretch::StretchSignal,
+        signal_length::SignalLength,
     )
 }
 
