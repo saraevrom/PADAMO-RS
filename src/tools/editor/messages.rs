@@ -26,5 +26,6 @@ pub enum EditorMessage{
     PaneResize(iced::widget::pane_grid::ResizeEvent),
     NodeListClicked(String),
     EditorScroll(scrollable::Viewport),
+    CompileGraph,
 }
 

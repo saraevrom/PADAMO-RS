@@ -78,3 +78,61 @@ impl CalculationNode for TriggerExpandNode{
 
 
 }
+
+#[derive(Clone,Debug)]
+pub struct TriggerExchangeNode;
+
+
+impl TriggerExchangeNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
+        let mut signal = inputs.request_detectorfulldata("Signal")?;
+        let trigger_source = inputs.request_detectorfulldata("Trigger source")?;
+
+        if let ROption::RSome(trig) = trigger_source.2{
+            if signal.0.length()==trig.length(){
+                signal.2 = ROption::RSome(trig);
+            }
+            else{
+                return Err(ExecutionError::OtherError(format!("Incompatible signal and trigger sizes: {}!={}",signal.0.length(),trig.length()).into()));
+            }
+        }
+
+        outputs.set_value("Signal", signal.into())
+    }
+}
+
+impl CalculationNode for TriggerExchangeNode {
+    fn category(&self,) -> RVec<RString>{
+        rvec!["Trigger manipulation".into()]
+    }
+
+    fn name(&self,) -> RString {
+        "Exchange trigger".into()
+    }
+
+
+    fn identifier(&self,) -> RString {
+        "padamocore.trigger_manipulation.exchange_trigger".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+            ("Trigger source", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>{
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>{
+        constants!()
+    }
+
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}

@@ -15,7 +15,7 @@ use self::messages::EditorMessage;
 
 use super::PadamoTool;
 use abi_stable::traits::IntoOwned;
-use iced::Length;
+use iced::{Element, Length};
 use iced::widget::scrollable::{self, Scrollbar};
 use once_cell::sync::Lazy;
 use iced::widget::pane_grid;
@@ -137,6 +137,11 @@ impl PadamoTool for PadamoEditor{
             let (second, third) = self.state.view();
             let second = second.map(messages::EditorMessage::CanvasMessage);
             let third = third.map(messages::EditorMessage::CanvasMessage);
+            let third:Element<EditorMessage> = iced::widget::column![
+                third,
+                iced::widget::button("Export compiled graph").on_press(EditorMessage::CompileGraph).width(iced::Length::Fill)
+            ].into();
+
             match  pane{
                 Pane::NodeTree=>first.into(),
                 Pane::CanvasEditor=>second.into(),
@@ -208,6 +213,16 @@ impl PadamoTool for PadamoEditor{
                         //self.state.scroll_offset = off;
                         //view.relative_offset().x
                     },
+                    messages::EditorMessage::CompileGraph=>{
+                        if let Some(path) = padamo.workspace.workspace("compiled_graphs").save_dialog(vec![("Padamo RS compiled compute graph",vec!["json"])]){
+                            let data = padamo.nodes.compile_graph(&self.state.nodes);
+                            if let Ok(s) = serde_json::to_string_pretty(&data){
+                                if let Err(e) = std::fs::write(path, s){
+                                    eprintln!("{}",e);
+                                }
+                            }
+                        }
+                    }
                     _=>()
                 }
             },
