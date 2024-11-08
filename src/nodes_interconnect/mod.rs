@@ -14,7 +14,6 @@ use errors::NodeRegistryError;
 
 use crate::tools::editor::nodes::{GraphNodeStorage, GraphNode};
 use padamo_api::calculation_nodes::graph::CalculationSequenceStorage;
-use padamo_api::calculation_nodes::node::CalculationNodeObject;
 use padamo_api::calculation_nodes::content::ConstantContentContainer;
 
 use abi_stable::sabi_trait::prelude::TD_Opaque;
