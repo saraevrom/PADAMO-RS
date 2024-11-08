@@ -7,13 +7,13 @@ use crate::prelude::*;
 use crate::{constants, ports, CalculationNode, ConstantContent, ContentType};
 
 #[derive(Clone,Debug)]
-pub struct AdHocOutputNode{
+pub struct AdHocInputNode{
     pub inputs_mapping:HashMap<String,ContentType>,
     pub placeholder_identifier:String
 }
 
 
-impl AdHocOutputNode{
+impl AdHocInputNode{
     pub fn new<T:Into<String>>(identifier:T)->Self{
         Self { inputs_mapping: HashMap::new() ,placeholder_identifier:identifier.into()}
     }
@@ -36,7 +36,7 @@ impl AdHocOutputNode{
     }
 }
 
-impl CalculationNode for AdHocOutputNode{
+impl CalculationNode for AdHocInputNode{
     fn name(&self,) -> abi_stable::std_types::RString where {
         self.placeholder_identifier.clone().into()
     }

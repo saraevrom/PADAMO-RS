@@ -8,6 +8,9 @@ pub mod rng;
 #[cfg(feature = "headless")]
 pub mod headless_helpers;
 
+pub use calculation_nodes::ad_hoc_input_node::AdHocInputNode;
+pub use calculation_nodes::ad_hoc_output_node::AdHocOutputNode;
+
 use abi_stable::sabi_trait::TD_Opaque;
 use abi_stable::std_types::{RString, RVec};
 use abi_stable::{StableAbi, library::RootModule, package_version_strings, sabi_types::VersionStrings, declare_root_module_statics};
