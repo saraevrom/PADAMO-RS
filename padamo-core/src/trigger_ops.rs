@@ -93,3 +93,32 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerExpand{
         end-start+self.expansion
     }
 }
+
+
+#[derive(Clone,Debug)]
+pub struct LazyTriggerNegate{
+    source:LazyTrigger,
+    //src_shape:Vec<usize>
+}
+
+impl LazyTriggerNegate{
+    pub fn new(source: LazyTrigger) -> Self {
+        Self { source}
+    }
+}
+
+impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerNegate{
+    fn length(&self)->usize {
+        self.source.length()
+    }
+
+    fn calculate_overhead(&self,start:usize, end:usize)->usize {
+        self.source.calculate_overhead(start,end)
+    }
+
+    fn request_range(&self,start:usize, end:usize)->ArrayND<bool> {
+        let mut pre = self.source.request_range(start,end);
+        pre.flat_data.iter_mut().for_each(|x| {*x = !*x;});
+        pre
+    }
+}

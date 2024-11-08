@@ -1,6 +1,11 @@
 use crate::trigger_ops::LazyTriggerExpand;
 use abi_stable::{rvec, std_types::{ROption::{self, RSome}, RResult, RString, RVec}};
-use padamo_api::{ports, constants, prelude::*};
+use padamo_api::{constants, nodes_vec, ports, prelude::*};
+
+
+fn category() -> RVec<RString>where {
+    rvec!["Trigger manipulation".into()]
+}
 
 #[derive(Clone,Debug)]
 pub struct TriggerExpandNode;
@@ -29,7 +34,7 @@ impl CalculationNode for TriggerExpandNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Category to place node in node list"]
     fn category(&self,) -> RVec<RString>where {
-        rvec!["Trigger manipulation".into()]
+        category()
     }
 
     #[allow(clippy::let_and_return)]
@@ -103,7 +108,7 @@ impl TriggerExchangeNode{
 
 impl CalculationNode for TriggerExchangeNode {
     fn category(&self,) -> RVec<RString>{
-        rvec!["Trigger manipulation".into()]
+        category()
     }
 
     fn name(&self,) -> RString {
@@ -136,3 +141,65 @@ impl CalculationNode for TriggerExchangeNode {
         self.calculate(inputs, outputs, constants, environment, rng).into()
     }
 }
+
+
+
+#[derive(Clone,Debug)]
+pub struct TriggerNegateNode;
+
+impl TriggerNegateNode{
+    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
+        let mut signal = inputs.request_detectorfulldata("Signal")?;
+
+        if let ROption::RSome(trig) = signal.2{
+            let trig = make_lao_box(crate::trigger_ops::LazyTriggerNegate::new(trig));
+            signal.2 = ROption::RSome(trig);
+        }
+
+        outputs.set_value("Signal", signal.into())
+    }
+}
+
+impl CalculationNode for TriggerNegateNode{
+    fn name(&self)->RString {
+        "Negate trigger".into()
+    }
+
+    fn category(&self)->RVec<RString> {
+        category()
+    }
+
+    fn identifier(&self)->RString {
+        "padamocore.trigger_manipulation.negate_trigger".into()
+    }
+
+    fn inputs(&self)->RVec<CalculationIO> {
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn outputs(&self)->RVec<CalculationIO> {
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn constants(&self)->RVec<CalculationConstant> {
+        constants!()
+    }
+
+    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError> {
+        self.calculate(inputs, outputs, constants, environment, rng).into()
+    }
+}
+
+pub fn nodes()->RVec<CalculationNodeBox>{
+    nodes_vec![
+        TriggerExpandNode,
+        TriggerExchangeNode,
+        TriggerNegateNode,
+        //StringReplaceRegexNode
+    ]
+}
+
