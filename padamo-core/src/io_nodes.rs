@@ -9,7 +9,18 @@ impl EnvOutputNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
         let key = constants.request_string("Key")?;
         // let value = constants.request_type(&self.0, "Value")?;
-        let value = environment.request_type(&self.0, &key)?;
+        let value = match  environment.request_type(&self.0, &key){
+            Ok(v) => v,
+            Err(e)=>{
+                if let Ok(d) = TryInto::<ConstantContentType>::try_into(self.0){
+                    let constant = constants.request_type(&d, "Default")?;
+                    constant.into()
+                }
+                else{
+                    return Err(e);
+                }
+            }
+        };
 
         outputs.set_value("Value", value.into())
     }
@@ -43,9 +54,13 @@ impl CalculationNode for EnvOutputNode{
     }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!(
+        let mut res = constants!(
             ("Key", "env_key")
-        )
+        );
+        if let Ok(v) = TryInto::<ConstantContentType>::try_into(self.0){
+            res.push(CalculationConstant::new("Default", v.default_constant()));
+        }
+        res
     }
 
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
