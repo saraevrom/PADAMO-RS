@@ -114,7 +114,17 @@ impl Interval{
 
     pub fn to_utc_interval(&self, reference:&LazyTimeSignal)->UnixInterval {
         let start = reference.request_range(self.start,self.start+1)[0];
-        let end = reference.request_range(self.end,self.end+1)[0];
+        let ref_end = reference.length();
+        let end = if self.end<ref_end{
+            reference.request_range(self.end,self.end+1)[0]
+        }
+        else if ref_end>=2{
+            let last_two_data = reference.request_range(ref_end-2,ref_end); // It goes beyond known interval
+            2.0*last_two_data[1]-last_two_data[0]
+        }
+        else{
+            reference.request_range(ref_end-1,ref_end)[0] + 1.0 // Give one more second to go beyond interval
+        };
         UnixInterval::new(start, end)
     }
 
