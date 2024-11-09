@@ -142,6 +142,19 @@ impl Into<ContentType> for ConstantContentType{
     }
 }
 
+impl TryInto<ConstantContentType> for ContentType{
+    type Error = ();
+    fn try_into(self) -> Result<ConstantContentType, Self::Error> {
+        match self {
+            ContentType::Integer=>Ok(ConstantContentType::Integer),
+            ContentType::Float=>Ok(ConstantContentType::Float),
+            ContentType::Boolean=>Ok(ConstantContentType::Boolean),
+            ContentType::String=>Ok(ConstantContentType::String),
+            _=>Err(())
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(abi_stable::StableAbi,Clone,Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
