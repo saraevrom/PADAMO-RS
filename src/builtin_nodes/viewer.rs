@@ -66,7 +66,7 @@ pub struct LoadedFileNode;
 
 impl LoadedFileNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let filename = environment.request_string(VIEWER_FILENAME_VAR)?;
+        let filename = environment.request_string(VIEWER_FILENAME_VAR).unwrap_or("file.h5".into());
         outputs.set_value("File path".into(), filename.into())?;
         Ok(())
     }
