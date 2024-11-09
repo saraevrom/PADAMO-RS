@@ -24,7 +24,8 @@ pub fn make_node_box<T:CalculationNode+'static>(x:T)->CalculationNodeBox{
 macro_rules! ports {
     ($( $x:expr ),* $(,)?) => {
         {
-            let mut temp_vec: RVec<CalculationIO> = RVec::new();
+            #[allow(unused_mut)]
+            let mut temp_vec: abi_stable::std_types::RVec<CalculationIO> = abi_stable::std_types::RVec::new();
             $(
                 temp_vec.push($x.into());
             )*
@@ -38,7 +39,8 @@ macro_rules! ports {
 macro_rules! constants {
     ($( $x:expr ),* $(,)?) => {
         {
-            let mut temp_vec: RVec<CalculationConstant> = RVec::new();
+            #[allow(unused_mut)]
+            let mut temp_vec: abi_stable::std_types::RVec<CalculationConstant> = abi_stable::std_types::RVec::new();
             $(
                 temp_vec.push($x.into());
             )*
@@ -52,7 +54,8 @@ macro_rules! constants {
 macro_rules! nodes_vec {
     ($( $x:expr ),* $(,)?) => {
         {
-            let mut temp_vec: RVec<CalculationNodeBox> = RVec::new();
+            #[allow(unused_mut)]
+            let mut temp_vec: abi_stable::std_types::RVec<CalculationNodeBox> = abi_stable::std_types::RVec::new();
             $(
                 temp_vec.push(CalculationNode_TO::from_value($x,abi_stable::sabi_trait::TD_Opaque));
             )*
