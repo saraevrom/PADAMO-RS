@@ -114,7 +114,12 @@ pub fn impl_content(_args:TokenStream,item:TokenStream)->TokenStream{
                 #type_content
             }
 
-
+            impl #typename{
+                pub fn get_variants()->Vec<Self>{
+                    use #typename::*;
+                    vec![#type_content]
+                }
+            }
 
 
             impl #containername{
