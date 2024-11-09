@@ -1,6 +1,22 @@
 use super::{LazyArrayOperation,LazyArrayOperationBox};
-use std::fmt::Debug;
-use atomic_refcell::AtomicRefCell;
+use std::{fmt::Debug, sync::{Arc, Mutex}};
+
+
+#[derive(Debug,Clone)]
+pub struct CacheContent<T>
+where
+    T:Cache
+{
+    pub cache:Option<T>,
+    pub last_bounds:(usize,usize)
+}
+
+impl<T:Cache> CacheContent<T>{
+    pub fn new()->Self{
+        Self{cache:None, last_bounds:(0,0)}
+    }
+}
+
 
 #[derive(Debug,Clone)]
 pub struct LazyArrayOperationLocalCache<T>
@@ -8,13 +24,13 @@ where
     T:Cache
 {
     src:LazyArrayOperationBox<T>,
-    cache:AtomicRefCell<Option<T>>,
-    last_bounds:AtomicRefCell<(usize,usize)>,
+    cache:Arc<Mutex<CacheContent<T>>>,
+    // last_bounds:Arc<Mutex<(usize,usize)>>,
 }
 
 impl<T:Cache> LazyArrayOperationLocalCache<T>{
     pub fn new(src:LazyArrayOperationBox<T>)->Self{
-        Self{src, cache:AtomicRefCell::new(None), last_bounds:AtomicRefCell::new((0,0))}
+        Self{src, cache:Arc::new(Mutex::new(CacheContent::new()))}
     }
 }
 
@@ -30,18 +46,20 @@ impl<T:Cache+Clone+Debug+Send+Sync> LazyArrayOperation<T> for LazyArrayOperation
 
     #[allow(clippy::let_and_return)]
     fn request_range(&self,start:usize,end:usize,) -> T where {
-        let mut cache_mut = self.cache.borrow_mut();
-        let mut last_bounds = self.last_bounds.borrow_mut();
-        if let Some(v) = cache_mut.take(){
-            let (old_start,old_end) = *last_bounds;
-            *last_bounds = (start,end);
+        let mut cache_mut = self.cache.lock().unwrap();
+
+
+        //let mut last_bounds = self.last_bounds.borrow_mut();
+        if let Some(v) = cache_mut.cache.take(){
+            let (old_start,old_end) = cache_mut.last_bounds;
+            cache_mut.last_bounds = (start,end);
             let mut res = v;
             //println!("CACHE REQUEST {}-{} ({}-{})",start,end,old_start,old_end);
 
             if start>=old_end || end<=old_start{
                 let data = self.src.request_range(start,end);
-                *cache_mut = Some(data.clone());
-                *last_bounds = (start,end);
+                cache_mut.cache = Some(data.clone());
+                cache_mut.last_bounds = (start,end);
 
                 data
             }
@@ -72,8 +90,8 @@ impl<T:Cache+Clone+Debug+Send+Sync> LazyArrayOperation<T> for LazyArrayOperation
         }
         else {
             let data = self.src.request_range(start,end);
-            *cache_mut = Some(data.clone());
-            *last_bounds = (start,end);
+            cache_mut.cache = Some(data.clone());
+            cache_mut.last_bounds = (start,end);
             //println!("CACHE REQUEST {}-{}",start,end);
             data
         }
