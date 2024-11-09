@@ -20,6 +20,6 @@ pub enum TriggerMessage{
 pub enum SelectionMessage{
     SetStart(String),
     SetEnd(String),
-    CommitInterval,
+    //CommitInterval,
     IntervalSelected(usize,String),
 }
