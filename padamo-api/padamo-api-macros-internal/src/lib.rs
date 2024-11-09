@@ -109,7 +109,7 @@ pub fn impl_content(_args:TokenStream,item:TokenStream)->TokenStream{
             }
 
             #[repr(C)]
-            #[derive(abi_stable::StableAbi,Copy,Clone,Debug,Eq,PartialEq)]
+            #[derive(abi_stable::StableAbi,Copy,Clone,Debug,Eq,PartialEq, EnumIter)]
             pub enum #typename{
                 #type_content
             }
