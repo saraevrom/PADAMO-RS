@@ -166,7 +166,7 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerAnd{
             }
             if current_state && !value{
                 current_state = false;
-                let aux_interval = flatten_trigger(self.source_b.request_range(start_i,i));
+                let aux_interval = flatten_trigger(self.source_b.request_range(start_i+start,i+start));
                 (start_i..i).for_each(|j| result[j] = result[j] && aux_interval[j-start_i]);
             }
         }

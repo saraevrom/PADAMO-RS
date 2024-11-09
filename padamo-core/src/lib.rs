@@ -14,6 +14,7 @@ pub mod boolconv;
 pub mod strings;
 pub mod strings_old;
 pub mod cache;
+pub mod io_nodes;
 
 #[export_root_module]
 pub fn plugin_root()->PadamoModule_Ref{
