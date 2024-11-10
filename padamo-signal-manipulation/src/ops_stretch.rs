@@ -203,11 +203,11 @@ impl LazyArrayOperation<ArrayND<bool>> for SyncedTriggerStretcher{
                 let mut res = Vec::with_capacity(small_length);
                 let mut scan_index:usize = 0;
                 for j in 0..length{
-                    if scan_index<tmp_src.len()-1{
-                        while tmp_tgt[j]>tmp_src[scan_index]{
+                    // if {
+                        while scan_index<tmp_src.len()-1 && tmp_tgt[j]>tmp_src[scan_index]{
                             scan_index += 1;
                         }
-                    }
+                    // }
                     res.push(src_sliced[scan_index]);
                 }
                 let mut tgt_lock = tgt.lock().unwrap();
