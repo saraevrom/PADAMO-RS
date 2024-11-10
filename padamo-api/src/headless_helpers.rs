@@ -20,13 +20,16 @@ fn register_nodes<T:AsRef<Path>>(nodes:&mut HashMap<String,CalculationNodeBox>, 
 
                     let parent = p.parent().ok_or(anyhow::Error::msg("No parent of path"))?;
                     let parent = parent.to_str().ok_or(anyhow::Error::msg("Bad file name"))?;
-                    let plugin = (||{
+                    let plugin_f = (||{
                         let header = lib_header_from_path(&p)?;
                         header.init_root_module::<PadamoModule_Ref>()
-                    })()?;
-                    let nodes_fn = plugin.nodes();
-                    let mut add_nodes = nodes_fn(parent.into());
-                    add_nodes.drain(..).for_each(|x| {nodes.insert(x.identifier().into(), x);});
+                    });
+                    if let Ok(plugin) = plugin_f(){
+                        let nodes_fn = plugin.nodes();
+                        let mut add_nodes = nodes_fn(parent.into());
+                        add_nodes.drain(..).for_each(|x| {nodes.insert(x.identifier().into(), x);});
+                    }
+
 
             }
             // if let Err(e) = nodes.load_lib(p.as_path()){
@@ -45,3 +48,5 @@ pub fn load_nodes<T:AsRef<Path>>(seekdir:T)->anyhow::Result<HashMap<String,Calcu
     register_nodes(&mut nodes, seekdir.as_ref(), true)?;
     Ok(nodes)
 }
+
+
