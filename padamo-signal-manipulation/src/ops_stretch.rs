@@ -14,23 +14,31 @@ fn get_bounds(src_time:&LazyTimeSignal,tgt_time:&LazyTimeSignal,start:usize, end
     println!("Remapping range {}-{}",start,end);
 
 
+    // Small margin in the start
     if start_id>0{
         start_id-=1;
     }
     println!("start {}",start_id);
 
     let src_len = src_time.length();
-    if end_id<src_len{
-        end_id += 1;
-    }
+    // Small margin in the end
+    // for _ in 0..2{
+    //     if end_id<src_len{
+    //         end_id += 1;
+    //     }
+    // }
 
     while (end_id<src_len) && (src_time.request_range(end_id, end_id+1)[0]<end_time){
     //if end_id<src_len{
         end_id += 1;
-        println!("end {}({}) TARGET={}",end_id, src_time.request_range(end_id, end_id+1)[0], end_time);
+        println!("end {}({})",end_id,  end_time);
 
     }
-    println!("end {}({}) TARGET={}",end_id, src_time.request_range(end_id, end_id+1)[0], end_time);
+    if end_id<src_len{
+        end_id += 1;
+    }
+
+    println!("end {}({})",end_id, end_time);
 
 
     (start_id,end_id)
@@ -71,6 +79,50 @@ fn resample(xdata:&[f64],ydata:&[f64],x_new:&[f64])->Vec<f64>{
     }
     res
 }
+
+
+fn estimate_bool_interp1d(xdata:&[f64],ydata:&[bool], xnew:f64, start_index:usize)->(usize,bool){
+    for i in start_index..xdata.len(){
+        if xdata[i]>xnew{
+            if i==0{
+                //eprintln!("LEFT bound hit");
+                return (0,ydata[i]);
+            }
+            else{
+                let x1 = xdata[i-1];
+                let x2 = xdata[i];
+                let mid_x = (x1+x2)/2.0;
+                let y1 = ydata[i-1];
+                let y2 = ydata[i];
+                if x1==x2{
+                    return (i-1,y1 || y2);
+                }
+                else if xnew>=mid_x{
+                    return (i-1,y2);
+                }
+                else{
+                    return (i-1,y1);
+                }
+            }
+        }
+
+    }
+    //eprintln!("RIGHT bound hit");
+    (xdata.len()-1,ydata[xdata.len()-1])
+}
+
+fn resample_bool(xdata:&[f64],ydata:&[bool],x_new:&[f64])->Vec<bool>{
+    let mut res = Vec::with_capacity(x_new.len());
+    res.resize(x_new.len(), false);
+    let mut search_start:usize = 0;
+    for (i,x) in x_new.iter().enumerate(){
+        let (a,b) = estimate_bool_interp1d(xdata, ydata, *x, search_start);
+        search_start = a;
+        res[i] = b;
+    }
+    res
+}
+
 
 #[derive(Clone,Debug)]
 pub struct SyncedSignalStretcher{
@@ -200,16 +252,16 @@ impl LazyArrayOperation<ArrayND<bool>> for SyncedTriggerStretcher{
                 for j in 0..small_length{
                     src_sliced.push(sp_src.flat_data[j*frame_size+pixel])
                 }
-                let mut res = Vec::with_capacity(small_length);
-                let mut scan_index:usize = 0;
-                for j in 0..length{
-                    // if {
-                        while scan_index<tmp_src.len()-1 && tmp_tgt[j]>tmp_src[scan_index]{
-                            scan_index += 1;
-                        }
-                    // }
-                    res.push(src_sliced[scan_index]);
-                }
+                let res = resample_bool(tmp_src.as_ref(), &src_sliced, tmp_tgt.as_ref());
+                // let mut scan_index:usize = 0;
+                // for j in 0..length{
+                //     // if {
+                //         while scan_index<tmp_src.len()-1 && tmp_tgt[j]>tmp_src[scan_index]{
+                //             scan_index += 1;
+                //         }
+                //     // }
+                //     res.push(src_sliced[scan_index]);
+                // }
                 let mut tgt_lock = tgt.lock().unwrap();
                 for j in 0..length{
                     tgt_lock.flat_data[j*frame_size+pixel] = res[j];
