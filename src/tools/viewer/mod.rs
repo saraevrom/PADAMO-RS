@@ -776,7 +776,10 @@ impl PadamoTool for PadamoViewer{
 
                 ViewerMessage::CreateAnimation=>{
                     println!("Animation parameters: {:?}",self.animation_parameters);
-                    if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![("GIF animation", vec!["gif"])]){
+                    if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![
+                        ("MP4 animation", vec!["mp4"]),
+                        ("GIF animation", vec!["gif"])
+                    ]){
 
                         self.stop_animator();
                         use plotters::prelude::*;
@@ -800,7 +803,9 @@ impl PadamoTool for PadamoViewer{
                                 //80 pixels for colormap
 
                                 let height = if animation_parameters.displaylc {animation_parameters.height+animation_parameters.lcheight} else {animation_parameters.height};
-                                if let Ok(root) = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay){
+                                //BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay)
+                                if let Ok(root) = plotters_video::VideoBackend::new(filename, (animation_parameters.width+80) as usize, height as usize,
+                                    plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize)){
 
                                     let root = root.into_drawing_area();
                                     // let (plot_root,lc_plot,root) = if animation_parameters.displaylc{
