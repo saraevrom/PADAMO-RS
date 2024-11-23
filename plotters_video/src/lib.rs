@@ -4,3 +4,4 @@ pub mod errors;
 
 pub use video_canvas::VideoBackend;
 pub use errors::VideoBackendError;
+pub use video_canvas::FrameDelay;

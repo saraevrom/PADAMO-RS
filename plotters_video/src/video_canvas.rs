@@ -5,6 +5,20 @@ use ndarray::Array3;
 use video_rs::encode::{Encoder, Settings};
 use video_rs::time::Time;
 
+#[derive(Clone, Copy,Debug)]
+pub enum FrameDelay{
+    DelayMS(usize),
+    FPS(usize)
+}
+
+impl FrameDelay{
+    pub fn to_delay(self)->Time{
+        match self {
+            Self::FPS(fps) => Time::from_nth_of_a_second(fps),
+            Self::DelayMS(ms) => Time::from_secs_f64((ms as f64)*0.001)
+        }
+    }
+}
 
 pub struct VideoBackend{
     encoder:Encoder,
@@ -16,13 +30,14 @@ pub struct VideoBackend{
     canvas_edited:bool,
 }
 
+
 impl VideoBackend{
-    pub fn new<T:AsRef<Path>>(destination:T,width:usize,height:usize, fps:usize)->Result<Self,video_rs::Error>{
+    pub fn new<T:AsRef<Path>>(destination:T,width:usize,height:usize, delay:FrameDelay)->Result<Self,video_rs::Error>{
         let encoder = Encoder::new(destination.as_ref(), Settings::preset_h264_yuv420p(width, height, true))?;
         let mut buffer = Array3::zeros((height,width,3));
         buffer.fill(255);
         let current_position = Time::zero();
-        Ok(Self{encoder,width,height,buffer,current_position,duration:Time::from_nth_of_a_second(fps), canvas_edited:false})
+        Ok(Self{encoder,width,height,buffer,current_position,duration:delay.to_delay(), canvas_edited:false})
     }
 
     pub fn clear_buffer(&mut self){
@@ -39,6 +54,7 @@ impl VideoBackend{
         Ok(())
     }
 
+    #[allow(unused)]
     fn finish(mut self)->Result<(),video_rs::Error>{
         self.encoder.finish()?;
         Ok(())

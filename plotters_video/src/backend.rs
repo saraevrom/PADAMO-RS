@@ -6,7 +6,7 @@ use plotters_backend::{
 };
 
 fn interpolate(rgb_src:u8,rgb_tgt:u8,alpha:f64)->u8{
-    let delta = (rgb_tgt-rgb_src) as f64;
+    let delta = (rgb_tgt as f64-rgb_src as f64);
     let base = rgb_src as f64;
     let raw = delta*alpha+base;
     raw.round() as u8
