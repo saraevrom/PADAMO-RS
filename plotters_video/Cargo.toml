@@ -1,0 +1,12 @@
+[package]
+name = "plotters_video"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# anyhow = "1.0.93"
+ndarray = "0.16"
+plotters = "0.3"
+plotters-backend = "0.3.7"
+thiserror = "2.0.3"
+video-rs = { version = "0.10.2", features = ["ndarray"] }
