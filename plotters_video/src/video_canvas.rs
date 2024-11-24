@@ -29,10 +29,10 @@ impl FrameDelay{
     //         Self::DelayMS(ms) => Time::from_secs_f64((ms as f64)*0.001)
     //     }
     // }
-    pub fn to_fps(self)->f32{
+    pub fn to_fps(self)->u32{
         match self {
-            Self::FPS(fps) => fps as f32,
-            Self::DelayMS(ms) => 1000.0/(ms as f32)
+            Self::FPS(fps) => fps as u32,
+            Self::DelayMS(ms) => (1000/ms) as u32
         }
     }
 }
@@ -41,6 +41,7 @@ pub struct VideoBackend{
     // encoder:Encoder,
     pub width:u32,
     pub height:u32,
+    pub frame_delay_data:FrameDelay,
     target:PathBuf,
     // pub buffer:Array3<u8>,/*
     // current_position:Time,
@@ -48,7 +49,6 @@ pub struct VideoBackend{
     pub image_buffer:RgbImage,
     video_buffer:Vec<u8>,
     pub canvas_edited:bool,
-    config:EncoderConfig,
     encoder:Encoder,
 }
 
@@ -65,7 +65,7 @@ impl VideoBackend{
         let image_buffer = RgbImage::new(width, height);
         let target = destination.as_ref().to_owned();
         let video_buffer = Vec::new();
-        Ok(Self{config,width,height, canvas_edited:false, encoder, image_buffer, video_buffer, target})
+        Ok(Self{width,height, canvas_edited:false, encoder, image_buffer, video_buffer, target, frame_delay_data:delay})
     }
 
     pub fn clear_buffer(&mut self){
@@ -92,7 +92,7 @@ impl VideoBackend{
         let mut video_buffer = Cursor::new(Vec::new());
         let mut mp4muxer = Mp4Muxer::new(&mut video_buffer);
         mp4muxer.init_video(self.width as i32, self.height as i32, false, "Plot");
-        mp4muxer.write_video(&self.video_buffer);
+        mp4muxer.write_video_with_fps(&self.video_buffer, self.frame_delay_data.to_fps());
         mp4muxer.close();
 
         // Some shenanigans to get the raw bytes for the video.
