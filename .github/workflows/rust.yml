@@ -22,6 +22,7 @@ jobs:
        cp target/release/padamo-rs release-linux/
        cp -r target/release/plugins release-linux/
        cp -r target/release/assets release-linux/
+       cp target/release/libonnx*.so release-linux
     - name: Archive Release
       uses: thedoctor0/zip-release@0.7.5
       with:
@@ -48,6 +49,7 @@ jobs:
        cp target/release/padamo-rs.exe release-windows/
        cp -r target/release/plugins release-windows/
        cp -r target/release/assets release-windows/
+       cp target/release/onnx*.dll release-windows/
     - name: Archive Release
       uses: thedoctor0/zip-release@0.7.5
       with:
