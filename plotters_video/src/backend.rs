@@ -6,7 +6,7 @@ use plotters_backend::{
 };
 
 fn interpolate(rgb_src:u8,rgb_tgt:u8,alpha:f64)->u8{
-    let delta = (rgb_tgt as f64-rgb_src as f64);
+    let delta = rgb_tgt as f64-rgb_src as f64;
     let base = rgb_src as f64;
     let raw = delta*alpha+base;
     raw.round() as u8
@@ -34,7 +34,7 @@ impl DrawingBackend for VideoBackend{
     }
 
     fn present(&mut self) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
-        self.flush_frame().map_err(crate::VideoBackendError::Video).map_err(DrawingErrorKind::DrawingError)
+        self.flush_frame().map_err(DrawingErrorKind::DrawingError)
     }
 
     fn draw_pixel(
@@ -48,9 +48,9 @@ impl DrawingBackend for VideoBackend{
         // {
         //     return Ok(());
         // }
-        if let Some(src_color) = self.get_color(point.0 as usize, point.1 as usize){
+        if let Some(src_color) = self.get_color(point.0 as u32, point.1 as u32){
             let new_color = interpolate_color(src_color, color.rgb, color.alpha);
-            self.set_color(point.0 as usize, point.1 as usize,new_color);
+            self.set_color(point.0 as u32, point.1 as u32,new_color);
         }
         Ok(())
     }

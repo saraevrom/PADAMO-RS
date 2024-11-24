@@ -4,10 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ffmpeg-next = { version = "7.1.0", features = ["format", "codec", "software-resampling", "software-scaling", "static"] }
+image = "0.25.5"
+imageproc = "0.25.0"
+#mp4 = "0.14.0"
+minimp4 = "0.1.2"
+# ffmpeg-next = { version = "7.1.0", features = ["format", "codec", "software-resampling", "software-scaling", "static"] }
 # anyhow = "1.0.93"
-ndarray = "0.16"
+# ndarray = "0.16"
+openh264 = "0.6.3"
 plotters = "0.3"
 plotters-backend = "0.3.7"
 thiserror = "2.0.3"
-video-rs = { version = "0.10.2", features = ["ndarray"] }
+# video-rs = { version = "0.10.2", features = ["ndarray"] }
