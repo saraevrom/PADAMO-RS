@@ -82,6 +82,8 @@ impl VideoBackend{
             //yuv.convert(&frame[..]);
             let bitstream = self.encoder.encode(&yuv)?;
             bitstream.write_vec(&mut self.video_buffer);
+            self.clear_buffer();
+            self.canvas_edited = false;
         }
         Ok(())
     }
