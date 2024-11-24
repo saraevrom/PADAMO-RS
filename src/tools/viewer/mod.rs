@@ -811,7 +811,7 @@ impl PadamoTool for PadamoViewer{
                                             }
                                         }
                                         "mp4"=>{
-                                            let backend = VideoBackend::new(filename, (animation_parameters.width+80) as usize, height as usize,
+                                            let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
                                                                             plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                             match backend{
                                                 Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
