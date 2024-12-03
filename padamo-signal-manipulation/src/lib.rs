@@ -1,5 +1,6 @@
 pub mod ops;
 pub mod ops_stretch;
+pub mod tempreduce_performance;
 pub mod node_reg;
 pub mod nodes_stretch;
 pub mod signal_length;

@@ -2,6 +2,7 @@ use abi_stable::{rvec, std_types::ROption::{self, RSome}};
 use padamo_api::{prelude::*, ports, constants};
 use abi_stable::std_types::{RResult,RVec,RString};
 use super::ops::{LazySpaceConverter,LazyTimeConverter};
+use super::tempreduce_performance::LazySpaceConverterPerformant;
 use padamo_api::lazy_array_operations::LazyArrayOperationBox;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 
@@ -18,7 +19,12 @@ impl TimeResolutionReduceNode{
             return Err(ExecutionError::OtherError("Divider must be natural number".into()));
         }
         let divider = divider as usize;
-        let signal = LazySpaceConverter::new(divider,trisignal.0,is_sum);
+        let signal = if constants.request_boolean("performance_over_memory")?{
+            make_lao_box(LazySpaceConverterPerformant::new(divider,trisignal.0,is_sum))
+        }
+        else{
+            make_lao_box(LazySpaceConverter::new(divider,trisignal.0,is_sum))
+        };
         let time = LazyTimeConverter::new(divider,trisignal.1);
         let signal = LazyArrayOperationBox::from_value(signal, TD_Opaque);
         let time = LazyArrayOperationBox::from_value(time, TD_Opaque);
@@ -61,7 +67,8 @@ impl CalculationNode for TimeResolutionReduceNode{
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants!(
             ("Divider", 1000),
-            ("Is sum", false)
+            ("Is sum", false),
+            ("performance_over_memory", "Performance over memory", false),
         )
     }
 
