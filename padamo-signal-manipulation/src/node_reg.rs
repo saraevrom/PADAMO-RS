@@ -26,7 +26,7 @@ impl TimeResolutionReduceNode{
             make_lao_box(LazySpaceConverter::new(divider,trisignal.0,is_sum))
         };
         let time = LazyTimeConverter::new(divider,trisignal.1);
-        let signal = LazyArrayOperationBox::from_value(signal, TD_Opaque);
+        //let signal = LazyArrayOperationBox::from_value(signal, TD_Opaque);
         let time = LazyArrayOperationBox::from_value(time, TD_Opaque);
         let trisignal = (signal,time,ROption::RNone);
         outputs.set_value("Signal", Content::DetectorFullData(trisignal.into()))?;
