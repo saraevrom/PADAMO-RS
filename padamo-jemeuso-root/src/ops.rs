@@ -67,8 +67,13 @@ pub struct AddTime{
 }
 
 impl AddTime {
-    pub fn new(length: usize, step: f64, offset_time: f64) -> Self {
-        Self { length, step, offset_time }
+    pub fn new(length: usize, step: f64, offset_time: &str) -> Option<Self> {
+        let dt = if let Some(v) = datetime_parser::parse_datetimes(offset_time, chrono::Utc::now()) {v}
+            else {return None;};
+        let tmpbase = (dt.naive_utc().and_utc().timestamp_micros() as f64)*1e-6;
+        //let tmpres = constants.request_float("tmpres")?;
+        let temporal = Self{length, step: tmpres, offset_time:tmpbase};
+        Some(temporal)
     }
 }
 

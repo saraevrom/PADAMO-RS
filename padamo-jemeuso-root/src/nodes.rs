@@ -16,11 +16,13 @@ impl EUSOROOTNode{
         }
         let length = spatial.length();
         let tmpbase:String = constants.request_string("tmpbase")?.into();
-        let dt = if let Some(v) = datetime_parser::parse_datetimes(&tmpbase, chrono::Utc::now()) {v}
-            else {return Err(ExecutionError::OtherError("Cannot parse datetime".into()));};
-        let tmpbase = (dt.naive_utc().and_utc().timestamp_micros() as f64)*1e-6;
         let tmpres = constants.request_float("tmpres")?;
-        let temporal = AddTime::new(length, tmpres, tmpbase);
+        let temporal = if let Some(v) = AddTime::new(length, tmpres, &tmpbase) {v}
+            else {return Err(ExecutionError::OtherError("Cannot parse datetime".into()));};
+        // let dt = if let Some(v) = datetime_parser::parse_datetimes(&tmpbase, chrono::Utc::now()) {v}
+        //     else {return Err(ExecutionError::OtherError("Cannot parse datetime".into()));};
+        // let tmpbase = (dt.naive_utc().and_utc().timestamp_micros() as f64)*1e-6;
+        // let temporal = AddTime::new(length, tmpres, tmpbase);
         let signal:LazyTriSignal = (make_lao_box(spatial), make_lao_box(temporal), RNone).into();
         outputs.set_value("Signal", signal.into())?;
         Ok(())
