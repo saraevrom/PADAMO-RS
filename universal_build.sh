@@ -63,3 +63,4 @@ mv -v libpadamohdf5.so                  plugins/
 mv -v libpadamotrackgen.so              plugins/
 mv -v libpadamorandom.so                plugins/
 mv -v libpadamostft.so                  plugins/
+mv -v libpadamoeusoroot.so              plugins/

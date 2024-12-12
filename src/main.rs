@@ -6,7 +6,7 @@ mod custom_widgets;
 mod nodes_interconnect;
 //mod detectors;
 mod builtin_nodes;
-mod datetime_parser;
+// mod datetime_parser;
 mod time_search;
 mod popup_message;
 mod compat;

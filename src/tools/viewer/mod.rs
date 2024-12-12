@@ -586,7 +586,7 @@ impl PadamoTool for PadamoViewer{
                         // Create a normal DateTime from the NaiveDateTime
                         let start_dt = DateTime::from_naive_utc_and_offset(naive, Utc);
 
-                        if let Some(end_dt) = crate::datetime_parser::parse_datetimes(&self.datetime_entry, start_dt){
+                        if let Some(end_dt) = datetime_parser::parse_datetimes(&self.datetime_entry, start_dt){
                             let index = crate::time_search::find_time(&signal.1, end_dt);
                             self.pointer = index;
                             self.clamp();
