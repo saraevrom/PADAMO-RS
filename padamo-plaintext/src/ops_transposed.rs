@@ -7,7 +7,7 @@ use regex::Regex;
 use crate::errors::CSVError;
 
 #[derive(Clone,Debug)]
-pub struct CSVReader{
+pub struct CSVReaderTransposed{
     pub separator:Regex,
     pub filename:String,
     pub start_line:usize,
@@ -16,7 +16,7 @@ pub struct CSVReader{
     pub row_bounds:(usize,usize)
 }
 
-impl CSVReader{
+impl CSVReaderTransposed{
     pub fn new(separator: String, filename: String, start_line: usize, length: Option<usize>, lower_bound:Option<usize>, upper_bound:Option<usize>) -> Result<Self, CSVError> {
         let separator = Regex::new(&separator)?;
         let f = File::open(&filename)?;
@@ -75,12 +75,30 @@ impl CSVReader{
         //     Ok(vec![])
         // }
     }
+    fn read_columns_csv(&self, column_start:usize, amount:usize)->Result<Vec<Vec<f64>>, CSVError>{
+        let f = File::open(&self.filename).map_err(CSVError::IOError)?;
+        let reader = BufReader::new(f);
+        let mut res = vec![vec![];amount];
+        // res.fill
+        for line in reader.lines().skip(self.start_line).take(self.length){
+            let line = line.map_err(CSVError::IOError)?;
+            let line = line.trim();
+            // println!("LINE: {}",line);
+            let items:Vec<f64> = self.separator.split(line).skip(column_start).take(amount).map(|x| x.parse::<f64>()).filter(|x| x.is_ok()).map(|x| x.unwrap()).collect();
+            // println!("ITEMS: {:?}",items);
+            items.iter().enumerate().for_each(|(i,x)| {
+                res[i].push(*x);
+            });
+        }
+        //println!("RES {:?}", res);
+        Ok(res)
+    }
 }
 
 
-impl LazyArrayOperation<ArrayND<f64>> for CSVReader{
+impl LazyArrayOperation<ArrayND<f64>> for CSVReaderTransposed{
     fn length(&self,) -> usize where {
-        self.length
+        self.frame_size
     }
 
     fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
@@ -88,11 +106,11 @@ impl LazyArrayOperation<ArrayND<f64>> for CSVReader{
     }
 
     fn request_range(&self,start:usize,end:usize,) -> ArrayND<f64> where {
-        let mut res = self.read_lines_csv(start+self.start_line, end-start,true).unwrap();
+        let mut res = self.read_columns_csv(start+self.start_line, end-start).unwrap();
         let res = res
             .drain(..)
-            .map(|x| ArrayND{flat_data: x.into(), shape:rvec![1,self.frame_size]})
-            .fold(ArrayND::new(vec![0,self.frame_size], 0.0),|a,b| a.merge(b));
+            .map(|x| ArrayND{flat_data: x.into(), shape:rvec![1,self.length]})
+            .fold(ArrayND::new(vec![0,self.length], 0.0),|a,b| a.merge(b));
         res
     }
 }

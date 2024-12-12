@@ -9,7 +9,8 @@ pub enum CSVError{
         total_length:usize,
         start_line:usize,
         length:Option<usize>
-
-    }
+    },
+    #[error("Invalid row slice: ({0}, {1}) from array of size {2}")]
+    InvalidSlice(usize,usize,usize),
 
 }
