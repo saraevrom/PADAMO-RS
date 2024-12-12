@@ -9,6 +9,7 @@ use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 
 pub mod polygon;
 pub mod parser;
+pub mod scripted;
 pub mod colors;
 pub mod selector_chart;
 pub mod transformer;

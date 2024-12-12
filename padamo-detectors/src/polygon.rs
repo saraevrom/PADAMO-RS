@@ -2,7 +2,8 @@
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use serde::{Serialize,Deserialize};
 use plotters::prelude::*;
-use crate::parser::parse_detector;
+use crate::{parser::parse_detector, scripted::parse_scripted};
+use rhai::{serde::from_dynamic, CustomType, Engine, EvalAltResult, TypeBuilder};
 //use super::colors::
 
 
@@ -19,7 +20,8 @@ fn format_point(x:(f64,f64), round:Option<usize>)->String{
 }
 
 
-#[derive(Serialize,Deserialize, Debug,Clone, PartialEq)]
+#[derive(Serialize,Deserialize, Debug,Clone, PartialEq, CustomType)]
+#[rhai_type(extra = Self::build_extra)]
 pub struct DetectorPixel{
     pub index:Vec<usize>,
     pub vertices:Vec<(f64,f64)>,
@@ -31,9 +33,33 @@ fn is_ccv(a:(f64,f64),b:(f64,f64),c:(f64,f64))->bool{
     ab.0*ac.1-ab.1*ac.0 >= 0.0
 }
 
+
+fn convert_array<'a,T:serde::Deserialize<'a>>(arr_in:&'a rhai::Array)->Result<Vec<T>,Box<EvalAltResult>>{
+    let mut arr_out:Vec<T> = Vec::with_capacity(arr_in.len());
+    for x in arr_in.iter(){
+        arr_out.push(from_dynamic(x)?);
+    };
+    Ok(arr_out)
+}
+
 impl DetectorPixel{
     pub fn new(index:Vec<usize>, vertices:Vec<(f64,f64)>)->Self{
         Self { index, vertices}
+    }
+
+    pub fn new_rhai(index:rhai::Array, vertices:rhai::Array)->Result<Self, Box<EvalAltResult>>{
+        let index = convert_array::<usize>(&index)?;
+        let vertices = convert_array::<rhai::Array>(&vertices)?;
+        let mut verts:Vec<(f64,f64)> = Vec::with_capacity(vertices.len());
+        for vert in vertices.iter(){
+            let new_vert = convert_array::<f64>(vert)?;
+            if new_vert.len()!=2{
+                return Err("Pixel vertex must be 2D".into());
+            }
+            verts.push((new_vert[0],new_vert[1]));
+        }
+
+        Ok(Self::new(index, verts))
     }
 
     // fn is_ccv(&self)->bool{
@@ -105,6 +131,39 @@ impl DetectorPixel{
         Self::new(index, vertices)
     }
 
+    pub fn rectangle_centered(index:Vec<usize>, center:(f64,f64), size:(f64,f64))->Self{
+        let start_x = center.0-size.0/2.;
+        let start_y = center.1-size.1/2.;
+        Self::rectangle(index, (start_x,start_y), size)
+    }
+
+    pub fn rectangle_centered_rhai(index:rhai::Array, center_x:f64, center_y:f64, size_x:f64, size_y:f64)->Result<Self, Box<EvalAltResult>>{
+        Self::rectangle_rhai(index, center_x-size_x/2., center_y-size_y/2.,size_x, size_y)
+    }
+
+    pub fn square(index:Vec<usize>, center:(f64,f64), size:f64)->Self{
+        Self::rectangle_centered(index, center, (size,size))
+    }
+
+    pub fn square_rhai(index:rhai::Array, center_x:f64, center_y:f64, size:f64)->Result<Self, Box<EvalAltResult>>{
+        Self::rectangle_centered_rhai(index, center_x, center_y, size, size)
+    }
+
+
+    pub fn rectangle_rhai(index:rhai::Array, start_x:f64, start_y:f64, size_x:f64, size_y:f64)->Result<Self, Box<EvalAltResult>>{
+        let index = convert_array(&index)?;
+        Ok(Self::rectangle(index, (start_x, start_y), (size_x,size_y)))
+    }
+
+    fn build_extra(builder: &mut TypeBuilder<Self>) {
+        builder
+            .with_name("DetectorPixel")
+            .with_fn("new_pixel", Self::new_rhai)
+            .with_fn("rectangle", Self::rectangle_rhai)
+            .with_fn("rectangle_centered", Self::rectangle_centered_rhai)
+            .with_fn("square", Self::square_rhai);
+    }
+
     pub fn make_polygon<S:Into<ShapeStyle>>(&self,color:S) -> Polygon<(f64,f64)>{
         Polygon::new(self.vertices.clone(), color)
     }
@@ -148,7 +207,8 @@ impl DetectorPixel{
     }
 }
 
-#[derive(Clone,Debug,Serialize,Deserialize,PartialEq)]
+#[derive(Clone,Debug,Serialize,Deserialize,PartialEq, CustomType)]
+#[rhai_type(extra = Self::build_extra)]
 pub struct DetectorContent{
     pub compat_shape:Vec<usize>,
     pub content:Vec<DetectorPixel>,
@@ -161,6 +221,22 @@ impl DetectorContent{
         Self { compat_shape, content: Vec::with_capacity(capacity), name}
     }
 
+    pub fn set_name(&mut self, name:&str){
+        self.name = name.to_owned();
+    }
+
+    pub fn set_shape(&mut self, shape:rhai::Array) -> Result<(), Box<EvalAltResult>> {
+        self.compat_shape = convert_array::<usize>(&shape)?;
+        Ok(())
+    }
+
+    pub fn clear(&mut self){
+        self.content.clear();
+    }
+
+    pub fn add_pixel(&mut self, pixel:DetectorPixel){
+        self.content.push(pixel);
+    }
 
     pub fn shape(&self)->&Vec<usize>{
         &self.compat_shape
@@ -236,8 +312,28 @@ impl DetectorContent{
     pub fn from_specs<'a>(i:&'a str)->Result<Self, nom::Err<nom::error::Error<&'a str>>>{
         parse_detector(i).map(|x| x.1)
     }
+
+    pub fn from_script<'a>(i:&'a str)->Result<Self, Box<rhai::EvalAltResult>>{
+        parse_scripted(i)
+    }
+
+    fn build_extra(builder: &mut TypeBuilder<Self>) {
+        builder
+            .with_name("DetectorContent")
+            .with_fn("new_detector", Self::default)
+            .with_fn("clear", Self::clear)
+            .with_fn("set_name", Self::set_name)
+            .with_fn("set_shape", Self::set_shape)
+            .with_fn("add_pixel", Self::add_pixel);
+    }
 }
 
+
+impl Default for DetectorContent{
+    fn default() -> Self {
+        Self::new(vec![1], "untitled".into())
+    }
+}
 
 /// Iterator for signal display value
 pub struct RectIterator<'a>{

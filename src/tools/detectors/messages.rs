@@ -6,6 +6,7 @@ pub enum DetectorManagerMessage{
     PaneDrag(iced::widget::pane_grid::DragEvent),
     PaneResize(iced::widget::pane_grid::ResizeEvent),
     PlotZoomMessage(crate::transform_widget::TransformMessage),
-    Rebuild,
+    RebuildMarkup,
+    RebuildScript,
     Export,
 }

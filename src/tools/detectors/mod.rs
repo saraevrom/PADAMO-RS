@@ -81,7 +81,8 @@ impl PadamoTool for PadamoDetectorManager{
         let frame:iced::Element<DetectorManagerMessage> = widget::row![
                 subframe,
                 widget::column![
-                    widget::button("Rebuild").on_press(DetectorManagerMessage::Rebuild),
+                    widget::button("Rebuild").on_press(DetectorManagerMessage::RebuildMarkup),
+                    widget::button("Rebuild (Rhai)").on_press(DetectorManagerMessage::RebuildScript),
                     widget::button("Export").on_press(DetectorManagerMessage::Export),
                 ],
 
@@ -110,7 +111,7 @@ impl PadamoTool for PadamoDetectorManager{
                     DetectorManagerMessage::PaneResize(pane_grid::ResizeEvent { split, ratio }) => {
                         self.panes.resize(*split, *ratio);
                     }
-                    DetectorManagerMessage::Rebuild=>{
+                    DetectorManagerMessage::RebuildMarkup=>{
                         match DetectorContent::from_specs(&self.source.text()) {
                             Ok(detector)=>{
                                 self.chart = Detector::from_cells(detector);
@@ -120,6 +121,16 @@ impl PadamoTool for PadamoDetectorManager{
                             }
                         }
                     },
+                    DetectorManagerMessage::RebuildScript=>{
+                        match DetectorContent::from_script(&self.source.text()) {
+                            Ok(detector)=>{
+                                self.chart = Detector::from_cells(detector);
+                            }
+                            Err(e)=>{
+                                padamo.show_error(e.to_string());
+                            }
+                        }
+                    }
                     DetectorManagerMessage::Export=>{
                         if let Some(path) = padamo.workspace.workspace("detectors").save_dialog(vec![("Detector",vec!["json"])]){
                             //if let nfd::Response::Okay(path) = v{
@@ -152,7 +163,7 @@ impl PadamoTool for PadamoDetectorManager{
     fn context_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef){
         match msg.as_ref(){
             PadamoAppMessage::Save=>{
-                if let Some(path) = padamo.workspace.workspace("detector_sources").save_dialog(vec![("Detector source",vec!["dsrc"])]){
+                if let Some(path) = padamo.workspace.workspace("detector_sources").save_dialog(vec![("Detector source",vec!["dsrc","rhai"])]){
                     //if let nfd::Response::Okay(path) = v{
                     match fs::write(path, &self.source.text()){
                         Ok(_)=>{},
@@ -162,7 +173,7 @@ impl PadamoTool for PadamoDetectorManager{
                 }
             },
             PadamoAppMessage::Open=>{
-                if let Some(path) = padamo.workspace.workspace("detector_sources").open_dialog(vec![("Detector source",vec!["dsrc"])]){
+                if let Some(path) = padamo.workspace.workspace("detector_sources").open_dialog(vec![("Detector source",vec!["dsrc","rhai"])]){
                     match fs::read_to_string(path){
                         Ok(s)=>{
                             self.source = widget::text_editor::Content::with_text(&s);
