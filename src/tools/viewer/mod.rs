@@ -1071,7 +1071,13 @@ impl PadamoTool for PadamoViewer{
     fn context_update(&mut self, msg: std::rc::Rc<PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
         match msg.as_ref() {
             PadamoAppMessage::Open=>{
-                let open_res = padamo.workspace.workspace("viewed_hdf5_data").open_dialog(vec![("HDF5 data",vec!["h5"]),("MATLAB 7.3 data",vec!["mat"]),("Cern ROOT data",vec!["root"])]);
+                let open_res = padamo.workspace.workspace("viewed_hdf5_data")
+                    .open_dialog(vec![
+                        ("HDF5, MATLAB 7.3 data",vec!["h5", "mat"]),
+                        ("old MATLAB data",vec!["mat"]),
+                        ("Cern ROOT data",vec!["root"]),
+                        ("Plain text", vec!["csv", "tsv", "txt"])
+                    ]);
                 if let Some(file_path) = open_res{
                     padamo.compute_graph.environment.0.insert(crate::builtin_nodes::viewer::VIEWER_FILENAME_VAR.into(), file_path.into());
                     self.file_changed = true;
