@@ -19,18 +19,22 @@ impl PhysicalFFNode{
         let mut signal = inputs.request_detectorfulldata("Signal")?;
         let eff_2d = inputs.request_detectorsignal("Eff_2D")?;
         let tau = inputs.request_detectorsignal("Tau")?;
-        let eff_2d = eff_2d.request_range(0,eff_2d.length());
-        let tau = tau.request_range(0,tau.length());
+        let mut eff_2d = eff_2d.request_range(0,eff_2d.length());
+        let mut tau = tau.request_range(0,tau.length());
+        if constants.request_boolean("squeeze_map")?{
+            tau = tau.squeeze();
+            eff_2d = eff_2d.squeeze();
+        }
         if signal.0.length()==0{
             return Err(ExecutionError::OtherError("Cannot check signal shape compatibility".into()));
         }
         let test_data = signal.0.request_range(0,1).squeeze();
 
         if !test_data.is_compatible(&tau){
-            return Err(ExecutionError::OtherError("flat fielding tau is not compatible with signal".into()));
+            return Err(ExecutionError::OtherError(format!("flat fielding tau {:?} is not compatible with signal {:?}", test_data.shape, tau.shape).into()));
         }
         if !test_data.is_compatible(&eff_2d){
-            return Err(ExecutionError::OtherError("flat fielding eff_2d is not compatible with signal".into()));
+            return Err(ExecutionError::OtherError(format!("flat fielding eff_2d {:?} is not compatible with signal {:?}", test_data.shape, eff_2d.shape).into()));
         }
         //if test_data.shape.le
         let consts = PhysicalFFConstants::from_constlist(&constants)?;
@@ -81,7 +85,9 @@ impl CalculationNode for PhysicalFFNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        PhysicalFFConstants::constlist()
+        let mut consts = PhysicalFFConstants::constlist();
+        consts.push(("squeeze_map","Squeeze map",false).into());
+        consts
     }
 
     #[allow(clippy::let_and_return)]
@@ -98,7 +104,10 @@ impl MapMultiplyNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
         let mut signal = inputs.request_detectorfulldata("Signal")?;
         let coeffs = inputs.request_detectorsignal("Coefficients")?;
-        let coeffs = coeffs.request_range(0,coeffs.length());
+        let mut coeffs = coeffs.request_range(0,coeffs.length());
+        if constants.request_boolean("squeeze_map")?{
+            coeffs = coeffs.squeeze();
+        }
 
         if signal.0.length()==0{
             return Err(ExecutionError::OtherError("Cannot check signal shape compatibility".into()));
@@ -106,7 +115,7 @@ impl MapMultiplyNode{
         let test_data = signal.0.request_range(0,1).squeeze();
 
         if !test_data.is_compatible(&coeffs){
-            return Err(ExecutionError::OtherError("coefficient matrix is not compatible with signal".into()));
+            return Err(ExecutionError::OtherError(format!("coefficient matrix with shape {:?} is not compatible with signal with shape {:?}", coeffs.shape,test_data.shape).into()));
         }
 
         //if test_data.shape.le
@@ -155,7 +164,9 @@ impl CalculationNode for MapMultiplyNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
+        constants!(
+            ("squeeze_map","Squeeze map",false)
+        )
     }
 
     #[allow(clippy::let_and_return)]
@@ -172,7 +183,11 @@ impl MapDivideNode{
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
         let mut signal = inputs.request_detectorfulldata("Signal")?;
         let coeffs = inputs.request_detectorsignal("Coefficients")?;
-        let coeffs = coeffs.request_range(0,coeffs.length());
+        let mut coeffs = coeffs.request_range(0,coeffs.length());
+
+        if constants.request_boolean("squeeze_map")?{
+            coeffs = coeffs.squeeze();
+        }
 
         if signal.0.length()==0{
             return Err(ExecutionError::OtherError("Cannot check signal shape compatibility".into()));
@@ -180,7 +195,7 @@ impl MapDivideNode{
         let test_data = signal.0.request_range(0,1).squeeze();
 
         if !test_data.is_compatible(&coeffs){
-            return Err(ExecutionError::OtherError("coefficient matrix is not compatible with signal".into()));
+            return Err(ExecutionError::OtherError(format!("coefficient matrix with shape {:?} is not compatible with signal witj shape {:?}", coeffs.shape,test_data.shape).into()));
         }
 
         //if test_data.shape.le
@@ -214,7 +229,7 @@ impl CalculationNode for MapDivideNode{
     fn inputs(&self,) -> RVec<CalculationIO>where {
         ports![
             ("Signal",ContentType::DetectorFullData),
-            ("Coefficients",ContentType::DetectorSignal)
+            ("Coefficients",ContentType::DetectorSignal),
         ]
     }
 
@@ -229,7 +244,9 @@ impl CalculationNode for MapDivideNode{
     #[allow(clippy::let_and_return)]
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
+        constants!(
+            ("squeeze_map","Squeeze map",false)
+        )
     }
 
     #[allow(clippy::let_and_return)]
