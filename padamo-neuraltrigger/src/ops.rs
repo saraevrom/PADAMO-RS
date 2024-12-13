@@ -8,7 +8,7 @@ use ndarray::prelude::*;
 
 #[derive(thiserror::Error,Debug,Clone,Copy)]
 pub enum ANNError {
-    #[error("THis ANN supports only 3D data")]
+    #[error("This ANN supports only 3D data")]
     DimensionMisalignmentError,
     #[error("Source array is empty")]
     EmptySource,
@@ -49,6 +49,7 @@ pub struct LazyANNTrigger3D{
     stride:usize,
     size_hint:(usize,usize,usize),
     output_layer:String,
+    squeeze_source:bool
     //output_shape:Vec<usize>,
 }
 
@@ -67,18 +68,31 @@ impl LazyANNTrigger3D{
         source.cut(0, aligned_length)
     }
 
-    pub fn new(model: Arc<ort::Session>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String)-> Result<Self, Box<dyn std::error::Error>>{
+    pub fn new(model: Arc<ort::Session>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool)-> Result<Self, Box<dyn std::error::Error>>{
         let source_length = source.length();
         if source_length==0{
             return Err(Box::new(ANNError::EmptySource));
         }
         let probe:ArrayND<f64> = source.request_range(0,1);
 
-        if probe.shape.len() != 3{
+        // let probe_len:usize = if squeeze_source{
+        //     probe.shape.iter().skip(1).filter(|x| **x!=1).count()+1
+        // }
+        // else{
+        //     probe.shape.len()
+        // };
+        let probe_shape:Vec<usize> = if squeeze_source{
+            probe.shape.iter().enumerate().filter(|(i,x)| **x != 1 || *i==0).map(|(_,x)| *x).collect()
+        }
+        else{
+            probe.shape.clone().into()
+        };
+
+        if probe_shape.len() != 3{
             return Err(Box::new(ANNError::DimensionMisalignmentError));
         }
-        let width = probe.shape[1];
-        let height = probe.shape[2];
+        let width = probe_shape[1];
+        let height = probe_shape[2];
 
         if source_length<size_hint.0{
             return Err(Box::new(ANNError::SmallSource));
@@ -104,7 +118,7 @@ impl LazyANNTrigger3D{
             return Err(Box::new(ANNError::Misaligned));
         }
 
-        Ok(Self { model, source,threshold, stride,size_hint, output_layer})
+        Ok(Self { model, source,threshold, stride,size_hint, output_layer, squeeze_source})
     }
 }
 
@@ -136,7 +150,16 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyANNTrigger3D{
         let cut_end = cut_end;
         println!("Cut {}, {}", cut_start,cut_end);
 
-        let source_data = self.source.request_range(cut_start,cut_end);
+        let mut source_data = self.source.request_range(cut_start,cut_end);
+        if self.squeeze_source{
+            let src_shape:Vec<usize> = source_data.shape.clone().into();
+            let mut squeezed_shape = vec![src_shape[0]];
+            squeezed_shape.extend(src_shape.iter().skip(1).filter(|x| **x!=1).map(|x| *x).collect::<Vec<usize>>());
+            source_data.shape = squeezed_shape.into();
+        }
+        let source_data = source_data;
+
+
         let src_time = source_data.shape[0];
         let src_width = source_data.shape[1];
         let src_height = source_data.shape[2];

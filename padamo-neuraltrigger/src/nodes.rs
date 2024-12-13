@@ -35,13 +35,15 @@ impl ANN3DNode {
     fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
         let stride = request_usize(&constants,"Stride")?;
         let threshold = constants.request_float("Threshold")? as f32;
+        let squeeze = constants.request_boolean("Squeeze")?;
         let mut signal = inputs.request_detectorfulldata("Signal")?;
 
         signal.0 = crate::ops::LazyANNTrigger3D::align_data(signal.0, stride, self.size_hint).map_err(ExecutionError::from_error)?;
         signal.1 = crate::ops::LazyANNTrigger3D::align_data(signal.1, stride, self.size_hint).map_err(ExecutionError::from_error)?;
 
         signal.2 = RSome(make_lao_box(
-            crate::ops::LazyANNTrigger3D::new(self.ann_model.clone(), signal.0.clone(), threshold, stride, self.size_hint, self.output_layer.clone()).map_err(ExecutionError::from_dyn_error)?
+            crate::ops::LazyANNTrigger3D::new(self.ann_model.clone(), signal.0.clone(), threshold, stride, self.size_hint,
+                                              self.output_layer.clone(),squeeze).map_err(ExecutionError::from_dyn_error)?
         ));
 
         outputs.set_value("Signal",signal.into())?;
@@ -90,7 +92,8 @@ impl CalculationNode for ANN3DNode{
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
             ("Threshold",0.5),
-            ("Stride",1)
+            ("Stride",1),
+            ("Squeeze", false),
         ]
     }
 
