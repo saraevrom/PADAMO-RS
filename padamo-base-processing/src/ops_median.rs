@@ -142,10 +142,16 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingMedianNormalize{
         let use_variance = self.variance;
         let window = self.window;
 
+        let dims = sourced.shape.len();
         let sourced1 = sourced.clone();
         let sourced1 = sourced1.to_ndarray();
 
-        let divisor = sourced1.slice(ndarray::s![self.window/2..self.window/2+end-start,..,..]);
+        let mut slice_part:Vec<ndarray::SliceInfoElem> = vec![ndarray::SliceInfoElem::Slice { start: (self.window/2) as isize, end: Some((self.window/2+end-start) as isize), step: 1 }];
+        for _ in 1..dims{
+            slice_part.push(ndarray::SliceInfoElem::Slice { start: 0, end: None, step: 1 });
+        }
+
+        let divisor = sourced1.slice(slice_part.as_slice());
         let divisor = divisor.to_owned();
         let divisor:ArrayND<f64> = divisor.into();
 
