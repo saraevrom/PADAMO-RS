@@ -72,10 +72,17 @@ pub struct ExportParameters{
     //#[field_name("Display LC")] displaylc:bool,
 }
 
-#[derive(Clone,Debug,Default,IcedForm)]
+#[derive(Clone,Debug,IcedForm)]
 pub struct ViewerForm{
+    #[field_name("Stop on trigger")] pub stop_on_trigger:bool,
     #[field_name("Animation")] pub animation:AnimationParameters,
     #[field_name("Export")] pub export:ExportParameters,
+}
+
+impl Default for ViewerForm{
+    fn default() -> Self {
+        Self { stop_on_trigger: false, animation: Default::default(), export: Default::default() }
+    }
 }
 
 impl Default for AnimationParameters{
@@ -177,6 +184,7 @@ pub struct PadamoViewer{
     // export_parameters:ExportParameters,
     // export_fields:ExportParametersBuffer,
     form:ViewerFormBuffer,
+    form_instance:ViewerForm,
 
 
     animator:Option<Worker<String>>,
@@ -184,7 +192,7 @@ pub struct PadamoViewer{
     animation_status: String,
     export_status:String,
 
-    stop_on_trigger:bool,
+    // stop_on_trigger:bool,
     file_changed:bool,
     view_transform: crate::transform_widget::TransformState,
     //animation_resolution:(u32,u32),
@@ -221,13 +229,14 @@ impl PadamoViewer{
             // export_fields:Default::default(),
             // export_parameters:export_params,
             form:Default::default(),
+            form_instance:Default::default(),
 
             animator:None,
             exporter:None,
             export_status:"IDLE".into(),
             animation_status:"IDLE".into(),
 
-            stop_on_trigger:false,
+            // stop_on_trigger:false,
         };
         res.fill_strings();
         res
@@ -272,7 +281,7 @@ impl PadamoViewer{
                 let t = time_stop.as_millis() as u64;
                 p.add_delay_ms = t*3;
             }
-            if self.stop_on_trigger{
+            if self.form_instance.stop_on_trigger{
                 if let ROption::RSome(v) = &signal.2{
                     let trig = v.request_range(self.pointer,self.pointer+1);
                     let muststop:bool = trig.flat_data.iter().fold(false, |a,b| a||*b);
@@ -446,14 +455,14 @@ impl PadamoTool for PadamoViewer{
             ],
             iced::widget::text(&self.export_status),
             iced::widget::rule::Rule::horizontal(10),
-            iced::widget::checkbox("Stop on trigger", self.stop_on_trigger).on_toggle(ViewerMessage::SetAutostop),
-            iced::widget::rule::Rule::horizontal(10),
+            // iced::widget::checkbox("Stop on trigger", self.stop_on_trigger).on_toggle(ViewerMessage::SetAutostop),
+            // iced::widget::rule::Rule::horizontal(10),
             //iced::widget::text("Export settings"),
             //self.export_fields.view().map(ViewerMessage::EditExportSettings),
 
             //iced::widget::rule::Rule::horizontal(10),
             //iced::widget::text("Animation settings"),
-            self.form.view_untitled().map(ViewerMessage::EditForm),
+            self.form.view(None).map(ViewerMessage::EditForm),
             //self.animation_fields.view().map(ViewerMessage::EditAnimationSettings),
         ].width(200).into();
 
@@ -590,6 +599,10 @@ impl PadamoTool for PadamoViewer{
                         },
                         ActionOrUpdate::Update(u)=>{
                             self.form.update(u.to_owned());
+                            if let Some(v) = self.form.get(){
+                                self.form_instance = v;
+                            }
+
                         }
                     }
                 }
@@ -643,9 +656,9 @@ impl PadamoTool for PadamoViewer{
                     }
                     //self.stop_exporter();
                 }
-                ViewerMessage::SetAutostop(v)=>{
-                    self.stop_on_trigger = *v;
-                }
+                // ViewerMessage::SetAutostop(v)=>{
+                //     self.stop_on_trigger = *v;
+                // }
                 ViewerMessage::TogglePixel(pix)=>{
                     self.chart.toggle_pixel(pix);
                     self.update_pixels(padamo,true);
@@ -663,8 +676,7 @@ impl PadamoTool for PadamoViewer{
                             let mut testframe = spatial.request_range(0,1);
                             testframe.shape.drain(0..1); //Remove time axis
                             let frame_shape = testframe.shape;
-                            let form_data = if let Some(f) = self.form.get() {f} else {return;};
-                            let settings = form_data.export;
+                            let settings = self.form_instance.export.clone();
                             println!("{:?}",settings);
                             if settings.spatialfield.is_empty(){
                                 padamo.show_error("Signal field is not specified");
@@ -799,7 +811,6 @@ impl PadamoTool for PadamoViewer{
                 }
 
                 ViewerMessage::CreateAnimation=>{
-                    println!("Animation parameters: {:?}",self.animation_parameters);
                     if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![
                         ("MP4 animation", vec!["mp4"]),
                         ("GIF animation", vec!["gif"]),
@@ -808,8 +819,10 @@ impl PadamoTool for PadamoViewer{
                         self.stop_animator();
                         use plotters::prelude::*;
 
-                        let form_data = if let Some(f) = self.form.get() {f} else {return;};
-                        let animation_parameters = form_data.animation;
+                        // let form_data = if let Some(f) = self.form.get() {f} else {return;};
+                        let animation_parameters = self.form_instance.animation.clone();
+
+                        println!("Animation parameters: {:?}",animation_parameters);
                         let plot_scale = self.plot_scale.clone();
                         let chart = self.chart.clone();
                         if let Some(signal_ref) = &self.signal{

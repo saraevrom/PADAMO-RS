@@ -29,7 +29,7 @@ pub enum ViewerMessage{
     Export,
     StopExport,
     SetAutoscale(bool),
-    SetAutostop(bool),
+    // SetAutostop(bool),
     SetMinSignal(String),
     SetMaxSignal(String),
     TogglePixel(Vec<usize>),
