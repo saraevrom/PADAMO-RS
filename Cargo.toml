@@ -19,7 +19,7 @@ padamo-workspace = { path = "./padamo-workspace" }
 padamo-detectors = { path = "./padamo-detectors" }
 padamo-state-persistence = { path = "./padamo-state-persistence" }
 padamo-iced-forms = { path = "./padamo-iced-forms" }
-padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive" }
+# padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive" }
 abi_stable = "0.11.3"
 plotters-layout = "0.1.0"
 plotters_video = { path = "./plotters_video" }
@@ -41,5 +41,5 @@ plotters-backend = "0.3.7"
 datetime-parser = { path = "./datetime-parser"}
 
 [workspace]
-members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime"]
+members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime", "padamo-iced-forms"]
 resolver = "2"

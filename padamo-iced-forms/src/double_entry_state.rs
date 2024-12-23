@@ -20,13 +20,13 @@ pub fn errored_entry<'a,M:Clone,F:Fn(String)->M+'a>(placeholder:&'a str,value:&'
 }
 
 #[derive(Clone,Debug)]
-pub struct EntryState<T:ToString+FromStr>{
+pub struct EntryState<T:ToString+FromStr+Clone>{
     pub parsed_value:T,
     pub string_value:String,
     pub is_valid:bool
 }
 
-impl<T:ToString+FromStr> EntryState<T>{
+impl<T:ToString+FromStr+Clone> EntryState<T>{
     pub fn new(v:T)->Self{
         Self {string_value: v.to_string(),parsed_value: v, is_valid: true }
     }
@@ -53,7 +53,7 @@ impl<T:ToString+FromStr> EntryState<T>{
         //iced::widget::text_input(placehoder,&self.string_value).on_input(msg)
     }
 
-    pub fn view_label<'a>(&'a self, label:&'a str)->iced::widget::Text<'_,iced::theme::Theme>{
+    pub fn view_label<'a>(&'a self, label:&'a str)->iced::widget::Text<'a,iced::theme::Theme>{
         errored_text(label,self.is_valid)
     }
 
@@ -65,7 +65,7 @@ impl<T:ToString+FromStr> EntryState<T>{
     }
 }
 
-impl<T:ToString+FromStr+Default> Default for EntryState<T>{
+impl<T:ToString+FromStr+Default+Clone> Default for EntryState<T>{
     fn default()->Self{
         Self::new(T::default())
     }

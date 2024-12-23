@@ -1,10 +1,8 @@
 [package]
 name = "padamo-iced-forms"
-version = "0.1.1"
+version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-
 [dependencies]
-iced = "0.13"
+iced = "0.13.1"
+padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive"}
