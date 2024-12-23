@@ -666,7 +666,11 @@ impl PadamoTool for Plotter{
                     }
                     PlotterMessage::SavePlot=>{
                         //diagram::PlotterChart::new(&self).
-                        let result = padamo.workspace.workspace("plots").save_dialog(vec![("Portable net graphics", vec!["png"]),("Scalar vector graphics", vec!["svg"])]);
+                        let result = padamo.workspace.workspace("plots").save_dialog(vec![
+                            ("Portable net graphics", vec!["png"]),
+                            ("Lossy compressed JPEG", vec!["jpg"]),
+                            ("Scalar vector graphics", vec!["svg"])
+                        ]);
                         if let Some(v) = result{
                             use plotters::prelude::*;
                             let out_shape = (self.out_shape.0.parsed_value, self.out_shape.1.parsed_value);
@@ -681,6 +685,7 @@ impl PadamoTool for Plotter{
                             match ext{
                                 Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape), filename)},
                                 Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
+                                Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
                                 _=>{
                                     println!("Cannot determine backend for {}", v);
                                 }

@@ -5,8 +5,8 @@ use padamo_iced_forms::Action;
 #[derive(Clone,Debug,IcedForm)]
 #[spoiler_hidden]
 pub struct AnimationParameters{
-    #[field_name("Create animation")] pub _start:Action<ViewerActions,ViewerActionStartAnimation>,
-    #[field_name("Stop")] pub _stop:Action<ViewerActions,ViewerActionStopAnimation>,
+    #[field_name("Create animation")] _start:Action<ViewerActions,ViewerActionStartAnimation>,
+    #[field_name("Stop")] _stop:Action<ViewerActions,ViewerActionStopAnimation>,
     #[field_name("Width [pix]")] pub width:u32,
     #[field_name("Height [pix]")] pub height:u32,
     #[field_name("Frame delay [ms]")] pub framedelay:u32,
@@ -19,8 +19,8 @@ pub struct AnimationParameters{
 #[spoiler_hidden]
 pub struct ExportParameters{
     //#[field_name("Frames step")] pub framesstep:usize,
-    #[field_name("Export")] pub _start:Action<ViewerActions,ViewerActionStartExport>,
-    #[field_name("Stop")] pub _stop:Action<ViewerActions,ViewerActionStopExport>,
+    #[field_name("Export")] _start:Action<ViewerActions,ViewerActionStartExport>,
+    #[field_name("Stop")] _stop:Action<ViewerActions,ViewerActionStopExport>,
     #[field_name("RAM part")] pub rampart:f64,
     #[field_name("Deflate")] pub deflate:bool,
     #[field_name("Deflate level")] pub deflatelevel:u8,
@@ -31,10 +31,19 @@ pub struct ExportParameters{
 }
 
 #[derive(Clone,Debug,IcedForm)]
+#[spoiler_hidden]
+pub struct FrameParameters{
+    #[field_name("Save frame")] _action:Action<ViewerActions,ViewerActionMakeFrame>,
+    #[field_name("Width [pix]")] pub width:u32,
+    #[field_name("Height [pix]")] pub height:u32,
+}
+
+#[derive(Clone,Debug,IcedForm)]
 pub struct ViewerForm{
     #[field_name("Stop on trigger")] pub stop_on_trigger:bool,
     #[field_name("Animation")] pub animation:AnimationParameters,
     #[field_name("Export")] pub export:ExportParameters,
+    #[field_name("Single Frame")] pub single_frame:FrameParameters
 }
 
 #[derive(Clone,Debug)]
@@ -43,7 +52,8 @@ pub enum ViewerActions{
     StartAnimation,
     StopAnimation,
     StartExport,
-    StopExport
+    StopExport,
+    MakeFrame,
 }
 
 make_action!(ViewerActionNoop,ViewerActions,Noop);
@@ -51,6 +61,7 @@ make_action!(ViewerActionStartAnimation,ViewerActions,StartAnimation);
 make_action!(ViewerActionStopAnimation,ViewerActions,StopAnimation);
 make_action!(ViewerActionStartExport,ViewerActions,StartExport);
 make_action!(ViewerActionStopExport,ViewerActions,StopExport);
+make_action!(ViewerActionMakeFrame,ViewerActions,MakeFrame);
 
 // #[derive(Clone,Debug,Default)]
 // pub struct ViewerActionsNoop;
@@ -64,7 +75,13 @@ impl Default for ViewerActions{
 
 impl Default for ViewerForm{
     fn default() -> Self {
-        Self { stop_on_trigger: false, animation: Default::default(), export: Default::default() }
+        Self { stop_on_trigger: false, animation: Default::default(), export: Default::default(), single_frame: Default::default() }
+    }
+}
+
+impl Default for FrameParameters{
+    fn default() -> Self {
+        FrameParameters { _action: Default::default(), width: 1024, height: 1024 }
     }
 }
 

@@ -311,6 +311,7 @@ impl PadamoViewer{
                                     Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
+                                        padamo.show_error(format!("{}",e));
                                         None
                                     }
                                 }
@@ -322,6 +323,7 @@ impl PadamoViewer{
                                     Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
+                                        padamo.show_error(format!("{}",e));
                                         None
                                     }
                                 }
@@ -361,6 +363,66 @@ impl PadamoViewer{
         if let Some(v) = &mut self.exporter{
             v.request_stop();
         }
+    }
+
+    fn make_frame(&mut self, padamo:crate::application::PadamoStateRef){
+        let result = padamo.workspace.workspace("plots").save_dialog(vec![
+                            ("Portable net graphics", vec!["png"]),
+                            ("Lossy compressed JPEG", vec!["jpg"]),
+                            ("Scalar vector graphics", vec!["svg"])
+                        ]);
+        if let Some(path_s) = result{
+            println!("Frame path: {}", path_s);
+            let path = std::path::Path::new(&path_s);
+            self.save_chart(path, padamo);
+        }
+    }
+
+    fn save_chart(&self, path:&std::path::Path, padamo:crate::application::PadamoStateRef){
+        use plotters::prelude::*;
+        if let Some(signal_ref) = &self.signal{
+                //let signal = signal_ref.clone();
+                let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
+                let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
+                let width = self.form_instance.single_frame.width;
+                let height = self.form_instance.single_frame.height;
+
+                if let Some(ext) = path.extension(){
+                    if let Some(ext_str) = ext.to_str(){
+                        match ext_str {
+                            "png" | "jpg" => {
+                                let backend = BitMapBackend::new(&path, (width+80,height));
+                                let root = backend.into_drawing_area();
+                                animator::make_frame(&root, &spatial, &temporal, self.pointer, &self.chart, self.plot_scale);
+                            },
+                            "svg" => {
+                                let backend = SVGBackend::new(&path, (width+80,height));
+                                let root = backend.into_drawing_area();
+                                animator::make_frame(&root, &spatial, &temporal, self.pointer, &self.chart, self.plot_scale);
+                            },
+                            ue=>{
+                                padamo.show_error(format!("Unsupported extension {}",ue));
+                                // eprintln!("Unsupported extension {}",ue);
+                            }
+                        }
+                    }
+                }
+
+                // let backend = BitMapBackend::new(, )
+
+                // let mut frame = spatial.request_range(i,i+1);
+                // frame.shape.drain(0..1);
+                // let tim = temporal.request_range(i,i+1)[0];
+                //
+                // root.fill(&WHITE).unwrap();
+                // let root_area = plotter.into_drawing_area();
+                // root_area.fill(&WHITE).unwrap();
+                //let cc = ChartBuilder::on(&root_area);
+                // let charter = self.chart.build_chart_generic(root_area, , , , );
+                // charter.draw_chart(&(), root_area);
+        }
+
+
     }
 }
 
@@ -767,6 +829,7 @@ impl PadamoTool for PadamoViewer{
                                     form::ViewerActions::StopAnimation=>{self.stop_animation();},
                                     form::ViewerActions::StartExport=>{self.run_export(padamo);},
                                     form::ViewerActions::StopExport=>{self.stop_export();},
+                                    form::ViewerActions::MakeFrame=>{self.make_frame(padamo);},
                                 }
                             }
                         },
@@ -784,14 +847,18 @@ impl PadamoTool for PadamoViewer{
                     println!("Submitted DT {}",self.datetime_entry);
                     if let Some(signal) = &self.signal{
 
-                        let ut = signal.1.request_range(self.pointer,self.pointer+1)[0];
+                        let ut:f64 = signal.1.request_range(self.pointer,self.pointer+1)[0];
                         let ut_s = ut as i64;
-                        let ut_ns = ((ut-ut_s as f64)*1e9) as u32;
-                        //println!("Datetime from {}=>{}; {}",ut,ut_s,ut_ns);
-                        let naive = NaiveDateTime::from_timestamp_opt(ut_s,ut_ns).unwrap();
+                        //let ut_ns = ((ut-ut_s as f64)*1e9) as u32;
+                        let ut_ns = ((ut-(ut_s as f64))*1e9) as u32;
 
-                        // Create a normal DateTime from the NaiveDateTime
-                        let start_dt = DateTime::from_naive_utc_and_offset(naive, Utc);
+
+                        //println!("Datetime from {}=>{}; {}",ut,ut_s,ut_ns);
+                        // let naive = NaiveDateTime::from_timestamp_opt(ut_s,ut_ns).unwrap();
+                        //
+                        // // Create a normal DateTime from the NaiveDateTime
+                        // let start_dt:DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
+                        let start_dt:DateTime<Utc> = DateTime::from_timestamp(ut_s, ut_ns).unwrap();
 
                         if let Some(end_dt) = datetime_parser::parse_datetimes(&self.datetime_entry, start_dt){
                             let index = crate::time_search::find_time(&signal.1, end_dt);
