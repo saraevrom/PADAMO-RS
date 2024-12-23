@@ -16,8 +16,9 @@ use messages::TriggerMessage;
 pub mod sparse_intervals;
 pub mod interval_selector;
 use interval_selector::IntervalSelectionDialog;
-use padamo_iced_forms_derive::IcedForm;
-use padamo_iced_forms::IcedFormInterface;
+// use padamo_iced_forms_derive::IcedForm;
+// use padamo_iced_forms::IcedFormInterface;
+use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 use crate::tools::viewer::Worker;
 use sparse_intervals::split_intervals;
 use iced_aw::selection_list;
@@ -53,8 +54,8 @@ pub struct PadamoTrigger{
 
     //interval_storage: Arc<Mutex<IntervalsContainer>>,
     trigger_interval_selector:Option<IntervalSelectionDialog>,
-    trigger_form:TriggerSettingsForm,
-    trigger_form_buffer:TriggerSettingsFormInterface,
+    // trigger_form:TriggerSettingsForm,
+    trigger_form_buffer:TriggerSettingsFormBuffer,
     trigger_process:Option<Worker<TriggerProcessMessage>>,
     trigger_status:String,
 
@@ -74,8 +75,8 @@ pub struct TriggerSettingsForm{
     #[field_name("Safeguard [frames]")] pub safeguard:usize,
 }
 
-impl TriggerSettingsForm{
-    pub fn new()->Self{
+impl Default for TriggerSettingsForm{
+    fn default()->Self{
         Self { chunksize: 10000, safeguard:3000 }
     }
 
@@ -84,7 +85,7 @@ impl TriggerSettingsForm{
 
 impl PadamoTrigger{
     pub fn new()->Self{
-        let trigger_form = TriggerSettingsForm::new();
+        // let trigger_form = TriggerSettingsForm::new();
         Self {
             chart:Detector::default_vtl(),
             signal:None,
@@ -102,8 +103,8 @@ impl PadamoTrigger{
             selection_positive:true,
 
             trigger_interval_selector:None,
-            trigger_form_buffer: TriggerSettingsFormInterface::new(&trigger_form),
-            trigger_form,
+            trigger_form_buffer: Default::default(),
+            // trigger_form,
             trigger_process:None,
             export_process:None,
             trigger_status:"IDLE".into(),
@@ -165,6 +166,7 @@ impl PadamoTrigger{
     }
 
     fn select_event(&mut self){
+        let trigger_form = if let Some(v) = self.trigger_form_buffer.get() {v} else {return;};
         if let Some(signal) = &self.signal{
             if let Some(sel) = self.selection{
 
@@ -177,7 +179,7 @@ impl PadamoTrigger{
                     self.negative_intervals.container[sel]
                 };
                 self.selected_interval = Some(interval);
-                if interval.length()>self.trigger_form.safeguard{
+                if interval.length()>trigger_form.safeguard{
                     return;
                 }
                 if self.loader.is_some(){
@@ -264,7 +266,7 @@ impl PadamoTool for PadamoTrigger{
                 widget::column![
                     widget::rule::Rule::horizontal(10),
                     widget::text("Settings"),
-                    self.trigger_form_buffer.view().map(TriggerMessage::SettingsMessage),
+                    self.trigger_form_buffer.view(None).map(TriggerMessage::SettingsMessage),
                 ]
             ].width(250)),
         ].into();
@@ -345,7 +347,8 @@ impl PadamoTool for PadamoTrigger{
                                         return;
                                     }
                                     let trigger_source = (*trigger).clone();
-                                    let settings = self.trigger_form.clone();
+                                    let settings = if let Some(v) = self.trigger_form_buffer.get() {v} else {return;};
+                                    // let settings = trigger_form;
                                     self.stop_worker();
                                     println!("TRIGGER START {}", interval);
 
@@ -398,7 +401,13 @@ impl PadamoTool for PadamoTrigger{
                         }
                     }
                     TriggerMessage::SettingsMessage(msg)=>{
-                        self.trigger_form_buffer.update(msg.clone(), &mut self.trigger_form);
+                        // self.trigger_form_buffer.update(msg.clone(), &mut self.trigger_form);
+                        match msg{
+                            padamo_iced_forms::ActionOrUpdate::Action(_)=>(),
+                            padamo_iced_forms::ActionOrUpdate::Update(u)=>{
+                                self.trigger_form_buffer.update(u.to_owned());
+                            },
+                        }
                     }
                     TriggerMessage::Stop=>{
                         if let Some(v) = &mut self.trigger_process{

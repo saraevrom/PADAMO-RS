@@ -1,3 +1,5 @@
+use padamo_iced_forms::ActionOrUpdate;
+
 use super::TriggerSettingsFormMessage;
 
 #[derive(Clone,Debug)]
@@ -6,7 +8,7 @@ pub enum TriggerMessage{
     CancelChoseTrigger,
     ConfirmTrigger,
     SelectionMessage(SelectionMessage),
-    SettingsMessage(TriggerSettingsFormMessage),
+    SettingsMessage(ActionOrUpdate<TriggerSettingsFormMessage>),
     SelectPositive(usize, String),
     SelectNegative(usize, String),
     ExamineEvent,
