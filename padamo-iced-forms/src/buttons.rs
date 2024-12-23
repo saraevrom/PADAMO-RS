@@ -1,50 +1,43 @@
-use std::{fmt::Debug, marker::PhantomData};
-use std::sync::Arc;
+use std::{fmt::Debug, marker::PhantomData, sync::Arc};
 
-use crate::{IcedForm,IcedFormBuffer};
+use crate::{IcedForm, IcedFormBuffer};
 
-// #[derive(Clone,Debug)]
-// pub struct ActionBuffer{
-//     pub identifier:String
-// }
-//
-// #[derive(Clone,Debug)]
-// pub struct Action{
-//     pub identifier:String
-// }
-//
-// #[derive(Clone,Debug)]
-// pub struct ActionMessage;
-//
-// impl
 
-pub trait ActionType: std::any::Any+Sync+Send+Default+Clone+std::fmt::Debug{}
 
-impl<T:std::any::Any+Sync+Send+Default+Clone+std::fmt::Debug> ActionType for T{
+pub trait ActionType: std::any::Any+Sync+Send+Clone+std::fmt::Debug+std::default::Default{}
 
+impl<T:std::any::Any+Sync+Send+Clone+std::fmt::Debug+std::default::Default> ActionType for T{
+
+}
+
+
+pub trait ActionTrait<T:ActionType>: Default+Clone+Debug{
+    fn make()->T;
 }
 
 #[derive(Clone,Debug,Default)]
-pub struct ActionBuffer<T:ActionType>{
-    _pd:PhantomData<T>
+pub struct ActionBuffer<T:ActionType,A:ActionTrait<T>>{
+    _pd1:PhantomData<T>,
+    _pd2:PhantomData<A>,
 }
 
-#[derive(Clone,Debug)]
+#[derive(Clone,Debug,Default)]
 pub struct ActionMessage;
 
 #[derive(Clone,Debug,Default)]
-pub struct Action<T:std::any::Any+Sync+Send+Default>{
-    _pd:PhantomData<T>
+pub struct Action<T:ActionType,A:ActionTrait<T>>{
+    _pd1:PhantomData<T>,
+    _pd2:PhantomData<A>,
 }
 
-impl<T:ActionType> IcedForm for Action<T>{
-    type Buffer = ActionBuffer<T>;
+
+impl<T:ActionType,A:ActionTrait<T>> IcedForm for Action<T,A>{
+    type Buffer = ActionBuffer<T,A>;
 }
 
-impl<T:ActionType> IcedFormBuffer for ActionBuffer<T>{
+impl <T:ActionType, A:ActionTrait<T>> IcedFormBuffer for ActionBuffer<T,A>{
+    type FormType = Action<T,A>;
     type Message = ActionMessage;
-    type FormType = Action<T>;
-
     fn get(&self)->Option<Self::FormType> {
         Default::default()
     }
@@ -62,6 +55,6 @@ impl<T:ActionType> IcedFormBuffer for ActionBuffer<T>{
     }
 
     fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,crate::ActionOrUpdate<Self::Message>,iced::Theme> {
-        iced::widget::button(title.unwrap_or("---")).on_press(crate::ActionOrUpdate::Action(Arc::new(T::default()))).into()
+        iced::widget::button(title.unwrap_or("---")).on_press(crate::ActionOrUpdate::Action(Arc::new(A::make()))).into()
     }
 }
