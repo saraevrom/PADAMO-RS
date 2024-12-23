@@ -14,8 +14,9 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use iced::widget::{column,row};
 use crate::messages::PadamoAppMessage;
 use std::time::Instant;
-use padamo_iced_forms_derive::IcedForm;
-use padamo_iced_forms::IcedFormInterface;
+// use padamo_iced_forms_derive::IcedForm;
+// use padamo_iced_forms::IcedFormInterface;
+use padamo_iced_forms::{ActionOrUpdate, IcedForm, IcedFormBuffer};
 
 use std::thread;
 use std::sync::mpsc;
@@ -48,6 +49,7 @@ pub enum PlayState{
 
 
 #[derive(Clone,Debug,IcedForm)]
+#[spoiler_hidden]
 pub struct AnimationParameters{
     #[field_name("Width [pix]")] pub width:u32,
     #[field_name("Height [pix]")] pub height:u32,
@@ -58,6 +60,7 @@ pub struct AnimationParameters{
 }
 
 #[derive(Clone,Debug,IcedForm)]
+#[spoiler_hidden]
 pub struct ExportParameters{
     //#[field_name("Frames step")] pub framesstep:usize,
     #[field_name("RAM part")] pub rampart:f64,
@@ -67,6 +70,12 @@ pub struct ExportParameters{
     #[field_name("Time field")] pub temporalfield:String,
     #[field_name("HDF chunk length [frames]")] pub chunk:usize,
     //#[field_name("Display LC")] displaylc:bool,
+}
+
+#[derive(Clone,Debug,Default,IcedForm)]
+pub struct ViewerForm{
+    #[field_name("Animation")] pub animation:AnimationParameters,
+    #[field_name("Export")] pub export:ExportParameters,
 }
 
 impl Default for AnimationParameters{
@@ -161,12 +170,14 @@ pub struct PadamoViewer{
     plot_scale:padamo_detectors::Scaling,
     plotter_needs_reset:bool,
 
-    animation_parameters:AnimationParameters,
-    animation_fields:AnimationParametersInterface,
+    // animation_parameters:AnimationParameters,
+    // animation_fields:AnimationParametersBuffer,
 
 
-    export_parameters:ExportParameters,
-    export_fields:ExportParametersInterface,
+    // export_parameters:ExportParameters,
+    // export_fields:ExportParametersBuffer,
+    form:ViewerFormBuffer,
+
 
     animator:Option<Worker<String>>,
     exporter:Option<Worker<String>>,
@@ -182,8 +193,8 @@ pub struct PadamoViewer{
 
 impl PadamoViewer{
     pub fn new()->Self{
-        let animation_params = Default::default();
-        let export_params = Default::default();
+        // let animation_params = Default::default();
+        // let export_params = Default::default();
         let mut res = Self{
             chart:Detector::default_vtl(),
             view_transform:Default::default(),
@@ -204,12 +215,12 @@ impl PadamoViewer{
             plot_scale:padamo_detectors::Scaling::Autoscale,
             plotter_needs_reset:false,
             file_changed:true,
-            animation_fields:AnimationParametersInterface::new(&animation_params),
-            animation_parameters: animation_params,
+            // animation_fields:Default::default(),
+            // animation_parameters: animation_params,
 
-            export_fields:ExportParametersInterface::new(&export_params),
-            export_parameters:export_params,
-
+            // export_fields:Default::default(),
+            // export_parameters:export_params,
+            form:Default::default(),
 
             animator:None,
             exporter:None,
@@ -437,12 +448,13 @@ impl PadamoTool for PadamoViewer{
             iced::widget::rule::Rule::horizontal(10),
             iced::widget::checkbox("Stop on trigger", self.stop_on_trigger).on_toggle(ViewerMessage::SetAutostop),
             iced::widget::rule::Rule::horizontal(10),
-            iced::widget::text("Export settings"),
-            self.export_fields.view().map(ViewerMessage::EditExportSettings),
+            //iced::widget::text("Export settings"),
+            //self.export_fields.view().map(ViewerMessage::EditExportSettings),
 
-            iced::widget::rule::Rule::horizontal(10),
-            iced::widget::text("Animation settings"),
-            self.animation_fields.view().map(ViewerMessage::EditAnimationSettings),
+            //iced::widget::rule::Rule::horizontal(10),
+            //iced::widget::text("Animation settings"),
+            self.form.view_untitled().map(ViewerMessage::EditForm),
+            //self.animation_fields.view().map(ViewerMessage::EditAnimationSettings),
         ].width(200).into();
 
         //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
@@ -565,13 +577,22 @@ impl PadamoTool for PadamoViewer{
                 ViewerMessage::EditDatetime(s)=>{
                     self.datetime_entry = s.clone();
                 }
-                ViewerMessage::EditAnimationSettings(v)=>{
-                    self.animation_fields.update(v.clone(),&mut self.animation_parameters);
-                }
-                ViewerMessage::EditExportSettings(v)=>{
-                    self.export_fields.update(v.clone(), &mut self.export_parameters);
-                }
+                // ViewerMessage::EditAnimationSettings(v)=>{
+                //     self.animation_fields.update(v.clone(),&mut self.animation_parameters);
+                // }
+                // ViewerMessage::EditExportSettings(v)=>{
+                //     self.export_fields.update(v.clone(), &mut self.export_parameters);
+                // }
+                ViewerMessage::EditForm(v)=>{
+                    match v{
+                        ActionOrUpdate::Action(_a)=>{
 
+                        },
+                        ActionOrUpdate::Update(u)=>{
+                            self.form.update(u.to_owned());
+                        }
+                    }
+                }
 
                 ViewerMessage::SubmitDatetime=>{
                     println!("Submitted DT {}",self.datetime_entry);
@@ -642,7 +663,8 @@ impl PadamoTool for PadamoViewer{
                             let mut testframe = spatial.request_range(0,1);
                             testframe.shape.drain(0..1); //Remove time axis
                             let frame_shape = testframe.shape;
-                            let settings = self.export_parameters.clone();
+                            let form_data = if let Some(f) = self.form.get() {f} else {return;};
+                            let settings = form_data.export;
                             println!("{:?}",settings);
                             if settings.spatialfield.is_empty(){
                                 padamo.show_error("Signal field is not specified");
@@ -786,7 +808,8 @@ impl PadamoTool for PadamoViewer{
                         self.stop_animator();
                         use plotters::prelude::*;
 
-                        let animation_parameters = self.animation_parameters.clone();
+                        let form_data = if let Some(f) = self.form.get() {f} else {return;};
+                        let animation_parameters = form_data.animation;
                         let plot_scale = self.plot_scale.clone();
                         let chart = self.chart.clone();
                         if let Some(signal_ref) = &self.signal{

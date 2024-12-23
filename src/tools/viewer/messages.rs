@@ -20,8 +20,9 @@ pub enum ViewerMessage{
     SubmitTimeline,
     SubmitDatetime,
     //SubmitSettings,
-    EditAnimationSettings(super::AnimationParametersMessage),
-    EditExportSettings(super::ExportParametersMessage),
+    // EditAnimationSettings(padamo_iced_forms::ActionOrUpdate<super::AnimationParametersMessage>),
+    // EditExportSettings(padamo_iced_forms::ActionOrUpdate<super::ExportParametersMessage>),
+    EditForm(padamo_iced_forms::ActionOrUpdate<super::ViewerFormMessage>),
     CreateAnimation,
     StopAnimation,
 
