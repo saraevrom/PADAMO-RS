@@ -1,5 +1,6 @@
 mod messages;
 mod animator;
+mod form;
 
 use super::PadamoTool;
 use abi_stable::std_types::ROption;
@@ -7,7 +8,6 @@ use padamo_api::calculation_nodes::content::Content;
 use padamo_api::lazy_array_operations::make_lao_box;
 use padamo_detectors::Detector;
 use plotters_video::VideoBackend;
-use serde::Serialize;
 use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -23,6 +23,9 @@ use std::sync::mpsc;
 use sysinfo::{System,RefreshKind,MemoryRefreshKind};
 
 pub use messages::ViewerMessage;
+use form::AnimationParameters;
+
+use form::ViewerForm;
 
 pub fn make_player_pad<'a>()->iced::widget::Container<'a, ViewerMessage>{
     iced::widget::container(
@@ -48,68 +51,6 @@ pub enum PlayState{
 }
 
 
-#[derive(Clone,Debug,IcedForm)]
-#[spoiler_hidden]
-pub struct AnimationParameters{
-    #[field_name("Width [pix]")] pub width:u32,
-    #[field_name("Height [pix]")] pub height:u32,
-    #[field_name("Frame delay [ms]")] pub framedelay:u32,
-    #[field_name("Display LC")] pub displaylc:bool,
-    #[field_name("LC height[pix]")] pub lcheight:u32,
-    //#[field_name("Display LC")] displaylc:bool,
-}
-
-#[derive(Clone,Debug,IcedForm)]
-#[spoiler_hidden]
-pub struct ExportParameters{
-    //#[field_name("Frames step")] pub framesstep:usize,
-    #[field_name("RAM part")] pub rampart:f64,
-    #[field_name("Deflate")] pub deflate:bool,
-    #[field_name("Deflate level")] pub deflatelevel:u8,
-    #[field_name("Signal field")] pub spatialfield:String,
-    #[field_name("Time field")] pub temporalfield:String,
-    #[field_name("HDF chunk length [frames]")] pub chunk:usize,
-    //#[field_name("Display LC")] displaylc:bool,
-}
-
-#[derive(Clone,Debug,IcedForm)]
-pub struct ViewerForm{
-    #[field_name("Stop on trigger")] pub stop_on_trigger:bool,
-    #[field_name("Animation")] pub animation:AnimationParameters,
-    #[field_name("Export")] pub export:ExportParameters,
-}
-
-impl Default for ViewerForm{
-    fn default() -> Self {
-        Self { stop_on_trigger: false, animation: Default::default(), export: Default::default() }
-    }
-}
-
-impl Default for AnimationParameters{
-    fn default() -> Self {
-        Self {
-            width: 1024,
-            height: 1024,
-            framedelay:200,
-            displaylc:false,
-            lcheight: 200,
-        }
-    }
-}
-
-impl Default for ExportParameters{
-    fn default() -> Self {
-        Self {
-            deflate: true ,
-            deflatelevel:3,
-            spatialfield:"pdm_2d_rot_global".into(),
-            temporalfield:"unixtime_dbl_global".into(),
-            //framesstep:1,
-            rampart:0.01,
-            chunk:16,
-        }
-    }
-}
 
 pub struct Worker<T>{
     pub worker: Option<thread::JoinHandle<()>>,
@@ -175,15 +116,8 @@ pub struct PadamoViewer{
     buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
     playstate:PlayState,
     plot_scale:padamo_detectors::Scaling,
-    plotter_needs_reset:bool,
 
-    // animation_parameters:AnimationParameters,
-    // animation_fields:AnimationParametersBuffer,
-
-
-    // export_parameters:ExportParameters,
-    // export_fields:ExportParametersBuffer,
-    form:ViewerFormBuffer,
+    form:form::ViewerFormBuffer,
     form_instance:ViewerForm,
 
 
@@ -192,11 +126,242 @@ pub struct PadamoViewer{
     animation_status: String,
     export_status:String,
 
-    // stop_on_trigger:bool,
     file_changed:bool,
     view_transform: crate::transform_widget::TransformState,
-    //animation_resolution:(u32,u32),
-    //animation_resolution_str:(String,String),
+
+}
+
+impl PadamoViewer{
+    fn run_export(&mut self, padamo:crate::application::PadamoStateRef){
+        if let Some(filename) = padamo.workspace.workspace("viewed_hdf5_data").save_dialog(vec![("HDF5 data", vec!["h5"])]){
+            //if let nfd::Response::Okay(filename) = res{
+            self.stop_exporter();
+            if let Some(signal_ref) = &self.signal{
+                let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
+                let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
+                let start = self.start;
+                let end = self.end+1;
+                let mut testframe = spatial.request_range(0,1);
+                testframe.shape.drain(0..1); //Remove time axis
+                let frame_shape = testframe.shape;
+                let settings = self.form_instance.export.clone();
+                println!("{:?}",settings);
+                if settings.spatialfield.is_empty(){
+                    padamo.show_error("Signal field is not specified");
+                    return;
+                }
+                if settings.temporalfield.is_empty(){
+                    padamo.show_error("Time field is not specified");
+                    return;
+                }
+
+                if settings.temporalfield==settings.spatialfield{
+                    padamo.show_error("Signal and time must be different");
+                    return;
+                }
+
+                if settings.rampart>=1.0 || settings.rampart<=0.0{
+                    padamo.show_error("Ram part must be in (0,1) interval");
+                    return;
+                }
+
+
+                let mut sys = System::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::new().with_ram()));
+                sys.refresh_memory();
+                let allowed_memory = ((sys.total_memory() as f64)*settings.rampart) as usize;
+                println!("Allowed usage of {} bytes",allowed_memory);
+                if allowed_memory==0{
+                    padamo.show_error("No memory available");
+                    return;
+                }
+
+                let sample = spatial.request_range(0,1);
+                let sample_size = sample.flat_data.len()*8; // (Flat buffer of f64 (8 bytes each))
+
+                let mut chunk_size:Vec<usize> = sample.shape.clone().into();
+                chunk_size[0] = settings.chunk;
+
+                println!("Frame size: {} bytes",sample_size);
+
+                let quota = allowed_memory/sample_size;
+
+                println!("Quota: {} samples",quota);
+
+
+                let (tx,rx) = mpsc::channel::<bool>();
+
+                let (tx_status,rx_status) = mpsc::channel::<String>();
+
+                let handle = thread::spawn(move || {
+                        tx_status.send("Estimating frame size".into()).unwrap();
+
+                        let mut size_up = end-start;
+                        let mut size_down = 0;
+                        let mut size_mid = (size_up+size_down)/2;
+                        while size_mid != size_down && size_mid != size_up {
+
+                            let overhead = spatial.calculate_overhead(start,start+size_mid);
+                            if overhead>=quota{
+                                size_up = size_mid;
+                            }
+                            else if overhead<=quota{
+                                size_down = size_mid;
+                            }
+                            size_mid = (size_up+size_down)/2;
+                        }
+                        let step = usize::max(size_mid,1);
+                        let overhead = spatial.calculate_overhead(start,start+step);
+                        println!("Estimated step: {} (overhead {})",step, overhead);
+
+                        if let Ok(file) = hdf5::File::create(filename){
+                            let mut ds_shape = vec![end-start];
+                            ds_shape.extend(frame_shape.clone());
+
+                            let mut space_ds = file.new_dataset::<f64>()
+                                .chunk(chunk_size)
+                                .shape(ds_shape);
+                            if settings.deflate{
+                                space_ds = space_ds.deflate(settings.deflatelevel);
+                            }
+
+                            let space_ds = space_ds.create(settings.spatialfield.as_str()).unwrap();
+
+                            let mut time_ds = file.new_dataset::<f64>()
+                                .chunk((settings.chunk,))
+                                //.chunk((1, 16, 16))
+                                .shape((end-start,));
+
+                            if settings.deflate{
+                                time_ds = time_ds.deflate(settings.deflatelevel);
+                            }
+
+                            let time_ds = time_ds.create(settings.temporalfield.as_str()).unwrap();
+
+                            let mut i = start;
+                            //let step = settings.framesstep;
+                            while i<end{
+                                let size = usize::min(step, end-i);
+
+                                tx_status.send(format!("{}/{}",i-start,end-start)).unwrap();
+
+                                let frame = crate::compat::arraynd_to_ndarray(spatial.request_range(i,i+size));
+                                let tim = temporal.request_range(i,i+size);
+
+                                let mut slabs:Vec<hdf5::SliceOrIndex> = Vec::with_capacity(frame_shape.len());
+                                for j in 0..frame_shape.len()+1{
+                                    if j==0{
+                                        slabs.push((i-start..i-start+size).into());
+                                    }
+                                    else {
+                                        slabs.push((0..frame_shape[j-1]).into());
+                                    }
+                                }
+                                let slicer: hdf5::Hyperslab = slabs.into();
+
+                                space_ds.write_slice(&frame, slicer).unwrap();
+                                time_ds.write_slice(&tim, (i-start..i-start+size, )).unwrap();
+                                if let Ok(v) = rx.try_recv(){
+                                    if v{
+                                        println!("Interrupt requested");
+                                        break;
+                                    }
+                                }
+                                i+=size;
+                            }
+                        }
+
+                });
+                self.exporter = Some(Worker::new(handle, tx, rx_status));
+                //self.exporter = Some((handle,tx,rx_status));
+            }
+            //}
+        }
+    }
+
+
+    fn run_animation(&mut self, padamo:crate::application::PadamoStateRef){
+        if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![
+            ("MP4 animation", vec!["mp4"]),
+            ("GIF animation", vec!["gif"]),
+        ]){
+
+            self.stop_animator();
+            use plotters::prelude::*;
+
+            // let form_data = if let Some(f) = self.form.get() {f} else {return;};
+            let animation_parameters = self.form_instance.animation.clone();
+
+            println!("Animation parameters: {:?}",animation_parameters);
+            let plot_scale = self.plot_scale.clone();
+            let chart = self.chart.clone();
+            if let Some(signal_ref) = &self.signal{
+                //let signal = signal_ref.clone();
+                let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
+                let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
+                let start = self.start;
+                let end = self.end+1;
+                let height = if animation_parameters.displaylc {animation_parameters.height+animation_parameters.lcheight} else {animation_parameters.height};
+                let f:&std::path::Path = filename.as_ref();
+                self.animator = if let Some(ext) = f.extension(){
+                    if let Some(ext_str) = ext.to_str(){
+                        match ext_str {
+                            "gif"=>{
+                                let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
+                                match backend{
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
+                                    Err(e)=>{
+                                        eprintln!("{}",e);
+                                        None
+                                    }
+                                }
+                            }
+                            "mp4"=>{
+                                let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
+                                                                plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
+                                match backend{
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
+                                    Err(e)=>{
+                                        eprintln!("{}",e);
+                                        None
+                                    }
+                                }
+                            }
+                            ue=>{
+                                padamo.show_error(format!("Unsupported extension {}",ue));
+                                // eprintln!("Unsupported extension {}",ue);
+                                None
+                            }
+                        }
+                    }
+                    else{
+                        padamo.show_error(format!("Invalid extension {:?}", ext));
+                        // eprintln!("Invalid extension {:?}", ext);
+                        None
+                    }
+                }
+                else{
+                    padamo.show_error("No extension");
+                    // eprintln!("No extension");
+                    None
+                };
+
+            }
+
+        }
+        //
+    }
+
+    fn stop_animation(&mut self){
+        if let Some(v) = &mut self.animator{
+            v.request_stop();
+        }
+    }
+
+    fn stop_export(&mut self){
+        if let Some(v) = &mut self.exporter{
+            v.request_stop();
+        }
+    }
 }
 
 impl PadamoViewer{
@@ -221,7 +386,7 @@ impl PadamoViewer{
             max_signal_entry:"".into(),
             is_autoscale:true,
             plot_scale:padamo_detectors::Scaling::Autoscale,
-            plotter_needs_reset:false,
+            //plotter_needs_reset:false,
             file_changed:true,
             // animation_fields:Default::default(),
             // animation_parameters: animation_params,
@@ -443,17 +608,17 @@ impl PadamoTool for PadamoViewer{
 
 
         let settings_column:iced::Element<'_,ViewerMessage> = column![
-            row![
-                iced::widget::button("Create animation").on_press( ViewerMessage::CreateAnimation),
-                iced::widget::button("Stop").on_press( ViewerMessage::StopAnimation),
-            ],
-            iced::widget::text(&self.animation_status),
+            // row![
+            //     iced::widget::button("Create animation").on_press( ViewerMessage::CreateAnimation),
+            //     iced::widget::button("Stop").on_press( ViewerMessage::StopAnimation),
+            // ],
+            row![iced::widget::text("Animation status:"),iced::widget::text(&self.animation_status)],
             iced::widget::rule::Rule::horizontal(10),
-            row![
-                iced::widget::button("Export").on_press( ViewerMessage::Export),
-                iced::widget::button("Stop").on_press(ViewerMessage::StopExport),
-            ],
-            iced::widget::text(&self.export_status),
+            // row![
+            //     iced::widget::button("Export").on_press( ViewerMessage::Export),
+            //     iced::widget::button("Stop").on_press(ViewerMessage::StopExport),
+            // ],
+            row![iced::widget::text("Export status:"),iced::widget::text(&self.export_status)],
             iced::widget::rule::Rule::horizontal(10),
             // iced::widget::checkbox("Stop on trigger", self.stop_on_trigger).on_toggle(ViewerMessage::SetAutostop),
             // iced::widget::rule::Rule::horizontal(10),
@@ -594,8 +759,16 @@ impl PadamoTool for PadamoViewer{
                 // }
                 ViewerMessage::EditForm(v)=>{
                     match v{
-                        ActionOrUpdate::Action(_a)=>{
-
+                        ActionOrUpdate::Action(a)=>{
+                            if let Some(action) =  a.as_ref().downcast_ref::<form::ViewerActions>(){
+                                match action {
+                                    form::ViewerActions::Noop=>{},
+                                    form::ViewerActions::StartAnimation=>{self.run_animation(padamo);},
+                                    form::ViewerActions::StopAnimation=>{self.stop_animation();},
+                                    form::ViewerActions::StartExport=>{self.run_export(padamo);},
+                                    form::ViewerActions::StopExport=>{self.stop_export();},
+                                }
+                            }
                         },
                         ActionOrUpdate::Update(u)=>{
                             self.form.update(u.to_owned());
@@ -644,18 +817,6 @@ impl PadamoTool for PadamoViewer{
                     self.update_scale();
                     request_buffer_fill = false;
                 }
-                ViewerMessage::StopAnimation=>{
-                    if let Some(v) = &mut self.animator{
-                        v.request_stop();
-                    }
-                    //self.stop_animator();
-                }
-                ViewerMessage::StopExport=>{
-                    if let Some(v) = &mut self.exporter{
-                        v.request_stop();
-                    }
-                    //self.stop_exporter();
-                }
                 // ViewerMessage::SetAutostop(v)=>{
                 //     self.stop_on_trigger = *v;
                 // }
@@ -664,334 +825,6 @@ impl PadamoTool for PadamoViewer{
                     self.update_pixels(padamo,true);
                 }
 
-                ViewerMessage::Export=>{
-                    if let Some(filename) = padamo.workspace.workspace("viewed_hdf5_data").save_dialog(vec![("HDF5 data", vec!["h5"])]){
-                        //if let nfd::Response::Okay(filename) = res{
-                        self.stop_exporter();
-                        if let Some(signal_ref) = &self.signal{
-                            let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
-                            let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
-                            let start = self.start;
-                            let end = self.end+1;
-                            let mut testframe = spatial.request_range(0,1);
-                            testframe.shape.drain(0..1); //Remove time axis
-                            let frame_shape = testframe.shape;
-                            let settings = self.form_instance.export.clone();
-                            println!("{:?}",settings);
-                            if settings.spatialfield.is_empty(){
-                                padamo.show_error("Signal field is not specified");
-                                return;
-                            }
-                            if settings.temporalfield.is_empty(){
-                                padamo.show_error("Time field is not specified");
-                                return;
-                            }
-
-                            if settings.temporalfield==settings.spatialfield{
-                                padamo.show_error("Signal and time must be different");
-                                return;
-                            }
-
-                            if settings.rampart>=1.0 || settings.rampart<=0.0{
-                                padamo.show_error("Ram part must be in (0,1) interval");
-                                return;
-                            }
-
-
-                            let mut sys = System::new_with_specifics(RefreshKind::new().with_memory(MemoryRefreshKind::new().with_ram()));
-                            sys.refresh_memory();
-                            let allowed_memory = ((sys.total_memory() as f64)*settings.rampart) as usize;
-                            println!("Allowed usage of {} bytes",allowed_memory);
-                            if allowed_memory==0{
-                                padamo.show_error("No memory available");
-                                return;
-                            }
-
-                            let sample = spatial.request_range(0,1);
-                            let sample_size = sample.flat_data.len()*8; // (Flat buffer of f64 (8 bytes each))
-
-                            let mut chunk_size:Vec<usize> = sample.shape.clone().into();
-                            chunk_size[0] = settings.chunk;
-
-                            println!("Frame size: {} bytes",sample_size);
-
-                            let quota = allowed_memory/sample_size;
-
-                            println!("Quota: {} samples",quota);
-
-
-                            let (tx,rx) = mpsc::channel::<bool>();
-
-                            let (tx_status,rx_status) = mpsc::channel::<String>();
-
-                            let handle = thread::spawn(move || {
-                                    tx_status.send("Estimating frame size".into()).unwrap();
-
-                                    let mut size_up = end-start;
-                                    let mut size_down = 0;
-                                    let mut size_mid = (size_up+size_down)/2;
-                                    while size_mid != size_down && size_mid != size_up {
-
-                                        let overhead = spatial.calculate_overhead(start,start+size_mid);
-                                        if overhead>=quota{
-                                            size_up = size_mid;
-                                        }
-                                        else if overhead<=quota{
-                                            size_down = size_mid;
-                                        }
-                                        size_mid = (size_up+size_down)/2;
-                                    }
-                                    let step = usize::max(size_mid,1);
-                                    let overhead = spatial.calculate_overhead(start,start+step);
-                                    println!("Estimated step: {} (overhead {})",step, overhead);
-
-                                    if let Ok(file) = hdf5::File::create(filename){
-                                        let mut ds_shape = vec![end-start];
-                                        ds_shape.extend(frame_shape.clone());
-
-                                        let mut space_ds = file.new_dataset::<f64>()
-                                            .chunk(chunk_size)
-                                            .shape(ds_shape);
-                                        if settings.deflate{
-                                            space_ds = space_ds.deflate(settings.deflatelevel);
-                                        }
-
-                                        let space_ds = space_ds.create(settings.spatialfield.as_str()).unwrap();
-
-                                        let mut time_ds = file.new_dataset::<f64>()
-                                            .chunk((settings.chunk,))
-                                            //.chunk((1, 16, 16))
-                                            .shape((end-start,));
-
-                                        if settings.deflate{
-                                            time_ds = time_ds.deflate(settings.deflatelevel);
-                                        }
-
-                                        let time_ds = time_ds.create(settings.temporalfield.as_str()).unwrap();
-
-                                        let mut i = start;
-                                        //let step = settings.framesstep;
-                                        while i<end{
-                                            let size = usize::min(step, end-i);
-
-                                            tx_status.send(format!("{}/{}",i-start,end-start)).unwrap();
-
-                                            let frame = crate::compat::arraynd_to_ndarray(spatial.request_range(i,i+size));
-                                            let tim = temporal.request_range(i,i+size);
-
-                                            let mut slabs:Vec<hdf5::SliceOrIndex> = Vec::with_capacity(frame_shape.len());
-                                            for j in 0..frame_shape.len()+1{
-                                                if j==0{
-                                                    slabs.push((i-start..i-start+size).into());
-                                                }
-                                                else {
-                                                    slabs.push((0..frame_shape[j-1]).into());
-                                                }
-                                            }
-                                            let slicer: hdf5::Hyperslab = slabs.into();
-
-                                            space_ds.write_slice(&frame, slicer).unwrap();
-                                            time_ds.write_slice(&tim, (i-start..i-start+size, )).unwrap();
-                                            if let Ok(v) = rx.try_recv(){
-                                                if v{
-                                                    println!("Interrupt requested");
-                                                    break;
-                                                }
-                                            }
-                                            i+=size;
-                                        }
-                                    }
-
-                            });
-                            self.exporter = Some(Worker::new(handle, tx, rx_status));
-                            //self.exporter = Some((handle,tx,rx_status));
-                        }
-                        //}
-                    }
-                }
-
-                ViewerMessage::CreateAnimation=>{
-                    if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![
-                        ("MP4 animation", vec!["mp4"]),
-                        ("GIF animation", vec!["gif"]),
-                    ]){
-
-                        self.stop_animator();
-                        use plotters::prelude::*;
-
-                        // let form_data = if let Some(f) = self.form.get() {f} else {return;};
-                        let animation_parameters = self.form_instance.animation.clone();
-
-                        println!("Animation parameters: {:?}",animation_parameters);
-                        let plot_scale = self.plot_scale.clone();
-                        let chart = self.chart.clone();
-                        if let Some(signal_ref) = &self.signal{
-                            //let signal = signal_ref.clone();
-                            let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
-                            let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
-                            let start = self.start;
-                            let end = self.end+1;
-                            let height = if animation_parameters.displaylc {animation_parameters.height+animation_parameters.lcheight} else {animation_parameters.height};
-                            let f:&std::path::Path = filename.as_ref();
-                            self.animator = if let Some(ext) = f.extension(){
-                                if let Some(ext_str) = ext.to_str(){
-                                    match ext_str {
-                                        "gif"=>{
-                                            let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
-                                            match backend{
-                                                Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
-                                                Err(e)=>{
-                                                    eprintln!("{}",e);
-                                                    None
-                                                }
-                                            }
-                                        }
-                                        "mp4"=>{
-                                            let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
-                                                                            plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
-                                            match backend{
-                                                Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
-                                                Err(e)=>{
-                                                    eprintln!("{}",e);
-                                                    None
-                                                }
-                                            }
-                                        }
-                                        ue=>{
-                                            eprintln!("Unsupported extension {}",ue);
-                                            None
-                                        }
-                                    }
-                                }
-                                else{
-                                    eprintln!("Invalid extension {:?}", ext);
-                                    None
-                                }
-                            }
-                            else{
-                                eprintln!("No extension");
-                                None
-                            };
-                            // match f.extension(){
-                            //     e=>eprintln!("Unsupported");
-                            // }
-
-                            //Some(animator::animate(, , , , , , , ));
-                            // let (tx,rx) = mpsc::channel::<bool>();
-                            //
-                            // let (tx_status,rx_status) = mpsc::channel::<String>();
-                            // //let status = self.animation_status.clone();
-                            //
-                            // let handle = thread::spawn( move || {
-                            //     //80 pixels for colormap
-                            //
-                            //     let height = if animation_parameters.displaylc {animation_parameters.height+animation_parameters.lcheight} else {animation_parameters.height};
-                            //     //BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay)
-                            //     if let Ok(root) = plotters_video::VideoBackend::new(filename, (animation_parameters.width+80) as usize, height as usize,
-                            //         plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize)){
-                            //
-                            //         let root = root.into_drawing_area();
-                            //         // let (plot_root,lc_plot,root) = if animation_parameters.displaylc{
-                            //         //     let (a,b) = root.split_vertically(height);
-                            //         //     //b.fill(&WHITE);
-                            //         //     (a,Some(b),oot)
-                            //         // }
-                            //         // else{
-                            //         //     (root,None)
-                            //         // };
-                            //         let lc_pair = if animation_parameters.displaylc{
-                            //             //let (a,b) = root.split_vertically(height);
-                            //             let space_out = spatial.request_range(start,end);
-                            //             let mut lc:Vec<f64> = Vec::with_capacity(end-start);
-                            //             lc.resize(end-start, 0.0);
-                            //             let pixel_count = (space_out.flat_data.len()/(end-start)) as f64;
-                            //
-                            //             for index in space_out.enumerate(){
-                            //                 lc[index[0]] += space_out[&index]/pixel_count;
-                            //             }
-                            //             let llc = lc.iter().min_by(|a, b| a.partial_cmp(b).unwrap());
-                            //             let mlc = lc.iter().max_by(|a, b| a.partial_cmp(b).unwrap());
-                            //             match (llc,mlc) {
-                            //                         (Some(minv), Some(maxv)) =>{Some((*minv,*maxv,lc))},
-                            //                         _=>{None}
-                            //             }
-                            //         }
-                            //         else{
-                            //             None
-                            //         };
-                            //
-                            //         for i in start..end{
-                            //             //let t1 = Instant::now();
-                            //             //if (i-start)%10==0{
-                            //             tx_status.send(format!("{}/{}",i-start,end-start)).unwrap();
-                            //
-                            //             //}
-                            //             //let report_time = t1.elapsed().as_secs_f64();
-                            //
-                            //                 //let time_start = Instant::now();
-                            //
-                            //             let mut frame = spatial.request_range(i,i+1);
-                            //             frame.shape.drain(0..1);
-                            //             let tim = temporal.request_range(i,i+1)[0];
-                            //
-                            //             root.fill(&WHITE).unwrap();
-                            //             if let Some((low,high,lc)) = &lc_pair{
-                            //                 let (a,b) = root.split_vertically(animation_parameters.height);
-                            //                 //a.fill(&WHITE).unwrap();
-                            //                 chart.build_chart_generic(&a,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                            //
-                            //                 //b.fill(&WHITE).unwrap();
-                            //                 let mut chart = ChartBuilder::on(&b)
-                            //                     .x_label_area_size(0.0)
-                            //                     .y_label_area_size(0.0)
-                            //                     .margin(1.0)
-                            //                     .build_cartesian_2d((start as f64)..(end as f64), *low..*high)
-                            //                     .unwrap();
-                            //
-                            //                 chart.configure_mesh().disable_x_mesh().axis_style(&BLACK).draw().unwrap();
-                            //                 chart.draw_series(LineSeries::new((start..end).map(|j| (j as f64,lc[j-start])), &BLACK)).unwrap();
-                            //                 let ptr = vec![(i as f64,*low),(i as f64,*high)];
-                            //                 chart.draw_series(LineSeries::new((0..2).map(|j| ptr[j]), RED)).unwrap();
-                            //             }
-                            //             else{
-                            //                 chart.build_chart_generic(&root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                            //             }
-                            //
-                            //
-                            //
-                            //             //let chart_time = t1.elapsed().as_secs_f64();
-                            //
-                            //
-                            //             if let Err(e) = root.present(){
-                            //                 println!("{:?}",e);
-                            //             };
-                            //             //let preirq = t1.elapsed().as_secs_f64();
-                            //             if let Ok(v) = rx.try_recv(){
-                            //                 if v{
-                            //                     println!("Interrupt requested");
-                            //                     break;
-                            //                 }
-                            //             }
-                            //
-                            //
-                            //             //let fin_time = t1.elapsed().as_secs_f64();
-                            //             //println!("PROFILING {}/{}/{}/{}",report_time,chart_time,preirq,fin_time);
-                            //             //padamo.compute_graph.borrow().
-                            //
-                            //         }
-                            //     }
-                            //     tx_status.send("END".into()).unwrap();
-                            // });
-                            //
-                            // self.animator = Some(Worker::new(handle, tx, rx_status));
-                            //self.animator = Some((handle,tx,rx_status));
-                        }
-
-
-                        //self.chart.build_chart_generic
-                    }
-                    //
-                }
 
                 ViewerMessage::PlotZoomMessage(msg)=>{
                     self.view_transform.update(msg.to_owned());
