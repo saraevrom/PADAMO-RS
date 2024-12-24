@@ -696,8 +696,9 @@ impl PadamoTool for PadamoViewer{
         //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
         let top_row = row![
             self.chart.view(frame,self.view_transform.transform(),self.plot_scale,
+                            Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x))),
                             Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
-                            Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x)))),
+                            ),
             iced::widget::rule::Rule::vertical(10),
             iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(200),
         ];
