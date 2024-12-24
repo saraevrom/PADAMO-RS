@@ -82,7 +82,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
         root.fill(&plotters::prelude::WHITE).unwrap();
         let builder = ChartBuilder::on(&root);
         self.build_chart(state, builder);
-        if self.plotter_data.channelmap_show{
+        if self.plotter_data.form_instance.display_settings.display_channel_map{
             let fullsize = root.dim_in_pixel();
             let (low,high) = self.plotter_data.detector.cells.size();
             let w = (high.0-low.0) as f32;
@@ -115,7 +115,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                 .unwrap();
 
             chart.configure_mesh()
-                .x_label_formatter(&(|x| self.plotter_data.axis_formatter.format(*x, tim[0])))
+                .x_label_formatter(&(|x| self.plotter_data.form_instance.display_settings.time_format.format(*x, tim[0])))
                 .x_labels(5)
                 .y_labels(10)
                 .draw().unwrap();
@@ -148,7 +148,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                 //println!("RGB {} {} {}",r,g,b);
                 let col = RGBColor(r,g,b);
                 if signal.shape.len()==index.len()+1{
-                    if self.plotter_data.lc_only{
+                    if self.plotter_data.form_instance.display_settings.lc_only{
                         for i in 0..tim.len(){
                             view_id[0] = i;
                             selected_lc[i] += signal[&view_id];
@@ -158,7 +158,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                         let drawn_series = chart.draw_series(LineSeries::new((0..tim.len()).map(|i| {
                             view_id[0] = i;
                             selected_lc[i] += signal[&view_id];
-                            let x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter{(i+data.start) as f64} else {tim[i]};
+                            let x = if let TimeAxisFormat::GTU = self.plotter_data.form_instance.display_settings.time_format{(i+data.start) as f64} else {tim[i]};
                             (x, signal[&view_id])
                         }), &col));
                         if let Ok(series) = drawn_series{
@@ -179,10 +179,10 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
 
             let index = self.plotter_data.view_index;
             let start = self.plotter_data.view_pivot;
-            if self.plotter_data.display_pointer && index>=start{
+            if self.plotter_data.form_instance.display_settings.display_pointer && index>=start{
                 let pos_index = index-start;
                 if pos_index<tim.len(){
-                    let ptr_x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter {index as f64} else {tim[index-start]};
+                    let ptr_x = if let TimeAxisFormat::GTU = self.plotter_data.form_instance.display_settings.time_format {index as f64} else {tim[index-start]};
                     let ptr_data = vec![(ptr_x,ymin),(ptr_x,ymax)];
                     let drawn_ptr = chart.draw_series(LineSeries::new((0..2).map(|i| ptr_data[i]), &RED));
                     if let Ok(series) = drawn_ptr{
@@ -192,14 +192,14 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
 
             }
 
-            match self.plotter_data.lc_mode {
+            match self.plotter_data.form_instance.display_settings.lc_mode {
                 super::LCMode::Off => (),
                 super::LCMode::All => {
 
-                    let divider = if self.plotter_data.lc_mean {*total_pix_count as f64} else {1.0};
+                    let divider = if self.plotter_data.form_instance.display_settings.lc_mean {*total_pix_count as f64} else {1.0};
                     let drawn_series = chart.draw_series(LineSeries::new((0..tim.len()).map(|i| {
                         //let x = if let TimeAxisFormat::GTU = self
-                        let x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter{(i+data.start) as f64} else {tim[i]};
+                        let x = if let TimeAxisFormat::GTU = self.plotter_data.form_instance.display_settings.time_format{(i+data.start) as f64} else {tim[i]};
                         (x, lc_total[i]/divider)
                     }), &BLACK));
                     if let Ok(series) = drawn_series{
@@ -208,10 +208,10 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                 },
                 super::LCMode::Selected => {
 
-                    let divider = if self.plotter_data.lc_mean {pixels_count} else {1.0};
+                    let divider = if self.plotter_data.form_instance.display_settings.lc_mean {pixels_count} else {1.0};
 
                     let drawn_series = chart.draw_series(LineSeries::new((0..tim.len()).map(|i| {
-                        let x = if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter{(i+data.start) as f64} else {tim[i]};
+                        let x = if let TimeAxisFormat::GTU = self.plotter_data.form_instance.display_settings.time_format{(i+data.start) as f64} else {tim[i]};
                         (x, selected_lc[i]/divider)
                     }), &BLACK));
                     if let Ok(series) = drawn_series{
@@ -220,7 +220,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                 },
             }
 
-            if let TimeAxisFormat::GTU = self.plotter_data.axis_formatter {
+            if let TimeAxisFormat::GTU = self.plotter_data.form_instance.display_settings.time_format {
                 // Gray line shenanigans
                 for i in 0..tim.len()-1{
                     let x = (i+data.start) as f64;
@@ -228,7 +228,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                     if tim[i+1]<tim[i]{
                         chart.draw_series(LineSeries::new((0..2).map(|i| ptr_data[i]), &RGBColor(157,0,0))).unwrap();
                     }
-                    else if tim[i+1]-tim[i] > self.plotter_data.step_threshold.parsed_value*data.time_step{
+                    else if tim[i+1]-tim[i] > self.plotter_data.form_instance.display_settings.step_threshold*data.time_step{
                         chart.draw_series(LineSeries::new((0..2).map(|i| ptr_data[i]), &RGBColor(127,127,127))).unwrap();
                     }
                 }

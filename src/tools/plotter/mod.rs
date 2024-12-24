@@ -2,6 +2,7 @@ use self::{data_state::DataState, messages::PlotterMessage};
 use std::{cell::RefCell, thread};
 
 use super::PadamoTool;
+use form::PlotterActions;
 //use iced::advanced::Widget;
 //use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use iced::{widget::{self}, Length};
@@ -21,25 +22,17 @@ use super::viewer::make_player_pad;
 // use padamo_workspace::PadamoWorkspace;
 use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
 
-use padamo_iced_forms::double_entry_state::{EntryState,errored_text};
+use padamo_iced_forms::{double_entry_state::{errored_text, EntryState}, ActionOrUpdate, IcedForm, IcedFormBuffer};
 
 //static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 pub mod data_state;
+pub mod form;
 
-#[derive(Clone,Debug,Copy,Eq,PartialEq)]
-pub enum LCMode{
-    Off,
-    All,
-    Selected
-}
+pub use form::{TimeAxisFormat,LCMode};
 
-#[derive(Clone,Debug,Copy,Eq,PartialEq)]
-pub enum TimeAxisFormat{
-    AsIs,
-    Offset,
-    UnixTime,
-    GTU
-}
+
+
+
 
 #[derive(Clone,Debug,Copy,Eq,PartialEq)]
 pub enum TimeAxisRangeFormat{
@@ -56,7 +49,7 @@ impl TimeAxisFormat{
                 let off = x-x0;
                 format!("{:.4}", off)
             },
-            Self::UnixTime=>{
+            Self::Time=>{
                 use chrono::DateTime;
                 let secs = x.floor();
                 let nsecs = (x - x.floor())*1e9;
@@ -72,7 +65,7 @@ impl TimeAxisFormat{
     }
     pub fn range_format(&self)->TimeAxisRangeFormat{
         match self {
-            Self::AsIs | Self::Offset | Self::UnixTime => TimeAxisRangeFormat::Seconds,
+            Self::AsIs | Self::Offset | Self::Time => TimeAxisRangeFormat::Seconds,
             Self::GTU => TimeAxisRangeFormat::GTU
         }
     }
@@ -91,10 +84,8 @@ pub struct Plotter{
     data: data_state::DataState,
     pixels:Vec<Vec<usize>>,
     pixels_show:Vec<bool>,
-    channelmap_show:bool,
 
-    safeguard:EntryState<usize>,
-    step_threshold:EntryState<f64>,
+
     //safeguard_str:String,
 
     //last_indices:Option<(usize,usize)>,
@@ -102,7 +93,6 @@ pub struct Plotter{
     last_x_limits:(f64,f64),
     last_y_limits_live:(f64,f64),
     last_x_limits_live:(f64,f64),
-    select_threshold:EntryState<f64>,
     //lazy_data_load:Option<(usize,usize)>,
     //select_threshold_string:String,
 
@@ -110,21 +100,18 @@ pub struct Plotter{
     view_index:usize,
     view_pivot:usize,
 
-    display_pointer:bool,
-    lc_mode:LCMode,
-    lc_only:bool,
-    lc_mean:bool,
 
     min_x_string:String,
     max_x_string:String,
     min_y_string:String,
     max_y_string:String,
-    out_shape:(EntryState<u32>,EntryState<u32>),
     //out_shape_str:(String,String),
-    axis_formatter:TimeAxisFormat,
     detector_pixels:usize,
 
     is_selecting_pixels:bool,
+
+    form_buffer:form::PlotterFormBuffer,
+    form_instance:form::PlotterForm,
     //loader:Option<thread::JoinHandle<DataCache>>
 }
 
@@ -198,8 +185,6 @@ impl Plotter{
                 plot_spec: RefCell::new(None),
                 detector:Detector::default_vtl(),
                 pixels:Vec::new(),
-                safeguard:EntryState::new(30000) ,
-                step_threshold:EntryState::new(1.5),
                 //safeguard_str:"30000".into(),
                 //last_indices:None,
                 pixels_show: Vec::new(),
@@ -207,25 +192,19 @@ impl Plotter{
                 last_x_limits:(0.0,0.0),
                 last_y_limits_live:(0.0,0.0),
                 last_x_limits_live:(0.0,0.0),
-                select_threshold:EntryState::new(5.0),
                 //select_threshold_string:"".into(),
                 cache:Cache::new(),
                 view_index:0,
                 view_pivot:0,
-                display_pointer:true,
-                lc_mode:LCMode::Off,
-                lc_only:false,
-                lc_mean:true,
-                channelmap_show:true,
                 min_x_string:"".into(),
                 max_x_string:"".into(),
                 min_y_string:"".into(),
                 max_y_string:"".into(),
-                out_shape:(EntryState::new(1024),EntryState::new(768)),
                 //out_shape_str:("".into(),"".into()),
-                axis_formatter: TimeAxisFormat::AsIs,
                 detector_pixels:1,
                 is_selecting_pixels:false,
+                form_buffer:Default::default(),
+                form_instance:Default::default(),
                 //loader:None,
                 //lazy_data_load:None,
         };
@@ -325,8 +304,9 @@ impl Plotter{
         //     }
         // }
         if let DataState::PendingLoad(start, end) = self.data{
-            if end-start>self.safeguard.parsed_value{
-                padamo.show_warning(format!("Cannot show signal of length {} (Safeguard is {})",end-start,self.safeguard.parsed_value));
+            let safeguard = self.form_instance.display_settings.safeguard;
+            if end-start>safeguard{
+                padamo.show_warning(format!("Cannot show signal of length {} (Safeguard is {})",end-start,safeguard));
                 self.data = DataState::NoData;
                 return;
             }
@@ -361,7 +341,8 @@ impl Plotter{
         if let DataState::Loaded(v) = &self.data{
             self.detector_pixels = v.pixel_count;
             self.view_pivot = v.start;
-            self.last_x_limits = if let TimeAxisFormat::GTU=self.axis_formatter{
+            let axis_formatter = self.form_instance.display_settings.time_format;
+            self.last_x_limits = if let TimeAxisFormat::GTU=axis_formatter{
                 (v.start as f64, v.end as f64)
             }
             else{
@@ -456,64 +437,8 @@ impl PadamoTool for Plotter{
 
             widget::rule::Rule::vertical(10),
             widget::scrollable(widget::column![
-                //widget::container::Container::new(
-                widget::button("Save plot").on_press(PlotterMessage::SavePlot),
-                widget::button("Clear pixel selection").on_press(PlotterMessage::ClearPixels),
-
-
-                //Settings
-
-                widget::rule::Rule::horizontal(10),
-                widget::text("Image export settings"),
-                widget::row![
-                    errored_text("Image size",self.out_shape.0.is_valid && self.out_shape.1.is_valid),
-                    //widget::text("Image size").vertical_alignment(iced::alignment::Vertical::Bottom),
-                    //widget::text_input("width",&self.out_shape_str.0).on_input(PlotterMessage::SetSizeX).on_submit(PlotterMessage::SubmitSize),
-                    //widget::text_input("height",&self.out_shape_str.1).on_input(PlotterMessage::SetSizeY).on_submit(PlotterMessage::SubmitSize),
-                    self.out_shape.0.view("width",PlotterMessage::SetSizeX),
-                    self.out_shape.1.view("height", PlotterMessage::SetSizeY)
-                ],
-                widget::rule::Rule::horizontal(10),
-                widget::checkbox("Display pointer", self.display_pointer).on_toggle(PlotterMessage::SetPointerDisplay),
-                widget::checkbox("Display channel map", self.channelmap_show).on_toggle(PlotterMessage::SetPixelmapOn),
-                // widget::row![
-                //     widget::text("Safeguard").vertical_alignment(iced::alignment::Vertical::Bottom),
-                //     widget::text_input("value",&self.safeguard_str).on_input(PlotterMessage::SetSafeguardString).on_submit(PlotterMessage::SafeguardCommit)
-                // ],
-                self.safeguard.view_row("Safeguard","value",PlotterMessage::SetSafeguardString),
-                self.step_threshold.view_row("Discontinuity threshold [steps]", "value", PlotterMessage::SetDiscontinuityThreshold),
-                widget::rule::Rule::horizontal(10),
-                widget::Container::new(widget::column![
-                    widget::text("Time format"),
-                    widget::radio::Radio::new("Unixtime",TimeAxisFormat::AsIs, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
-                    widget::radio::Radio::new("Frames",TimeAxisFormat::GTU, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
-                    widget::radio::Radio::new("Seconds",TimeAxisFormat::Offset, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
-                    widget::radio::Radio::new("Time",TimeAxisFormat::UnixTime, Some(self.axis_formatter), PlotterMessage::SetTimeFormat),
-                ]),
-                widget::rule::Rule::horizontal(10),
-                widget::Container::new(widget::column![
-                    widget::text("LC"),
-                    widget::radio::Radio::new("Off",LCMode::Off, Some(self.lc_mode), PlotterMessage::SetLCMode),
-                    widget::radio::Radio::new("Selected",LCMode::Selected, Some(self.lc_mode), PlotterMessage::SetLCMode),
-                    widget::radio::Radio::new("All",LCMode::All, Some(self.lc_mode), PlotterMessage::SetLCMode),
-                    widget::checkbox("Mean", self.lc_mean).on_toggle(PlotterMessage::SetLCMean),
-                    widget::checkbox("Only", self.lc_only).on_toggle(PlotterMessage::SetLCOnly),
-                ]),
-                widget::rule::Rule::horizontal(10),
-                widget::text("Pixels autoselection"),
-                // widget::row![
-                //     widget::text("Selection threshold"),
-                //     widget::text_input("value", &self.select_threshold_string).on_input(PlotterMessage::SetThreshold).on_submit(PlotterMessage::SubmitThreshold),
-                // ],
-                self.select_threshold.view_row("Selection threshold", "value", PlotterMessage::SetThreshold),
-                widget::button("Threshold selection").on_press(PlotterMessage::SelectByThreshold),
-                widget::button("Manual selection").on_press(PlotterMessage::TogglePixelSelector),
-                widget::rule::Rule::horizontal(10),
-                //Pixel list
-                widget::container::Container::new(
-                    widget::scrollable(widget::container::Container::new(pixlist_element).width(Length::Fill)),
-                ),
-                //),
+                self.form_buffer.view(None).map(PlotterMessage::FormMessage),
+                pixlist_element
             ]).width(300).height(iced::Length::Fill)
         ]).width(iced::Length::Shrink).height(iced::Length::Fill)
             .into();
@@ -562,12 +487,79 @@ impl PadamoTool for Plotter{
             PadamoAppMessage::PlotterMessage(plot_msg) => {
                 let mut will_replot = true;
                 match plot_msg {
-                    PlotterMessage::Clear=>{
-                        self.clear();
+                    PlotterMessage::FormMessage(form_msg)=>{
+                        match form_msg{
+                            ActionOrUpdate::Update(update_msg)=>{
+                                self.form_buffer.update(update_msg.clone());
+                                // println!("Form update");
+                                match self.form_buffer.get(){
+                                    Ok(new_v)=> {
+                                        // println!("{:?}",new_v);
+                                        self.form_instance = new_v;
+                                        self.update_data_state();
+                                    },
+                                    Err(e)=>eprintln!("Form get error: {}",e),
+                                    // println!("Get OK");
+                                }
+                            },
+                            ActionOrUpdate::Action(action)=>{
+                                if let Some(plotter_action) = action.downcast_ref::<PlotterActions>(){
+                                    match plotter_action {
+                                        PlotterActions::Noop=>(),
+                                        PlotterActions::Save=>{
+                                            //diagram::PlotterChart::new(&self).
+                                            let result = padamo.workspace.workspace("plots").save_dialog(vec![
+                                                ("Portable net graphics", vec!["png"]),
+                                                ("Lossy compressed JPEG", vec!["jpg"]),
+                                                ("Scalar vector graphics", vec!["svg"])
+                                            ]);
+                                            if let Some(v) = result{
+                                                use plotters::prelude::*;
+                                                let out_shape = (self.form_instance.output_shape.width, self.form_instance.output_shape.height);
+                                                let filename = std::path::Path::new(&v);
+                                                let ext:Option<&str> = if let Some(e) = filename.extension(){
+                                                    e.to_str()
+                                                }
+                                                else{
+                                                    None
+                                                };
+
+                                                match ext{
+                                                    Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape), filename)},
+                                                    Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
+                                                    Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
+                                                    _=>{
+                                                        println!("Cannot determine backend for {}", v);
+                                                    }
+                                                }
+                                            }
+                                            will_replot=false;
+                                        },
+                                        PlotterActions::ClearSelection=>{
+                                            self.clear_pixels();
+                                        },
+                                        PlotterActions::ThresholdSelect=>{
+                                            if let DataState::Loaded(data) = &self.data{
+                                                let pix_data = data.signal.clone();
+                                                let maxes = get_maxes(&pix_data);
+                                                for i in maxes.enumerate(){
+                                                    if maxes[&i]>self.form_instance.selector.threshold{
+                                                        self.select_pixel(&i);
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        PlotterActions::ManualSelect=>{
+                                            self.is_selecting_pixels = !self.is_selecting_pixels;
+                                        }
+                                    }
+                                }
+                            },
+                        }
                     }
-                    PlotterMessage::SetPixelmapOn(v)=>{
-                        self.channelmap_show = *v;
-                    }
+
+
+
                     PlotterMessage::PlotPixel(start, end, index) => {
                         println!("Engaged plot {}..{} ({}) for {:?}", start,end, end-start, index);
 
@@ -582,9 +574,7 @@ impl PadamoTool for Plotter{
                     PlotterMessage::TogglePixel(index, value)=>{
                         self.pixels_show[*index] = *value;
                     }
-                    PlotterMessage::SetPointerDisplay(value)=>{
-                        self.display_pointer = *value;
-                    }
+
                     PlotterMessage::SyncData { start, end, pointer, force_clear }=>{
                         self.view_index = *pointer;
                         if *force_clear{
@@ -598,23 +588,7 @@ impl PadamoTool for Plotter{
                     //     self.view_index = *ptr;
                     //     will_replot = self.display_pointer;
                     // }
-                    PlotterMessage::SetSafeguardString(s)=>{
-                        self.safeguard.set_string(s.clone());
-                        will_replot=false;
-                    }
-                    PlotterMessage::SetLCMode(mode)=>{
-                        self.lc_mode = *mode;
-                    }
-                    PlotterMessage::SetTimeFormat(fmt)=>{
-                        let needs_update = self.axis_formatter.range_format()!=fmt.range_format();
-                        self.axis_formatter = *fmt;
-                        if needs_update {
-                            self.update_data_state();
-                        }
-                    }
-                    PlotterMessage::SetLCOnly(v)=>{
-                        self.lc_only = *v;
-                    }
+
 
                     PlotterMessage::SetXMin(v)=>{
                         self.min_x_string = v.clone();
@@ -629,9 +603,7 @@ impl PadamoTool for Plotter{
                     PlotterMessage::SetYMax(v)=>{
                         self.max_y_string = v.clone();
                     }
-                    PlotterMessage::SetLCMean(v)=>{
-                        self.lc_mean = *v;
-                    }
+
                     PlotterMessage::SubmitLimits=>{
                         if let Ok(min_x_unshifted) = self.min_x_string.parse::<f64>(){
                             if let Ok(max_x_unshifted) = self.max_x_string.parse::<f64>(){
@@ -646,7 +618,7 @@ impl PadamoTool for Plotter{
                         if let Ok(min_y) = self.min_y_string.parse(){
                             if let Ok(max_y) = self.max_y_string.parse(){
                                 let (bottom_y, top_y) = self.last_y_limits;
-                                let top_y_scaled = if self.lc_mean {top_y} else {top_y*(self.detector_pixels as f64)};
+                                let top_y_scaled = if self.form_instance.display_settings.lc_mean {top_y} else {top_y*(self.detector_pixels as f64)};
                                 if bottom_y<=min_y && min_y<=max_y && max_y<=top_y_scaled{
                                     self.last_y_limits_live = (min_y,max_y);
                                 }
@@ -654,83 +626,17 @@ impl PadamoTool for Plotter{
                         }
                         self.sync_entries();
                     }
-                    PlotterMessage::SetSizeX(v)=>{
-                        self.out_shape.0.set_string(v.clone());
-                        //self.out_shape_str.0 = v.clone();
-                        will_replot = false;
-                    }
-                    PlotterMessage::SetSizeY(v)=>{
-                        self.out_shape.1.set_string(v.clone());
-                        //self.out_shape_str.1 = v.clone();
-                        will_replot = false;
-                    }
-                    PlotterMessage::SavePlot=>{
-                        //diagram::PlotterChart::new(&self).
-                        let result = padamo.workspace.workspace("plots").save_dialog(vec![
-                            ("Portable net graphics", vec!["png"]),
-                            ("Lossy compressed JPEG", vec!["jpg"]),
-                            ("Scalar vector graphics", vec!["svg"])
-                        ]);
-                        if let Some(v) = result{
-                            use plotters::prelude::*;
-                            let out_shape = (self.out_shape.0.parsed_value, self.out_shape.1.parsed_value);
-                            let filename = std::path::Path::new(&v);
-                            let ext:Option<&str> = if let Some(e) = filename.extension(){
-                                e.to_str()
-                            }
-                            else{
-                                None
-                            };
 
-                            match ext{
-                                Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape), filename)},
-                                Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
-                                Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
-                                _=>{
-                                    println!("Cannot determine backend for {}", v);
-                                }
-                            }
-                        }
-                        will_replot=false;
-                    }
-                    PlotterMessage::SetThreshold(v)=>{
-                        // self.select_threshold_string = v.clone();
-                        // if let Ok(v) = self.select_threshold_string.parse(){
-                        //     self.select_threshold = v;
-                        // }
-                        self.select_threshold.set_string(v.clone());
-                        will_replot=false;
-                    },
-                    PlotterMessage::ClearPixels=>{
-                        self.clear_pixels();
-                    }
-                    PlotterMessage::SelectByThreshold=>{
-                        if let DataState::Loaded(data) = &self.data{
-                            let pix_data = data.signal.clone();
-                            let maxes = get_maxes(&pix_data);
-                            for i in maxes.enumerate(){
-                                if maxes[&i]>self.select_threshold.parsed_value{
-                                    self.select_pixel(&i);
-                                }
-                            }
-                        }
-                    }
+
                     // PlotterMessage::LazySelectData(start, end)=>{
                     //     self.lazy_data_load = Some((*start,*end));
                     // }
                     PlotterMessage::PlotXClicked(_)=>(),
-                    PlotterMessage::ShowPixelSelector=>{
-                        self.is_selecting_pixels = true;
-                    }
+
                     PlotterMessage::HidePixelSelector=>{
                         self.is_selecting_pixels = false;
                     }
-                    PlotterMessage::TogglePixelSelector=>{
-                        self.is_selecting_pixels = !self.is_selecting_pixels;
-                    }
-                    PlotterMessage::SetDiscontinuityThreshold(v)=>{
-                        self.step_threshold.set_string(v.clone());
-                    }
+
                     PlotterMessage::TogglePixelByName(v)=>{
                         println!("Toggled pixel {:?}",v);
                         self.toggle_pixel(v);
@@ -748,7 +654,7 @@ impl PadamoTool for Plotter{
 
     fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
         if let PadamoAppMessage::PlotterMessage(PlotterMessage::PlotXClicked(f)) = msg.as_ref(){
-            if let TimeAxisFormat::GTU = self.axis_formatter{
+            if let TimeAxisFormat::GTU = self.form_instance.display_settings.time_format{
                 let i = *f as usize;
                 return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPosition(i)));
             }
