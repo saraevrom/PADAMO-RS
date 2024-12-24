@@ -56,6 +56,7 @@ pub struct PadamoTrigger{
     trigger_interval_selector:Option<IntervalSelectionDialog>,
     // trigger_form:TriggerSettingsForm,
     trigger_form_buffer:TriggerSettingsFormBuffer,
+    trigger_form_instance:TriggerSettingsForm,
     trigger_process:Option<Worker<TriggerProcessMessage>>,
     trigger_status:String,
 
@@ -104,6 +105,7 @@ impl PadamoTrigger{
 
             trigger_interval_selector:None,
             trigger_form_buffer: Default::default(),
+            trigger_form_instance: Default::default(),
             // trigger_form,
             trigger_process:None,
             export_process:None,
@@ -166,7 +168,7 @@ impl PadamoTrigger{
     }
 
     fn select_event(&mut self){
-        let trigger_form = if let Some(v) = self.trigger_form_buffer.get() {v} else {return;};
+        let trigger_form = &self.trigger_form_instance;
         if let Some(signal) = &self.signal{
             if let Some(sel) = self.selection{
 
@@ -347,7 +349,7 @@ impl PadamoTool for PadamoTrigger{
                                         return;
                                     }
                                     let trigger_source = (*trigger).clone();
-                                    let settings = if let Some(v) = self.trigger_form_buffer.get() {v} else {return;};
+                                    let settings = self.trigger_form_instance.clone();
                                     // let settings = trigger_form;
                                     self.stop_worker();
                                     println!("TRIGGER START {}", interval);
@@ -406,6 +408,10 @@ impl PadamoTool for PadamoTrigger{
                             padamo_iced_forms::ActionOrUpdate::Action(_)=>(),
                             padamo_iced_forms::ActionOrUpdate::Update(u)=>{
                                 self.trigger_form_buffer.update(u.to_owned());
+                                match self.trigger_form_buffer.get(){
+                                    Ok(v)=>self.trigger_form_instance = v,
+                                    Err(e)=>eprintln!("Form get error: {}",e),
+                                }
                             },
                         }
                     }

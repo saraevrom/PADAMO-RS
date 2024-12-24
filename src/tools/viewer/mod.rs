@@ -835,8 +835,10 @@ impl PadamoTool for PadamoViewer{
                         },
                         ActionOrUpdate::Update(u)=>{
                             self.form.update(u.to_owned());
-                            if let Some(v) = self.form.get(){
-                                self.form_instance = v;
+                            match self.form.get(){
+
+                                Ok(v) =>self.form_instance = v,
+                                Err(e)=>eprintln!("Form get error: {}",e),
                             }
 
                         }
