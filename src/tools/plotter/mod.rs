@@ -327,7 +327,7 @@ impl Plotter{
                 //let end = end;
 
                 let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end);
-                self.clear_pixels();
+                // self.clear_pixels();
 
                 //self.loader = Some(loader);
                 //self.last_indices = Some(indices);
@@ -617,9 +617,10 @@ impl PadamoTool for Plotter{
                         }
                         if let Ok(min_y) = self.min_y_string.parse(){
                             if let Ok(max_y) = self.max_y_string.parse(){
-                                let (bottom_y, top_y) = self.last_y_limits;
-                                let top_y_scaled = if self.form_instance.display_settings.lc_mean {top_y} else {top_y*(self.detector_pixels as f64)};
-                                if bottom_y<=min_y && min_y<=max_y && max_y<=top_y_scaled{
+                                // let (bottom_y, top_y) = self.last_y_limits;
+                                // let top_y_scaled = if self.form_instance.display_settings.lc_mean {top_y} else {top_y*(self.detector_pixels as f64)};
+                                // if bottom_y<=min_y && min_y<=max_y && max_y<=top_y_scaled{
+                                if min_y<=max_y{
                                     self.last_y_limits_live = (min_y,max_y);
                                 }
                             }
