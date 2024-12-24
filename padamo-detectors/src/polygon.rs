@@ -3,7 +3,7 @@ use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use serde::{Serialize,Deserialize};
 use plotters::prelude::*;
 use crate::{parser::parse_detector, scripted::parse_scripted};
-use rhai::{serde::from_dynamic, CustomType, Engine, EvalAltResult, TypeBuilder};
+use rhai::{serde::from_dynamic, CustomType, EvalAltResult, TypeBuilder};
 //use super::colors::
 
 

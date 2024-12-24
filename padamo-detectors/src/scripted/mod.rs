@@ -1,7 +1,6 @@
 
 use crate::polygon::DetectorContent;
-use rhai::{CustomType, Dynamic, Engine, EvalAltResult, TypeBuilder};
-use rhai::serde::from_dynamic;
+use rhai::{Engine, EvalAltResult};
 // pub mod errors;
 
 pub fn parse_scripted(src:&str)->Result<DetectorContent,Box<EvalAltResult>>{

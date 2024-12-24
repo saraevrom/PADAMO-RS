@@ -1,5 +1,5 @@
-use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
-use padamo_api::{constants, make_node_box, nodes_vec, ports, prelude::*};
+use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
+use padamo_api::{constants, make_node_box, ports, prelude::*};
 
 #[derive(Clone,Debug)]
 pub struct EnvOutputNode(pub ContentType);

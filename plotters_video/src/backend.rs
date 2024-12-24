@@ -1,8 +1,7 @@
 use super::VideoBackend;
 use plotters::prelude::*;
-use plotters::style::text_anchor::{HPos, VPos};
 use plotters_backend::{
-    BackendColor, BackendStyle, BackendTextStyle, DrawingBackend, DrawingErrorKind,
+    BackendColor, DrawingBackend, DrawingErrorKind,
 };
 
 fn interpolate(rgb_src:u8,rgb_tgt:u8,alpha:f64)->u8{

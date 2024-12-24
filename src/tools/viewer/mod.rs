@@ -10,13 +10,13 @@ use padamo_detectors::Detector;
 use plotters_video::VideoBackend;
 use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use iced::widget::{column,row};
 use crate::messages::PadamoAppMessage;
 use std::time::Instant;
 // use padamo_iced_forms_derive::IcedForm;
 // use padamo_iced_forms::IcedFormInterface;
-use padamo_iced_forms::{ActionOrUpdate, IcedForm, IcedFormBuffer};
+use padamo_iced_forms::{ActionOrUpdate, IcedFormBuffer};
 
 use std::thread;
 use std::sync::mpsc;

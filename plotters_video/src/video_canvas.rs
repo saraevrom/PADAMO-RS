@@ -1,4 +1,4 @@
-use std::{fs::File, path::{Path, PathBuf}};
+use std::path::{Path, PathBuf};
 
 // use ndarray::Array3;
 
@@ -6,11 +6,11 @@ use std::{fs::File, path::{Path, PathBuf}};
 // use video_rs::time::Time;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use image::{EncodableLayout, GenericImageView, Rgb, RgbImage};
+use image::{EncodableLayout, GenericImageView, RgbImage};
 // use imageproc::drawing::draw_filled_circle_mut;
 use minimp4::Mp4Muxer;
 
-use openh264::encoder::{self, Encoder, EncoderConfig};
+use openh264::encoder::{Encoder, EncoderConfig};
 
 
 //Firstly I tried using video_rs. But building FFMPEG in github is nontrivial.

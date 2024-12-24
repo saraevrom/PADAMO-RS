@@ -1,6 +1,5 @@
 use iced::Element;
 use std::{any::Any, sync::Arc};
-use crate::errors::FormError;
 
 #[derive(Clone,Debug)]
 pub enum ActionOrUpdate<T:std::fmt::Debug+std::clone::Clone>{

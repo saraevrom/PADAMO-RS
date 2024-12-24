@@ -22,7 +22,7 @@ use super::viewer::make_player_pad;
 // use padamo_workspace::PadamoWorkspace;
 use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
 
-use padamo_iced_forms::{double_entry_state::{errored_text, EntryState}, ActionOrUpdate, IcedForm, IcedFormBuffer};
+use padamo_iced_forms::{ActionOrUpdate, IcedFormBuffer};
 
 //static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 pub mod data_state;

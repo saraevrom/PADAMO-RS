@@ -1,7 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
-use abi_stable::std_types::RVec;
-use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTimeSignal};
+use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyDetectorSignal};
 use rayon::prelude::*;
 use super::ops::free_threads;
 

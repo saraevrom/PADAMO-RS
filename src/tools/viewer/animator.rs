@@ -1,5 +1,4 @@
 use std::{sync::mpsc, thread};
-use std::path::Path;
 use crate::messages::PadamoAppMessage;
 
 use super::{AnimationParameters, Worker};

@@ -4,7 +4,7 @@ use abi_stable::rvec;
 use abi_stable::std_types::RVec;
 use crate::prelude::*;
 
-use crate::{constants, ports, CalculationNode, ConstantContent, ContentType};
+use crate::{constants, ports, CalculationNode, ContentType};
 
 #[derive(Clone,Debug)]
 pub struct AdHocInputNode{
