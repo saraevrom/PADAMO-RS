@@ -19,12 +19,17 @@ fn format_point(x:(f64,f64), round:Option<usize>)->String{
     format!("({}, {})",format_double(x.0,round),format_double(x.1,round))
 }
 
+fn do_vecs_match<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
+    let matching = a.iter().zip(b.iter()).filter(|&(a, b)| a == b).count();
+    matching == a.len() && matching == b.len()
+}
 
 #[derive(Serialize,Deserialize, Debug,Clone, PartialEq, CustomType)]
 #[rhai_type(extra = Self::build_extra)]
 pub struct DetectorPixel{
     pub index:Vec<usize>,
     pub vertices:Vec<(f64,f64)>,
+    pub color:Option<(f32,f32,f32)>
 }
 
 fn is_ccv(a:(f64,f64),b:(f64,f64),c:(f64,f64))->bool{
@@ -44,7 +49,7 @@ fn convert_array<'a,T:serde::Deserialize<'a>>(arr_in:&'a rhai::Array)->Result<Ve
 
 impl DetectorPixel{
     pub fn new(index:Vec<usize>, vertices:Vec<(f64,f64)>)->Self{
-        Self { index, vertices}
+        Self { index, vertices, color:None}
     }
 
     pub fn new_rhai(index:rhai::Array, vertices:rhai::Array)->Result<Self, Box<EvalAltResult>>{
@@ -92,6 +97,14 @@ impl DetectorPixel{
             }
         }
         res
+    }
+
+    pub fn set_color(&mut self, r:f32,g:f32,b:f32){
+        self.color = Some((r,g,b));
+    }
+
+    pub fn clear_color(&mut self){
+        self.color = None;
     }
 
     pub fn contains_point(&self,point:(f64,f64))->bool{
@@ -161,7 +174,9 @@ impl DetectorPixel{
             .with_fn("new_pixel", Self::new_rhai)
             .with_fn("rectangle", Self::rectangle_rhai)
             .with_fn("rectangle_centered", Self::rectangle_centered_rhai)
-            .with_fn("square", Self::square_rhai);
+            .with_fn("square", Self::square_rhai)
+            .with_fn("set_color", Self::set_color)
+            .with_fn("clear_color", Self::clear_color);
     }
 
     pub fn make_polygon<S:Into<ShapeStyle>>(&self,color:S) -> Polygon<(f64,f64)>{
@@ -204,6 +219,15 @@ impl DetectorPixel{
         }
         // /println!("{:?}", ((min_x, min_y), (max_x, max_y)));
         ((min_x, min_y), (max_x, max_y))
+    }
+
+    pub fn get_color(&self)->(f32,f32,f32){
+        if let Some(c) = self.color{
+            c
+        }
+        else{
+            super::colors::get_color_indexed(&self.index)
+        }
     }
 }
 
@@ -317,6 +341,15 @@ impl DetectorContent{
         parse_scripted(i)
     }
 
+    pub fn find_color(&self, index:&Vec<usize>)->Option<(f32,f32,f32)>{
+        for pixel in &self.content{
+            if do_vecs_match(&pixel.index, index){
+                return Some(pixel.get_color());
+            }
+        }
+        None
+    }
+
     fn build_extra(builder: &mut TypeBuilder<Self>) {
         builder
             .with_name("DetectorContent")
@@ -425,7 +458,7 @@ impl<'a> ColorIterator<'a>{
 
         let color = if let Some(i) = search_vec(self.source, &poly.index) {
             if self.vis[i]{
-                let rgb = super::colors::get_color_indexed(&poly.index);
+                let rgb = poly.get_color();
                 let r = (rgb.0*256.0) as u8;
                 let g = (rgb.1*256.0) as u8;
                 let b = (rgb.2*256.0) as u8;

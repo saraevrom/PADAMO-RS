@@ -1,6 +1,6 @@
 use super::{messages::PlotterMessage, TimeAxisFormat};
 //use super::colors::get_color;
-use padamo_detectors::{colors::get_color_indexed, Margins};
+use padamo_detectors::Margins;
 use iced::{
     widget::canvas::{Frame, Geometry},
     Size,
@@ -141,7 +141,8 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                     continue;
                 }
 
-                let color:(f32,f32,f32) = get_color_indexed(&index);
+                // let color:(f32,f32,f32) = get_color_indexed(&index);
+                let color = self.plotter_data.detector.cells.find_color(&index).unwrap_or((0.0,0.0,0.0));
                 let r = (color.0*256.0) as u8;
                 let g = (color.1*256.0) as u8;
                 let b = (color.2*256.0) as u8;

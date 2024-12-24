@@ -80,20 +80,20 @@ pub fn get_color(i:usize,j:usize)->(f32,f32,f32){
     h_color(shift_id,(j as f32)*180.0/16.0,gray_shift*0.3,gray_shift*0.5)
 }
 
-pub fn get_color_indexed(data:&Vec<usize>)->(f32,f32,f32){
+pub(crate) fn get_color_indexed(data:&Vec<usize>)->(f32,f32,f32){
     let mut hasher = DefaultHasher::new();
     for i in data.iter(){
         hasher.write_usize(*i);
     }
     let hash = hasher.finish();
-    let hue = (hash & 7) as f32;
-    let hue = hue*360.0/8.0;
-    let hash = hash>>3;
-    let saturation = (hash & 1) as f32;
+    let hue = (hash & 2097151) as f32;
+    let hue = hue*360.0/2097152.0;
+    let hash = hash>>21;
+    let saturation = (hash & 2097151) as f32/ 2097151.0;
     let saturation = 0.5+0.5*saturation;
-    let hash = hash>>1;
-    let value = (hash & 3) as f32;
-    let value = 0.5+0.5*value/3.0;
+    let hash = hash>>21;
+    let value = (hash & 2097151) as f32/2097151.0;
+    let value = 0.75+0.25*value;
     hsv_to_rgb(hue, saturation, value)
     //hasher.write(data);
 }
