@@ -31,8 +31,8 @@ impl<T:IcedFormBuffer> IcedFormBuffer for BoxBuffer<T>{
         self.inner.update(unbox(message.inner));
     }
 
-    fn get(&self)->Option<Self::FormType> {
-        self.inner.get().map(|x| Box::new(x))
+    fn get(&self)->crate::Result<Self::FormType> {
+        self.inner.get().map(|x| Box::new(x)).map_err(|e| e.map("Inner of"))
     }
 
     fn set(&mut self, value:Self::FormType) {

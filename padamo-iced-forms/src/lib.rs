@@ -5,6 +5,8 @@ pub mod options;
 pub mod vectors;
 pub mod refs;
 pub mod buttons;
+pub mod errors;
+pub use errors::Result;
 
 // pub mod unit;
 pub use traits::{IcedForm,IcedFormBuffer};

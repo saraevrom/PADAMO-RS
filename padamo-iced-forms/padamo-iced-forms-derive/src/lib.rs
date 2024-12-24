@@ -168,7 +168,7 @@ fn impl_unit_struct(name:syn::Ident) -> TokenStream {
         impl IcedFormBuffer for #buffer_name{
             type Message = #message_name;
             type FormType = #name;
-            fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,iced_forms::ActionOrUpdate<Self::Message>,iced::Theme,iced::Renderer> {
+            fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,padamo_iced_forms::ActionOrUpdate<Self::Message>,iced::Theme,iced::Renderer> {
                 if let Some(v) = title{
                     iced::widget::text(v).into()
                 }
@@ -180,8 +180,8 @@ fn impl_unit_struct(name:syn::Ident) -> TokenStream {
 
             }
 
-            fn get(&self)->Option<#name> {
-                Some(#name)
+            fn get(&self)->padamo_iced_forms::Result<#name> {
+                Ok(#name)
             }
 
             fn set(&mut self, value:#name){

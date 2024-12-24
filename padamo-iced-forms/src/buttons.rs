@@ -38,8 +38,8 @@ impl<T:ActionType,A:ActionTrait<T>> IcedForm for Action<T,A>{
 impl <T:ActionType, A:ActionTrait<T>> IcedFormBuffer for ActionBuffer<T,A>{
     type FormType = Action<T,A>;
     type Message = ActionMessage;
-    fn get(&self)->Option<Self::FormType> {
-        Default::default()
+    fn get(&self)->crate::Result<Self::FormType> {
+        Ok(Default::default())
     }
 
     fn update(&mut self, _message:Self::Message) {

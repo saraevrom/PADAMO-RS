@@ -97,17 +97,18 @@ impl <T:IcedFormBuffer> IcedFormBuffer for OptionBuffer<T>{
         }
     }
 
-    fn get(&self)->Option< Option<T::FormType>> {
+    fn get(&self)->crate::Result< Option<T::FormType>> {
         match &self.stash{
-            OptionStash::Empty=>Some(None),
-            OptionStash::Stowed(_)=>Some(None),
+            OptionStash::Empty=>Ok(None),
+            OptionStash::Stowed(_)=>Ok(None),
             OptionStash::Some(v) => {
-                if let Some(res) = v.get(){
-                    Some(Some(res))
-                }
-                else{
-                    None
-                }
+                v.get().map_err(|x| x.map("Inner of")).map(Some)
+                // if let Some(res) = v.get(){
+                //     Some(Some(res))
+                // }
+                // else{
+                //     None
+                // }
             }
         }
     }

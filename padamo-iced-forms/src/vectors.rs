@@ -64,12 +64,12 @@ impl <T:IcedFormBuffer> IcedFormBuffer for VectorBuffer<T>{
 
         }
     }
-    fn get(&self)->Option<Self::FormType> {
+    fn get(&self)->crate::Result<Self::FormType> {
         let mut res = Vec::new();
-        for x in self.data.iter(){
-            res.push(if let Some(v) = x.get() {v} else { return None;});
+        for (i,x) in self.data.iter().enumerate(){
+            res.push( x.get().map_err(|e| e.map(format!("element #{i}")))?);
         }
-        Some(res)
+        Ok(res)
     }
 
     fn set(&mut self, value:Self::FormType) {

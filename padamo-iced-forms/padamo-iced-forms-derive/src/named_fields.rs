@@ -54,7 +54,7 @@ pub fn impl_named_fields(fields: syn::FieldsNamed, name:syn::Ident, spoiler:crat
 
         });
 
-        get_content.extend(quote! {let #field_name = if let Some(v) = IcedFormBuffer::get(&self.state.#field_name) {v} else {return None;};});
+        get_content.extend(quote! {let #field_name = IcedFormBuffer::get(&self.state.#field_name).map_err(|e| e.map(format!("Field {}",stringify!(#field_name))))?;});
         get_content_final.extend(quote! {#field_name,});
 
         set_content.extend(quote! {IcedFormBuffer::set(&mut self.state.#field_name,value.#field_name);});
@@ -132,9 +132,9 @@ pub fn impl_named_fields(fields: syn::FieldsNamed, name:syn::Ident, spoiler:crat
                 }
             }
 
-            fn get(&self)->Option<#name> {
+            fn get(&self)-> padamo_iced_forms::Result<#name> {
                 #get_content
-                Some(#name{
+                Ok(#name{
                     #get_content_final
                 })
             }

@@ -1,5 +1,6 @@
 use iced::Element;
 use std::{any::Any, sync::Arc};
+use crate::errors::FormError;
 
 #[derive(Clone,Debug)]
 pub enum ActionOrUpdate<T:std::fmt::Debug+std::clone::Clone>{
@@ -33,7 +34,7 @@ pub trait IcedFormBuffer<Theme=iced::Theme,Renderer=iced::Renderer>:std::fmt::De
     }
 
     fn update(&mut self, message:Self::Message);
-    fn get(&self)->Option<Self::FormType>;
+    fn get(&self)->crate::errors::Result<Self::FormType>;
     fn set(&mut self, value:Self::FormType);
     fn from_value(value:Self::FormType) ->Self;
 }

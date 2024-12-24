@@ -263,10 +263,10 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
                 }
             }
 
-            fn get(&self)->Option<#name> {
+            fn get(&self)->padamo_iced_forms::Result<#name> {
                 match &self.state{
                     #get_content
-                }
+                }.map_err(|e| e.map("Selected value"))
             }
 
             fn set(&mut self, value:#name){
@@ -286,7 +286,7 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
 
             }
 
-            fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,iced_forms::ActionOrUpdate<#message_name>,iced::Theme,iced::Renderer> {
+            fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,padamo_iced_forms::ActionOrUpdate<#message_name>,iced::Theme,iced::Renderer> {
                 let display_name = match &self.state{
                     #display_names_content
                 };
@@ -309,10 +309,10 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
                 //     .alignment(iced_aw::drop_down::Alignment::Bottom);
                 //let underlay = iced::widget::checkbox(display_name, self.expanded).on_toggle(#message_name::SetExpanded);
                 let underlay = if self.expanded{
-                    iced::widget::Button::new("Dismiss").on_press(iced_forms::ActionOrUpdate::Update(#message_name::Dismiss))
+                    iced::widget::Button::new("Dismiss").on_press(padamo_iced_forms::ActionOrUpdate::Update(#message_name::Dismiss))
                 }
                 else{
-                    iced::widget::Button::new(iced::widget::Text::new(display_name)).on_press(iced_forms::ActionOrUpdate::Update(#message_name::Expand))
+                    iced::widget::Button::new(iced::widget::Text::new(display_name)).on_press(padamo_iced_forms::ActionOrUpdate::Update(#message_name::Expand))
                 };
                 let overlay:iced::Element<'a,#choose_message_name,iced::Theme,iced::Renderer> = iced::widget::column![
                     #overlay_content
@@ -321,13 +321,13 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
                 let mut dropdown = iced::widget::Column::new();
                 dropdown = dropdown.push(underlay);
                 if self.expanded{
-                    dropdown = dropdown.push(overlay.map(#message_name::Choose).map(iced_forms::ActionOrUpdate::Update));
+                    dropdown = dropdown.push(overlay.map(#message_name::Choose).map(padamo_iced_forms::ActionOrUpdate::Update));
                 }
 
 
                 // drop_down.into()
 
-                let selected_element:iced::Element<'a,iced_forms::ActionOrUpdate<#update_message_name>,iced::Theme,iced::Renderer> = match &self.state{
+                let selected_element:iced::Element<'a,padamo_iced_forms::ActionOrUpdate<#update_message_name>,iced::Theme,iced::Renderer> = match &self.state{
                     #element_view
                 }.into();
 

@@ -42,7 +42,7 @@ pub fn impl_unnamed_fields(fields: syn::FieldsUnnamed, name:syn::Ident, spoiler:
 
         });
 
-        get_content.extend(quote! {if let Some(v) = IcedFormBuffer::get(&self.state.#field_index) {v} else {return None;},});
+        get_content.extend(quote! {if let Some(v) = IcedFormBuffer::get(&self.state.#field_index).map_err(|e| e.map(format!("Field #{}",stringify!(#field_index))))?,});
         // get_content_final.extend(quote! {#field_name,});
 
         set_content.extend(quote! {IcedFormBuffer::set(&mut self.state.#field_index,value.#field_index);});
@@ -118,7 +118,7 @@ pub fn impl_unnamed_fields(fields: syn::FieldsUnnamed, name:syn::Ident, spoiler:
                 }
             }
 
-            fn get(&self)->Option<#name> {
+            fn get(&self)->padamo_iced_forms::Result<#name> {
                 Some(#name(
                     #get_content
                 ))

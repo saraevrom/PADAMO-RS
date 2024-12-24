@@ -28,8 +28,8 @@ macro_rules! impl_entry_base {
                 self.set_string(message.0);
             }
 
-            fn get(&self)->Option<$ty> {
-                Some(self.parsed_value.clone())
+            fn get(&self)->crate::Result<$ty> {
+                Ok(self.parsed_value.clone())
             }
 
             fn set(&mut self, value: $ty){
@@ -91,8 +91,8 @@ impl IcedFormBuffer for BoolBuffer{
         self.inner = message.0;
     }
 
-    fn get(&self)->Option<bool> {
-        Some(self.inner)
+    fn get(&self)->crate::Result<bool> {
+        Ok(self.inner)
     }
 
     fn set(&mut self, value:Self::FormType) {
