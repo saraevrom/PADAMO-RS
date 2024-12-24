@@ -899,7 +899,7 @@ impl GraphNodeStorage{
             for tgt_node in self.nodes.iter(){
                 //println!("TEST");
                 if !Rc::ptr_eq(tgt_node, src_node){
-                    tgt_node.borrow_mut().unlink_from(src_node.clone(), output_port);
+                    let _ = tgt_node.borrow_mut().unlink_from(src_node.clone(), output_port);
                 }
             }
             self.remove_dead_connections();
@@ -1019,7 +1019,7 @@ impl GraphNodeStorage{
             entry.insert("identifier".into(), node_ref.represented_node.identifier().clone().into());
 
             let mut conns = serde_json::Map::new();
-            for (inp_port,inp_type) in node_ref.inputs.iter(){
+            for (inp_port,_inp_type) in node_ref.inputs.iter(){
                 let value = if let Some(conn) =node_ref.connections.get(inp_port){ // &inp_def.connection{
                     if let Some(conn_rc) = conn.node.upgrade(){
                         if let Some(node_index) = self.lookup_node(&conn_rc){
@@ -1069,66 +1069,62 @@ impl GraphNodeStorage{
             self.clear();
             for value in arr.iter(){
                 if let serde_json::Value::Object(obj) = value{
-                    'stop: {
-                        //let identifier = if let Some(serde_json::Value::String(identifier) )= obj.get("identifier"){identifier}
-                        //else { break 'stop; };
-                        let identifier = obj.get("identifier").ok_or(GraphDeserializationError::NotFound("identifier".into()))?;
-                        let identifier = if let serde_json::Value::String(v) = identifier {v} else {return Err(GraphDeserializationError::WrongFormat("identifier".into()));};
 
-                        // let position = if let Some(position ) = obj.get("position"){
-                        //     position
-                        // }
-                        // else { break 'stop; };
-                        let position = obj.get("position").ok_or(GraphDeserializationError::NodeNotFound("position".into()))?;
+                    //let identifier = if let Some(serde_json::Value::String(identifier) )= obj.get("identifier"){identifier}
+                    //else { break 'stop; };
+                    let identifier = obj.get("identifier").ok_or(GraphDeserializationError::NotFound("identifier".into()))?;
+                    let identifier = if let serde_json::Value::String(v) = identifier {v} else {return Err(GraphDeserializationError::WrongFormat("identifier".into()));};
+
+                    // let position = if let Some(position ) = obj.get("position"){
+                    //     position
+                    // }
+                    // else { break 'stop; };
+                    let position = obj.get("position").ok_or(GraphDeserializationError::NodeNotFound("position".into()))?;
 
 
-                        //let pos:SerdePoint = if let Ok(pos) = serde_json::from_value(position.clone()) {pos}
-                        //else { break 'stop; };
-                        let pos:SerdePoint = serde_json::from_value(position.clone()).map_err(GraphDeserializationError::JsonError)?;
+                    //let pos:SerdePoint = if let Ok(pos) = serde_json::from_value(position.clone()) {pos}
+                    //else { break 'stop; };
+                    let pos:SerdePoint = serde_json::from_value(position.clone()).map_err(GraphDeserializationError::JsonError)?;
 
-                        // let consts = if let Some(serde_json::Value::Object(c)) = obj.get("constants") {c}
-                        // else { break 'stop; };
+                    // let consts = if let Some(serde_json::Value::Object(c)) = obj.get("constants") {c}
+                    // else { break 'stop; };
 
-                        let consts = obj.get("constants").ok_or(GraphDeserializationError::NodeNotFound("constants".into()))?;
-                        let consts = if let serde_json::Value::Object(c) = consts {c} else {return Err(GraphDeserializationError::WrongFormat("constants".into()));};
+                    let consts = obj.get("constants").ok_or(GraphDeserializationError::NodeNotFound("constants".into()))?;
+                    let consts = if let serde_json::Value::Object(c) = consts {c} else {return Err(GraphDeserializationError::WrongFormat("constants".into()));};
 
-                        let consts_externals = obj.get("constants_external_flags");
-                        let consts_externals = if let Some(v) = consts_externals{
-                            if let serde_json::Value::Object(v1) = v{
-                                Some(v1)
-                            }
-                            else{
-                                None
-                            }
+                    let consts_externals = obj.get("constants_external_flags");
+                    let consts_externals = if let Some(v) = consts_externals{
+                        if let serde_json::Value::Object(v1) = v{
+                            Some(v1)
                         }
                         else{
                             None
-                        };
+                        }
+                    }
+                    else{
+                        None
+                    };
 
 
-                        let mut node = if let Some(v) = registry.create_calculation_node(identifier.clone()) {v}
-                        else{
-                            return Err(GraphDeserializationError::NodeNotFound(identifier.clone()));
-                        };
+                    let mut node = if let Some(v) = registry.create_calculation_node(identifier.clone()) {v}
+                    else{
+                        return Err(GraphDeserializationError::NodeNotFound(identifier.clone()));
+                    };
 
-                        for (key,con) in consts.iter(){
-                            let deserialized_con = serde_json::from_value(con.clone());
-                            if let Ok(con_val) = &deserialized_con {
-                                println!("Constant deserialize success");
+                    for (key,con) in consts.iter(){
+                        let deserialized_con = serde_json::from_value(con.clone());
+                        if let Ok(con_val) = &deserialized_con {
+                            println!("Constant deserialize success");
 
-                                if let Some(entry) = node.constants.constants.get_mut(key){
-                                    println!("Entry found");
-                                    if entry.content.is_compatible(con_val){
-                                        println!("Entry compatible");
-                                        (*entry).content = con_val.clone();
-                                        (*entry).use_external = if let Some(ext) = consts_externals{
-                                            if let Some(v) = ext.get(key){
-                                                if let serde_json::Value::Bool(b) = v{
-                                                    *b
-                                                }
-                                                else{
-                                                    false
-                                                }
+                            if let Some(entry) = node.constants.constants.get_mut(key){
+                                println!("Entry found");
+                                if entry.content.is_compatible(con_val){
+                                    println!("Entry compatible");
+                                    (*entry).content = con_val.clone();
+                                    (*entry).use_external = if let Some(ext) = consts_externals{
+                                        if let Some(v) = ext.get(key){
+                                            if let serde_json::Value::Bool(b) = v{
+                                                *b
                                             }
                                             else{
                                                 false
@@ -1136,18 +1132,22 @@ impl GraphNodeStorage{
                                         }
                                         else{
                                             false
-                                        };
-
-                                        entry.update_buffer();
+                                        }
                                     }
+                                    else{
+                                        false
+                                    };
+
+                                    entry.update_buffer();
                                 }
                             }
                         }
-                        node.position = pos.into();
-                        node.reestimate_size();
-
-                        self.insert_node(node);
                     }
+                    node.position = pos.into();
+                    node.reestimate_size();
+
+                    self.insert_node(node);
+
                 }
             }
 

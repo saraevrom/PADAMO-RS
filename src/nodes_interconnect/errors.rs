@@ -7,7 +7,7 @@ pub enum NodeRegistryError{
     LegacyDuplicate(String),
     LibraryError(abi_stable::library::LibraryError),
     PathError,
-    NoName,
+    // NoName,
 }
 
 impl Display for NodeRegistryError{
@@ -16,7 +16,7 @@ impl Display for NodeRegistryError{
             Self::NodeDuplicate(x)=>write!(f,"Node {} is defined twice", x),
             Self::LegacyDuplicate(x)=>write!(f,"Legacy name {} is defined twice", x),
             Self::LibraryError(x)=>write!(f,"Library error: {}", x),
-            Self::NoName=>write!(f,"No file name"),
+            // Self::NoName=>write!(f,"No file name"),
             Self::PathError=>write!(f,"Path error ocurred"),
         }
     }
