@@ -47,7 +47,7 @@ pub fn temporal_moving_median(array:ArrayND<f64>,window:usize)->ArrayND<f64>{
         free_threads(&mut threads, threadcount);
         let tgt = target.clone();
         let src = source.clone();
-        let pixel_index = pixel;
+        // let pixel_index = pixel;
         let offset = pixel;
         //println!("Starting pixel {}", pixel);
         let handle = thread::spawn(move || {

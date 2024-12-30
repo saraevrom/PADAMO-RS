@@ -53,7 +53,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
 
     fn update(
         &self,
-        state: &mut Self::State,
+        _state: &mut Self::State,
         event: iced::widget::canvas::Event,
         bounds: iced::Rectangle,
         cursor: iced::mouse::Cursor,
@@ -97,7 +97,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
         }
     }
 
-    fn build_chart<DB:DrawingBackend>(&self, state: &Self::State,  mut builder:ChartBuilder<DB>) {
+    fn build_chart<DB:DrawingBackend>(&self, _state: &Self::State,  mut builder:ChartBuilder<DB>) {
         //build your chart here, please refer to plotters for more details
         if let super::DataState::Loaded(data) = &self.plotter_data.data{
             let tim = &data.time;

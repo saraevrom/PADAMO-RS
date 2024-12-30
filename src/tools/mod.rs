@@ -6,6 +6,7 @@ pub mod detectors;
 
 use std::rc::Rc;
 
+#[allow(unused_variables)]
 pub trait PadamoTool{
     fn tab_label(&self) -> iced_aw::TabLabel {
         iced_aw::TabLabel::Text(self.tab_name())

@@ -1,5 +1,5 @@
-use nom::multi::{separated_list0, separated_list1};
-use nom::number::complete::{double, };
+use nom::multi::separated_list0;
+use nom::number::complete::double;
 use nom::IResult;
 use nom::error::{context, ParseError};
 use nom::character::complete::{char as char_t, digit1, multispace0};
@@ -51,8 +51,8 @@ pub fn parse_index<'a>(i:&'a str)-> IResult<&'a str, Vec<usize>, nom::error::Err
     //     cut(preceded(sp, char_t(','))),
     //     preceded(sp, parse_usize)
     // );
-    let separator = terminated(preceded(sp, char_t(',')),sp);
-    let array = separated_list1(separator, parse_usize);
+    //let separator = terminated(preceded(sp, char_t(',')),sp);
+    //let array = separated_list1(separator, parse_usize);
     //let mut inbracket_pair = terminated(preceded(char_t('['),array),preceded(sp,char_t(']')));
     let mut inbracket_pair = context(
         "index",

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 // use video_rs::time::Time;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use image::{EncodableLayout, GenericImageView, RgbImage};
+use image::{EncodableLayout, RgbImage};
 // use imageproc::drawing::draw_filled_circle_mut;
 use minimp4::Mp4Muxer;
 

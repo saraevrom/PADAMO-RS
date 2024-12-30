@@ -37,7 +37,7 @@ fn read_time_key(filename:&str, temporal:&str)->f64{
 fn has_spacetime(filename:&str,spatial:&str, temporal:&str)->bool{
     let hdf5_file = if let Ok(v) = hdf5::File::open(&filename) {v} else {return false};
     let dataset1 = if let Ok(v) = hdf5_file.dataset(&temporal) {v} else {return false};
-    let dataset2 = if let Ok(v) = hdf5_file.dataset(&spatial) {v} else {return false};
+    let _dataset2 = if let Ok(v) = hdf5_file.dataset(&spatial) {v} else {return false};
 
     let s = dataset1.shape();
     if s.len()>2{

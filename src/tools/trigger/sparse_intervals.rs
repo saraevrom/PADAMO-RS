@@ -299,7 +299,7 @@ impl IntervalStorage{
     }
 
     pub fn is_available(&self, interval:Interval)->bool{
-        if let Some((closest,i)) = self.interval_in_point(interval.start){
+        if let Some((closest,_i)) = self.interval_in_point(interval.start){
             return closest.contains(&interval);
         }
         false
@@ -339,7 +339,7 @@ pub fn split_intervals(trigger_result:&Vec<bool>)->(Vec<Interval>,Vec<Interval>)
     let mut negatives = Vec::new();
 
     let mut interval_start:usize = 0;
-    let mut current_end:usize = 0;
+    let mut current_end:usize;
     let mut current = trigger_result[0];
     for (i,x) in trigger_result.iter().enumerate(){
         current_end = i;

@@ -43,7 +43,7 @@ pub struct Detector<Message>{
 
 impl<Message> Detector<Message>{
     pub fn new(compat_shape:Vec<usize>,name:String)->Self{
-        let capacity = compat_shape.iter().fold(1, |a,b| a*b);
+        //let capacity = compat_shape.iter().fold(1, |a,b| a*b);
         let cells = polygon::DetectorContent::new(compat_shape, name);
         Self::from_cells(cells)
     }
@@ -200,7 +200,7 @@ impl<Message> Detector<Message>{
 
                 let mut unmapped_pos = *unmapped;
                 unmapped_pos.1 -= 20;
-                let txt = if let Some((buf,t)) = pixels {
+                let txt = if let Some((buf,_t)) = pixels {
                     if let Some(val) = buf.try_get(index){
                         format!("{:?} {:.3}",index,val)
                     }
@@ -282,7 +282,7 @@ where
     type State = Option<((f64,f64),(i32,i32))>;
 
 
-    fn build_chart<DB: DrawingBackend>(&self, state: &Self::State, builder: ChartBuilder<DB>) {}
+    fn build_chart<DB: DrawingBackend>(&self, _state: &Self::State, _builder: ChartBuilder<DB>) {}
 
     fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
         self.detector.build_chart_generic(&root, &self.source,self.scale,self.transform,state);

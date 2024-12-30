@@ -358,7 +358,7 @@ impl Plotter{
         }
     }
 
-    fn save_chart<T:plotters::backend::DrawingBackend>(&self, plotter:T, path:&std::path::Path){
+    fn save_chart<T:plotters::backend::DrawingBackend>(&self, plotter:T){
         use plotters::prelude::*;
         let root_area = plotter.into_drawing_area();
         root_area.fill(&WHITE).unwrap();
@@ -526,9 +526,9 @@ impl PadamoTool for Plotter{
                                                 };
 
                                                 match ext{
-                                                    Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape), filename)},
-                                                    Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
-                                                    Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape), filename)},
+                                                    Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape))},
+                                                    Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape))},
+                                                    Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape))},
                                                     _=>{
                                                         println!("Cannot determine backend for {}", v);
                                                     }
@@ -654,7 +654,7 @@ impl PadamoTool for Plotter{
     }
 
 
-    fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
+    fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, _padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
         if let PadamoAppMessage::PlotterMessage(PlotterMessage::PlotXClicked(f)) = msg.as_ref(){
             if let TimeAxisFormat::GTU = self.form_instance.display_settings.time_format{
                 let i = *f as usize;
@@ -667,13 +667,13 @@ impl PadamoTool for Plotter{
         None
     }
 
-    fn context_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
+    fn context_update(&mut self, _msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
         // if let Some((start,end)) = self.lazy_data_load.take(){
         //     println!("Eager load {},{}",start,end);
         //     self.data.apply_start_end(start, end);
         //     self.ensure_data_async(padamo);
         // }
-        if let DataState::PendingLoad(start, end) = self.data{
+        if let DataState::PendingLoad(_, _) = self.data{
             self.ensure_data_async(padamo);
         }
     }

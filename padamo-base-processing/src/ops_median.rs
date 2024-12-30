@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fmt::Debug;
 
 use padamo_api::lazy_array_operations::{LazyArrayOperation, LazyDetectorSignal};
@@ -85,14 +84,6 @@ impl LazySlidingMedianNormalize{
     }
 }
 
-fn clamp_zero(x:f64)->f64{
-    if x==0.0{
-        1.0
-    }
-    else{
-        x
-    }
-}
 
 // fn collapse_med<A,D:ndarray::Dimension>(array:ndarray::ArrayBase<A,D>){
 //
@@ -110,7 +101,7 @@ fn safe_divide(a:f64,b:f64)->f64{
 
 fn safe_divide_arrs(a:ArrayND<f64>,b:ArrayND<f64>)->ArrayND<f64>{
     let mut a = a;
-    let shape = b.shape;
+    //let shape = b.shape;
     for i in 0..b.flat_data.len(){
         if b.flat_data[i]==0.0{
             a.flat_data[i] = 0.0;

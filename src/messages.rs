@@ -4,9 +4,6 @@ use crate::tools::viewer::ViewerMessage;
 use crate::tools::plotter::messages::PlotterMessage;
 use crate::tools::trigger::messages::TriggerMessage;
 use crate::tools::detectors::messages::DetectorManagerMessage;
-use iced::font;
-
-
 
 #[derive(Clone,Debug)]
 pub enum PadamoAppMessage{

@@ -38,9 +38,9 @@ where
     type State = Option<((f64,f64),(i32,i32))>;
 
 
-    fn build_chart<DB: DrawingBackend>(&self, state: &Self::State, builder: ChartBuilder<DB>) {}
+    fn build_chart<DB: DrawingBackend>(&self, _state: &Self::State, _builder: ChartBuilder<DB>) {}
 
-    fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
+    fn draw_chart<DB: DrawingBackend>(&self, _state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
         self.detector.build_chart_aux(&root, self.pixels, self.pixels_show, Margins { top: 5, bottom: 5, left: 5, right: 5 });
         //self.detector.build_chart_generic(&root, &self.source,self.scale,state);
     }

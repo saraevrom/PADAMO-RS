@@ -64,7 +64,7 @@ impl PadamoTool for PadamoDetectorManager{
         //
         // ].into();
         //todo!()
-        let subframe = iced::widget::PaneGrid::new(&self.panes,|id, pane, is_maximized| {
+        let subframe = iced::widget::PaneGrid::new(&self.panes,|_id, pane, _is_maximized| {
             match pane{
                 Pane::DetectorView=>{
                     let controls:iced::Element<'_,_> = self.viewer_transform.view().into();

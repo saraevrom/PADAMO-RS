@@ -1,5 +1,5 @@
 use super::VideoBackend;
-use plotters::prelude::*;
+// use plotters::prelude::*;
 use plotters_backend::{
     BackendColor, DrawingBackend, DrawingErrorKind,
 };

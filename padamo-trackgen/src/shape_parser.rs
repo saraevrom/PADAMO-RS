@@ -1,4 +1,5 @@
 
+#[allow(dead_code)]
 pub fn parse_usize_vec(s:&str)->Option<Vec<usize>>{
     let mut s = s.trim();
     s = s.trim_start_matches("[");

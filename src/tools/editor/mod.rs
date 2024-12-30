@@ -48,7 +48,7 @@ impl PadamoEditor{
     pub fn new(tree:Tree<String>)->Self{
         let (mut panes,pane1) = pane_grid::State::new(Pane::NodeTree);
         let (pane2,split1) = panes.split(pane_grid::Axis::Vertical, pane1, Pane::CanvasEditor).unwrap();
-        let (pane3, split2) = panes.split(pane_grid::Axis::Vertical, pane2, Pane::ConstantEditor).unwrap();
+        let (_pane3, split2) = panes.split(pane_grid::Axis::Vertical, pane2, Pane::ConstantEditor).unwrap();
         panes.resize(split1, 0.25);
         panes.resize(split2, 0.75);
 
@@ -124,7 +124,7 @@ impl PadamoTool for PadamoEditor{
         //     iced_aw::split::Axis::Vertical,
         //     EditorMessage::TreeSplitPositionSet
         // ).into();
-        let split:iced::Element<'a, EditorMessage> = pane_grid::PaneGrid::new(&self.panes, |id, pane, maximized|{
+        let split:iced::Element<'a, EditorMessage> = pane_grid::PaneGrid::new(&self.panes, |_id, pane, _maximized|{
             let first:iced::Element<'_,EditorMessage> = scrollable::Scrollable::new(
                 iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x))))
             )

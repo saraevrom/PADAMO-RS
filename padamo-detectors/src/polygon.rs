@@ -304,16 +304,16 @@ impl DetectorContent{
     pub fn default_vtl()->Self{
 
         let mut vtl = Self::new(vec![16,16], "Verkhnetulomsky".into());
-        let PIXEL_SIZE = 2.85;
-        let HALF_GAP = 2.0;
+        let pixel_size = 2.85;
+        let half_gap = 2.0;
         for i in 0..16usize{
             for j in 0..16usize{
-                let x_offset = if i<8 {-HALF_GAP} else {HALF_GAP} ;
-                let y_offset = if j<8 {-HALF_GAP} else {HALF_GAP};
-                let x = x_offset+(i as f64)*PIXEL_SIZE-8.0*PIXEL_SIZE;
-                let y = y_offset+(j as f64)*PIXEL_SIZE-8.0*PIXEL_SIZE;
+                let x_offset = if i<8 {-half_gap} else {half_gap} ;
+                let y_offset = if j<8 {-half_gap} else {half_gap};
+                let x = x_offset+(i as f64)*pixel_size-8.0*pixel_size;
+                let y = y_offset+(j as f64)*pixel_size-8.0*pixel_size;
                 let index = vec![i,j];
-                vtl.content.push(DetectorPixel::rectangle(index, (x,y), (PIXEL_SIZE,PIXEL_SIZE)));
+                vtl.content.push(DetectorPixel::rectangle(index, (x,y), (pixel_size,pixel_size)));
             }
         }
         vtl

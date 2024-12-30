@@ -11,7 +11,7 @@ pub struct AnyLCLinearTrackGeneratorDynamicGaussNode;
 
 #[derive(Debug,Clone)]
 pub struct AnyLCLinearTrackGeneratorDynamicMoffatNode;
-
+/*
 fn request_nonnegative(name:&str,constants:&ConstantContentContainer)->Result<f64,ExecutionError>{
     let value = constants.request_float(name)?;
     if value>=0.0{
@@ -31,6 +31,7 @@ fn request_nonnegative_input(name:&str,constants:&ContentContainer)->Result<f64,
         Err(ExecutionError::OtherError(format!("Value {} must be nonnegative",name).into()))
     }
 }
+*/
 
 fn request_usize(name:&str,constants:&ConstantContentContainer)->Result<usize,ExecutionError>{
     let value = constants.request_integer(name)?;

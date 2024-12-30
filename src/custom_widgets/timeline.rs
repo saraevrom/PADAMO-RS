@@ -45,7 +45,7 @@ where
     fn layout(
         &self,
         _tree:&mut iced::advanced::widget::Tree,
-        renderer: &Renderer,
+        _renderer: &Renderer,
         limits: &iced::advanced::layout::Limits,
     ) -> iced::advanced::layout::Node {
         // let mut bounds = limits.();
@@ -56,13 +56,13 @@ where
 
     fn draw(
         &self,
-        state: &iced::advanced::widget::Tree,
+        _state: &iced::advanced::widget::Tree,
         renderer: &mut Renderer,
-        theme: &Theme,
-        style: &iced::advanced::renderer::Style,
+        _theme: &Theme,
+        _style: &iced::advanced::renderer::Style,
         layout: iced::advanced::Layout<'_>,
         cursor: iced::mouse::Cursor,
-        viewport: &iced::Rectangle,
+        _viewport: &iced::Rectangle,
     ) {
         let bounds = layout.bounds();
 

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{spanned::Spanned, DeriveInput};
+use syn::DeriveInput;
 mod named_fields;
 mod unnamed_fields;
 mod enums;

@@ -16,7 +16,7 @@ pub struct IntervalSelectionDialog{
 
 impl IntervalSelectionDialog{
     pub fn new(unmarked_intervals:sparse_intervals::IntervalStorage)->Self{
-        let (start_s,end_s,start,end) = if let Some(v) = unmarked_intervals.get_first_available(){
+        let (_start_s,_end_s,start,end) = if let Some(v) = unmarked_intervals.get_first_available(){
             (
                 v.start.to_string(),
                 v.end.to_string(),
