@@ -20,9 +20,9 @@ where
     T:Clone+Debug+abi_stable::StableAbi+hdf5::H5Type+Send+Sync,
     //D:ndarray::Dimension
 {
-    filename:String,
-    dataset_path:String,
-    hdf5_file: hdf5::File,
+    // filename:String,
+    // dataset_path:String,
+    // hdf5_file: hdf5::File,
     dataset: hdf5::Dataset,
     _marker:PhantomData<T>,
     //cache:Mutex<Option<(usize,usize,ArrayND<T>)>>,
@@ -37,7 +37,7 @@ where
     pub fn new(filename:String, dataset_path:String)->Result<Self, hdf5::Error>{
         let hdf5_file = hdf5::File::open(&filename)?;
         let dataset = hdf5_file.dataset(&dataset_path)?;
-        Ok(Self{filename, dataset_path, hdf5_file, dataset, _marker:PhantomData, })//cache:Mutex::new(None)})
+        Ok(Self{dataset, _marker:PhantomData, })//cache:Mutex::new(None)})
     }
 
     pub fn check_read(&self)->bool{
@@ -102,9 +102,9 @@ where
     T:Clone+Debug+abi_stable::StableAbi+hdf5::H5Type,
     //D:ndarray::Dimension
 {
-    filename:String,
-    dataset_path:String,
-    hdf5_file: hdf5::File,
+    // filename:String,
+    // dataset_path:String,
+    // hdf5_file: hdf5::File,
     dataset: hdf5::Dataset,
     _marker:PhantomData<T>,
     is_matlab:bool,
@@ -149,7 +149,7 @@ where
             is_matlab = true;
             println!("MATLAB time detected");
         }
-        Ok(Self{filename, dataset_path, hdf5_file, dataset, _marker:PhantomData, is_matlab})
+        Ok(Self{dataset, _marker:PhantomData, is_matlab})
     }
 
     pub fn check_read(&self)->bool{

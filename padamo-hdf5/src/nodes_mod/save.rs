@@ -8,19 +8,19 @@ use crate::compat::arraynd_to_ndarray;
 pub struct SaveHDF5Node;
 
 impl SaveHDF5Node{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError> {
-        let signal = inputs.request_detectorfulldata("Signal")?;
-        let file_path = inputs.request_string("File path")?.to_string();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError> {
+        let signal = args.inputs.request_detectorfulldata("Signal")?;
+        let file_path = args.inputs.request_string("File path")?.to_string();
         let h5_file = hdf5::File::create(file_path).map_err(ExecutionError::from_error)?;
 
-        let chunk_size = constants.request_integer("chunk")?;
+        let chunk_size = args.constants.request_integer("chunk")?;
         let chunk_size:usize = chunk_size.try_into().map_err(ExecutionError::from_error)?;
 
-        let spatial_name = constants.request_string("spatial_field")?.into_string();
-        let temporal_name = constants.request_string("temporal_field")?.into_string();
+        let spatial_name = args.constants.request_string("spatial_field")?.into_string();
+        let temporal_name = args.constants.request_string("temporal_field")?.into_string();
 
         let spatial = signal.0.request_range(0,signal.0.length());
-        let deflate = constants.request_boolean("deflate")?;
+        let deflate = args.constants.request_boolean("deflate")?;
 
         let ds_shape:Vec<usize> = spatial.shape.clone().into();
         let mut chunk_3d = ds_shape.clone();
@@ -30,7 +30,7 @@ impl SaveHDF5Node{
             .chunk(chunk_3d)
             .shape(ds_shape);
         if deflate{
-            let deflate_level = constants.request_integer("deflate_level")?;
+            let deflate_level = args.constants.request_integer("deflate_level")?;
             let deflate_level = deflate_level.try_into().map_err(ExecutionError::from_error)?;
             space_ds = space_ds.deflate(deflate_level);
         }
@@ -43,7 +43,7 @@ impl SaveHDF5Node{
             .chunk(chunk_size)
             .shape(vec![temporal.len()]);
         if deflate{
-            let deflate_level = constants.request_integer("deflate_level")?;
+            let deflate_level = args.constants.request_integer("deflate_level")?;
             let deflate_level = deflate_level.try_into().map_err(ExecutionError::from_error)?;
             time_ds = time_ds.deflate(deflate_level);
         }
@@ -98,8 +98,8 @@ impl CalculationNode for SaveHDF5Node{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }
 
@@ -110,18 +110,18 @@ impl CalculationNode for SaveHDF5Node{
 pub struct SaveHDF5ArrayNode;
 
 impl SaveHDF5ArrayNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError> {
-        let array = inputs.request_detectorsignal("Array")?;
-        let file_path = inputs.request_string("File path")?.to_string();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError> {
+        let array = args.inputs.request_detectorsignal("Array")?;
+        let file_path = args.inputs.request_string("File path")?.to_string();
         let h5_file = hdf5::File::append(file_path).map_err(ExecutionError::from_error)?;
 
-        let chunk_size = constants.request_integer("chunk")?;
+        let chunk_size = args.constants.request_integer("chunk")?;
         let chunk_size:usize = chunk_size.try_into().map_err(ExecutionError::from_error)?;
 
-        let spatial_name = constants.request_string("field")?.into_string();
+        let spatial_name = args.constants.request_string("field")?.into_string();
 
         let spatial = array.request_range(0,array.length());
-        let deflate = constants.request_boolean("deflate")?;
+        let deflate = args.constants.request_boolean("deflate")?;
 
         let ds_shape:Vec<usize> = spatial.shape.clone().into();
         let mut chunk_3d = ds_shape.clone();
@@ -131,7 +131,7 @@ impl SaveHDF5ArrayNode{
             .chunk(chunk_3d)
             .shape(ds_shape);
         if deflate{
-            let deflate_level = constants.request_integer("deflate_level")?;
+            let deflate_level = args.constants.request_integer("deflate_level")?;
             let deflate_level = deflate_level.try_into().map_err(ExecutionError::from_error)?;
             space_ds = space_ds.deflate(deflate_level);
         }
@@ -184,7 +184,7 @@ impl CalculationNode for SaveHDF5ArrayNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }

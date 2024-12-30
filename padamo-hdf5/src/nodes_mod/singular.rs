@@ -12,11 +12,11 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 pub struct LazyHDF5SignalNode;
 
 impl LazyHDF5SignalNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let filename = inputs.request_string("Filename")?;
-        let spatial = constants.request_string("Spatial")?.into();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let filename = args.inputs.request_string("Filename")?;
+        let spatial = args.constants.request_string("Spatial")?.into();
         //let spatial = super::make_spatial()
-        let temporal = constants.request_string("Temporal")?.into();
+        let temporal = args.constants.request_string("Temporal")?.into();
         //let spatial_reader = LazyHDF5Reader3D::<f64>::new(filename.clone().into(), spatial);
         let spatial_reader = super::make_spatial(filename.clone().into(), spatial);
         let temporal_reader = LazyTimeHDF5Reader::<f64>::new(filename.into(), temporal);
@@ -24,7 +24,7 @@ impl LazyHDF5SignalNode{
             (Ok(sp),Ok(tmp))=>{
                 let signal:LazyTriSignal = (sp,LazyTimeSignal::from_value(tmp,TD_Opaque) ,ROption::RNone).into();
                 //let signal:LazyTriSignal = (LazyDetectorSignal::from_value(sp,TD_Opaque),LazyTimeSignal::from_value(tmp,TD_Opaque) ,ROption::RNone).into();
-                outputs.set_value("Signal", Content::DetectorFullData(signal))
+                args.outputs.set_value("Signal", Content::DetectorFullData(signal))
             },
             (Err(sp),Err(tmp))=>{
                 Err(ExecutionError::OtherError(format!("HDF error (spatiotemporal): {}; {}",sp,tmp).into()))
@@ -78,8 +78,8 @@ impl CalculationNode for LazyHDF5SignalNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 
 }

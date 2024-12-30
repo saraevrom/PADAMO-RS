@@ -47,11 +47,11 @@ fn has_spacetime(filename:&str,spatial:&str, temporal:&str)->bool{
 }
 
 impl LazyHDF5DirSignalNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let dirname:String = inputs.request_string("Dirname")?.into();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let dirname:String = args.inputs.request_string("Dirname")?.into();
 
-        let spatial:String = constants.request_string("Spatial")?.into();
-        let temporal:String = constants.request_string("Temporal")?.into();
+        let spatial:String = args.constants.request_string("Spatial")?.into();
+        let temporal:String = args.constants.request_string("Temporal")?.into();
 
         let paths = fs::read_dir(&dirname).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
 
@@ -140,7 +140,7 @@ impl LazyHDF5DirSignalNode{
         // }
         if let (Some(sp), Some(tmp)) = (spatial_reader,temporal_reader){
             let signal:LazyTriSignal = (sp,tmp ,ROption::RNone).into();
-            outputs.set_value("Signal", Content::DetectorFullData(signal))
+            args.outputs.set_value("Signal", Content::DetectorFullData(signal))
         }
         else{
             Err(ExecutionError::OtherError("No files to join".into()))
@@ -187,8 +187,8 @@ impl CalculationNode for LazyHDF5DirSignalNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 
 }
