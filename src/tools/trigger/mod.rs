@@ -261,7 +261,10 @@ impl PadamoTool for PadamoTrigger{
                     widget::button("Stop").on_press(TriggerMessage::Stop),
                 ],
                 widget::button("Focus on event").on_press(TriggerMessage::ExamineEvent),
-                widget::button("Export").on_press(TriggerMessage::Export),
+                widget::row![
+                    widget::button("Export").on_press(TriggerMessage::Export),
+                    widget::button("Export stop").on_press(TriggerMessage::ExportStop)
+                ],
                 widget::text(&self.trigger_status),
                 widget::text(&self.export_status),
 
@@ -482,7 +485,6 @@ impl PadamoTool for PadamoTrigger{
                     TriggerMessage::ExportStop=>{
                         if let Some(v) = &mut self.export_process{
                              v.request_stop();
-
                         }
                     }
                 }

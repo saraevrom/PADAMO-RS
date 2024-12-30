@@ -28,7 +28,7 @@ use form::AnimationParameters;
 
 use form::ViewerForm;
 
-use iced_font_awesome::{fa_icon_solid, fa_icon};
+use iced_font_awesome::fa_icon_solid;
 
 fn get_icon(icon:&'static str)->FaIcon{
     fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])

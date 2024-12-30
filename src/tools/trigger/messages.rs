@@ -9,7 +9,9 @@ pub enum TriggerMessage{
     ConfirmTrigger,
     SelectionMessage(SelectionMessage),
     SettingsMessage(ActionOrUpdate<TriggerSettingsFormMessage>),
+    #[allow(dead_code)] // (usize, String for iced_aw compat)
     SelectPositive(usize, String),
+    #[allow(dead_code)] // (usize, String for iced_aw compat)
     SelectNegative(usize, String),
     ExamineEvent,
     Stop,
@@ -23,5 +25,6 @@ pub enum SelectionMessage{
     SetStart(String),
     SetEnd(String),
     //CommitInterval,
+    #[allow(dead_code)] // (usize, String for iced_aw compat)
     IntervalSelected(usize,String),
 }

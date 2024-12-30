@@ -14,7 +14,6 @@ use crate::{application::PadamoState, messages::PadamoAppMessage};
 pub mod messages;
 pub mod diagram;
 //pub mod selection_diagram;
-mod colors;
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use iced::widget::canvas::Cache;
 use super::viewer::ViewerMessage;
@@ -33,7 +32,7 @@ pub use form::{TimeAxisFormat,LCMode};
 
 
 
-
+#[allow(dead_code)]
 #[derive(Clone,Debug,Copy,Eq,PartialEq)]
 pub enum TimeAxisRangeFormat{
     Seconds,
@@ -63,6 +62,8 @@ impl TimeAxisFormat{
             }
         }
     }
+
+    #[allow(dead_code)]
     pub fn range_format(&self)->TimeAxisRangeFormat{
         match self {
             Self::AsIs | Self::Offset | Self::Time => TimeAxisRangeFormat::Seconds,

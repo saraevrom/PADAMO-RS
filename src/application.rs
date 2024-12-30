@@ -81,17 +81,6 @@ impl PadamoState{
 }
 
 impl Padamo{
-    pub fn generate_state<'a>(&'a mut self)->PadamoStateRef<'a>{
-        //PadamoStateRef { appref: self }
-        &mut self.state
-        // PadamoStateRef {
-        //     nodes: self.nodes.clone(),
-        //     compute_graph: self.compute_graph.clone(),
-        //     workspace:self.workspace.clone(),
-        //     add_delay_ms:self.add_delay_ms.clone(),
-        //     //popup_messages:self.popup_messages.clone(),
-        // }
-    }
 
 
     pub fn update_tools(&mut self, msg:Rc<PadamoAppMessage>){

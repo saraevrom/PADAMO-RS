@@ -21,16 +21,16 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
         Self { visible: false, content: BTreeMap::new(), name, parent, last_rect:RefCell::new(None),metadata}
     }
 
-    fn path(&self)->Vec<String>{
-        if let Some(parent) = self.parent.upgrade(){
-            let mut path = parent.borrow().path();
-            path.push(self.name.clone());
-            path
-        }
-        else{
-            vec![self.name.clone()]
-        }
-    }
+    // fn path(&self)->Vec<String>{
+    //     if let Some(parent) = self.parent.upgrade(){
+    //         let mut path = parent.borrow().path();
+    //         path.push(self.name.clone());
+    //         path
+    //     }
+    //     else{
+    //         vec![self.name.clone()]
+    //     }
+    // }
 
     pub fn is_final(&self)->bool{
         self.content.is_empty()

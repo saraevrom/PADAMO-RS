@@ -177,7 +177,7 @@ impl PadamoTool for PadamoEditor{
     }
 
     fn update(&mut self, msg: Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef){
-        match &*msg{
+        match msg.as_ref(){
             crate::messages::PadamoAppMessage::EditorMessage(emsg) =>{
                 match emsg {
                     messages::EditorMessage::CanvasMessage(msg) => {

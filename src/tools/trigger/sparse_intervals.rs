@@ -70,6 +70,7 @@ impl Interval{
         }
     }
 
+    #[allow(dead_code)]
     pub fn unify(&self,other:&Self)->Option<Self>{
         if self.start>other.end || other.end>self.end{
             None
@@ -183,6 +184,7 @@ impl IntervalStorage{
         }
     }
 
+    #[allow(dead_code)]
     pub fn print_contents(&self){
         for i in self.container.iter(){
             print!("{} ",i);

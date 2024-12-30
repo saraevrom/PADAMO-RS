@@ -17,7 +17,6 @@ pub struct EditorState{
     pub nodes: super::nodes::GraphNodeStorage,
     pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
     pub pending_paste:RefCell<Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>>,
-    pub divider_position: Option<u16>,
     pub scroll_offset: scrollable::AbsoluteOffset
 }
 
@@ -25,7 +24,7 @@ pub struct EditorState{
 impl EditorState{
     pub fn new()->Self{
         let nodes = super::nodes::GraphNodeStorage::new();
-        Self { nodes, copied_data:None, pending_paste:RefCell::new(None), divider_position:None, scroll_offset:scrollable::AbsoluteOffset{x:0.0, y:0.}}
+        Self { nodes, copied_data:None, pending_paste:RefCell::new(None), scroll_offset:scrollable::AbsoluteOffset{x:0.0, y:0.}}
     }
 
     pub fn request_paste(&mut self){
@@ -42,6 +41,7 @@ impl EditorState{
 
     }
 
+    #[allow(dead_code)]
     pub fn paste_buffer(&mut self, position:iced::Point){
         if let Some(buf) = &self.copied_data{
             self.nodes.instantiate(&buf, position);
@@ -319,7 +319,6 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                 // if !bounds.contains(curpos){
                 //     return (event::Status::Ignored, None);
                 // }
-                let curpos_origin = curpos;
                 let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
 
                 match event{
@@ -327,7 +326,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                     // Event::Mouse(iced::mouse::Event::CursorLeft)=>{
                     //     println!("Cursor left the area");
                     // },
-                    Event::Mouse(iced::mouse::Event::CursorMoved { position })=>{
+                    Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>{
                         if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, can_delete, size:_ } = state{
                             if ! *can_delete{
                                 let deletion_rect = self.deletion_box();
@@ -387,7 +386,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                         }
                     },
                     Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right))=>{
-                        if let Some((i,pos,size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
+                        if let Some((i,_pos,_size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
                             match mouse_status{
                                 super::nodes::NodeMouseHit::Input(port,_)=>{
                                     msg = Some(EditorCanvasMessage::UnlinkInput { node: i, input_port: port })

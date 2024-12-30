@@ -1,12 +1,12 @@
 use padamo_api::prelude::CalculationNodeBox;
 use ordered_hash_map::OrderedHashMap;
-use padamo_api::prelude::*;
 use super::PortData;
 
 #[derive(Clone,Debug)]
 pub struct NodeProxy(pub CalculationNodeBox);
 
 impl NodeProxy{
+    #[allow(dead_code)]
     pub fn new(node:CalculationNodeBox)->Self{
         Self(node)
     }

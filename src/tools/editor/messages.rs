@@ -7,6 +7,7 @@ pub enum EditorCanvasMessage{
     LinkNode{from:usize,output_port:String, to:usize, input_port:String},
     UnlinkOutput{node:usize, output_port:String},
     UnlinkInput{node:usize, input_port:String},
+    #[allow(dead_code)]
     Unselect,
     SquareSelect(iced::Point,iced::Point),
     Select(usize),

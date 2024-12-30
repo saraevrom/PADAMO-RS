@@ -91,6 +91,7 @@ pub struct OutputDefinition{
 }
 
 impl OutputDefinition{
+    #[allow(dead_code)]
     pub fn new( port_type:PortType)->Self{
         Self { port_type }
     }
@@ -437,13 +438,13 @@ impl GraphNode{
     pub fn mouse_event(&self, point:iced::Point)->Option<NodeMouseHit>{
         if is_inside(point, self.position, self.size){
             let port_size = iced::Size::new(PORT_SIZE, PORT_SIZE);
-            for (i,(title, port_data)) in self.inputs.iter().enumerate(){
+            for (i,(title, _port_data)) in self.inputs.iter().enumerate(){
                 let pos = self.get_input_position(i);
                 if is_inside(point, pos, port_size){
                     return Some(NodeMouseHit::Input(title.clone(),self.get_input_position(i)+PORT_CENTER_OFFSET));
                 }
             }
-            for (i,(title, port_data)) in self.outputs.iter().enumerate(){
+            for (i,(title, _port_data)) in self.outputs.iter().enumerate(){
                 let pos = self.get_output_position(i);
                 if is_inside(point, pos, port_size){
                     return Some(NodeMouseHit::Output(title.clone(),self.get_output_position(i)+PORT_CENTER_OFFSET));
@@ -490,6 +491,7 @@ impl NodeSelection{
         Self { selected_nodes: Vec::new() }
     }
 
+    #[allow(dead_code)]
     pub fn simplify(&mut self){
         self.selected_nodes = self.selected_nodes.drain(..).filter(|x| x.upgrade().is_some()).collect();
     }
@@ -937,6 +939,7 @@ impl GraphNodeStorage{
         }
     }
 
+    #[allow(dead_code)]
     pub fn select_node(&mut self, i:usize){
         self.unselect_nodes();
         self.add_to_selection(i);
