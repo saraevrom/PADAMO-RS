@@ -1,5 +1,6 @@
 use std::f64::consts::E;
 
+#[allow(dead_code)]
 fn lambertw0_binary(x:f64, precision:f64)->f64{
     if x < -1.0/E{
         return -1.0;

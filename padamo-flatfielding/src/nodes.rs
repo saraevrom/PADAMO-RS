@@ -15,13 +15,13 @@ pub fn old_id(name:&str)->ROption<RString>{
 pub struct PhysicalFFNode;
 
 impl PhysicalFFNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
-        let eff_2d = inputs.request_detectorsignal("Eff_2D")?;
-        let tau = inputs.request_detectorsignal("Tau")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
+        let eff_2d = args.inputs.request_detectorsignal("Eff_2D")?;
+        let tau = args.inputs.request_detectorsignal("Tau")?;
         let mut eff_2d = eff_2d.request_range(0,eff_2d.length());
         let mut tau = tau.request_range(0,tau.length());
-        if constants.request_boolean("squeeze_map")?{
+        if args.constants.request_boolean("squeeze_map")?{
             tau = tau.squeeze();
             eff_2d = eff_2d.squeeze();
         }
@@ -37,9 +37,9 @@ impl PhysicalFFNode{
             return Err(ExecutionError::OtherError(format!("flat fielding eff_2d {:?} is not compatible with signal {:?}", test_data.shape, eff_2d.shape).into()));
         }
         //if test_data.shape.le
-        let consts = PhysicalFFConstants::from_constlist(&constants)?;
+        let consts = PhysicalFFConstants::from_constlist(&args.constants)?;
         signal.0 = make_lao_box(crate::ops::PhysicalFF::new(signal.0, eff_2d, tau, consts));
-        outputs.set_value("Signal", signal.into())?;
+        args.outputs.set_value("Signal", signal.into())?;
         Ok(())
     }
 }
@@ -92,8 +92,8 @@ impl CalculationNode for PhysicalFFNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -101,11 +101,11 @@ impl CalculationNode for PhysicalFFNode{
 pub struct MapMultiplyNode;
 
 impl MapMultiplyNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
-        let coeffs = inputs.request_detectorsignal("Coefficients")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
+        let coeffs = args.inputs.request_detectorsignal("Coefficients")?;
         let mut coeffs = coeffs.request_range(0,coeffs.length());
-        if constants.request_boolean("squeeze_map")?{
+        if args.constants.request_boolean("squeeze_map")?{
             coeffs = coeffs.squeeze();
         }
 
@@ -120,7 +120,7 @@ impl MapMultiplyNode{
 
         //if test_data.shape.le
         signal.0 = make_lao_box(crate::ops::MultiplyByMap::new(signal.0, coeffs));
-        outputs.set_value("Signal", signal.into())?;
+        args.outputs.set_value("Signal", signal.into())?;
         Ok(())
     }
 }
@@ -171,8 +171,8 @@ impl CalculationNode for MapMultiplyNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -180,12 +180,12 @@ impl CalculationNode for MapMultiplyNode{
 pub struct MapDivideNode;
 
 impl MapDivideNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
-        let coeffs = inputs.request_detectorsignal("Coefficients")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
+        let coeffs = args.inputs.request_detectorsignal("Coefficients")?;
         let mut coeffs = coeffs.request_range(0,coeffs.length());
 
-        if constants.request_boolean("squeeze_map")?{
+        if args.constants.request_boolean("squeeze_map")?{
             coeffs = coeffs.squeeze();
         }
 
@@ -200,7 +200,7 @@ impl MapDivideNode{
 
         //if test_data.shape.le
         signal.0 = make_lao_box(crate::ops::DivideByMap::new(signal.0, coeffs));
-        outputs.set_value("Signal", signal.into())?;
+        args.outputs.set_value("Signal", signal.into())?;
         Ok(())
     }
 }
@@ -251,7 +251,7 @@ impl CalculationNode for MapDivideNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
