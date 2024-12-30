@@ -47,14 +47,14 @@ fn request_usize(name:&str,constants:&ConstantContentContainer)->Result<usize,Ex
 pub struct BlankDataNode;
 
 impl BlankDataNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError> {
-        let length = request_usize("length",&constants)?;
-        let time_offset = constants.request_float("time_offset")?;
-        let time_step = constants.request_float("time_step")?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
+        let length = request_usize("length",&args.constants)?;
+        let time_offset = args.constants.request_float("time_offset")?;
+        let time_step = args.constants.request_float("time_step")?;
 
         //let shape = constants.request_string("shape")?;
         //let shape = crate::shape_parser::parse_usize_vec(&shape).ok_or_else(|| ExecutionError::OtherError(format!("Cannot parse shape {}",&shape).into()))?;
-        let detector_content = environment.request_string("detector")?.to_string();
+        let detector_content = args.environment.request_string("detector")?.to_string();
         let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let shape = detector.compat_shape.clone();
 
@@ -63,7 +63,7 @@ impl BlankDataNode{
 
         let signal:LazyTriSignal = (make_lao_box(spatial),make_lao_box(temporal),ROption::RNone).into();
 
-        outputs.set_value("Signal", signal.into())?;
+        args.outputs.set_value("Signal", signal.into())?;
 
         Ok(())
     }
@@ -114,8 +114,8 @@ impl CalculationNode for BlankDataNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }
 
@@ -124,16 +124,16 @@ impl CalculationNode for BlankDataNode{
 pub struct AdditiveNormalNoiseNode;
 
 impl AdditiveNormalNoiseNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let sigma = constants.request_float("sigma")?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let sigma = args.constants.request_float("sigma")?;
         if sigma<=0.0{
             return Err(ExecutionError::OtherError("Standard deviation must be positive".into()));
         }
-        let seed = constants.request_integer("seed")?;
-        let mut signal = inputs.request_detectorfulldata("Background")?;
+        let seed = args.constants.request_integer("seed")?;
+        let mut signal = args.inputs.request_detectorfulldata("Background")?;
         signal.2 = ROption::RNone;
         signal.0 = make_lao_box(super::ops::LazyAdditiveNormalNoise::new(signal.0, seed, sigma));
-        outputs.set_value("Signal", signal.into())
+        args.outputs.set_value("Signal", signal.into())
     }
 }
 
@@ -180,7 +180,7 @@ impl CalculationNode for AdditiveNormalNoiseNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }

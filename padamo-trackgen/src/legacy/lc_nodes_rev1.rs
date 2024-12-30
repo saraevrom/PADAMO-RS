@@ -13,13 +13,13 @@ fn category() -> RVec<RString>where {
 pub struct LinearLCNodeOld;
 
 impl LinearLCNodeOld{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let tau = inputs.request_float("tau")?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let tau = args.inputs.request_float("tau")?;
         if tau==0.0{
             return Err(ExecutionError::OtherError("Linear LC tau must be nonzero".into()));
         }
         let output:DoubleFunctionOperatorBox = (move |x| x/tau+1.0).into();
-        outputs.set_value("LC", output.into())?;
+        args.outputs.set_value("LC", output.into())?;
         Ok(())
     }
 }
@@ -70,8 +70,8 @@ impl CalculationNode for LinearLCNodeOld{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -81,13 +81,13 @@ impl CalculationNode for LinearLCNodeOld{
 pub struct ExponentLCNodeOld;
 
 impl ExponentLCNodeOld{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let tau = inputs.request_float("tau")?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let tau = args.inputs.request_float("tau")?;
         if tau==0.0{
             return Err(ExecutionError::OtherError("Exponent LC tau must not be zero".into()));
         }
         let output:DoubleFunctionOperatorBox = (move |x:f64| (x/tau).exp()).into();
-        outputs.set_value("LC", output.into())?;
+        args.outputs.set_value("LC", output.into())?;
         Ok(())
     }
 }
@@ -138,8 +138,8 @@ impl CalculationNode for ExponentLCNodeOld{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -151,11 +151,11 @@ impl CalculationNode for ExponentLCNodeOld{
 pub struct MultiplyByFloatNodeOld;
 
 impl MultiplyByFloatNodeOld{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let m = inputs.request_float("Multiplier")?;
-        let inner = inputs.request_function("LC")?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let m = args.inputs.request_float("Multiplier")?;
+        let inner = args.inputs.request_function("LC")?;
         let output = inner.map(move |x| x*m);
-        outputs.set_value("LC", output.into())?;
+        args.outputs.set_value("LC", output.into())?;
         Ok(())
     }
 }
@@ -204,8 +204,8 @@ impl CalculationNode for MultiplyByFloatNodeOld{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 

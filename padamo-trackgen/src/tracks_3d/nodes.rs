@@ -10,44 +10,44 @@ use abi_stable::rvec;
 pub struct GaussPSFMeteorTrackNode;
 
 impl GaussPSFMeteorTrackNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer, environment: &mut ContentContainer) -> Result<(),ExecutionError>{
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
 
-        let detector_content = environment.request_string("detector")?.to_string();
+        let detector_content = args.environment.request_string("detector")?.to_string();
         let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let detector = crate::ensquared_energy::detector::wireframe(detector);
 
-        let mut data = inputs.request_detectorfulldata("Background")?;
-        let lc = inputs.request_function("Lightcurve")?;
+        let mut data = args.inputs.request_detectorfulldata("Background")?;
+        let lc = args.inputs.request_function("Lightcurve")?;
 
-        let pivot_frame = constants.request_float("pivot_frame")?;
+        let pivot_frame = args.constants.request_float("pivot_frame")?;
 
-        let modify_intensity = constants.request_boolean("modify_intensity")?;
-        let motion_blur_steps = crate::requesters::request_usize("motion_blur_steps",&constants)?;
+        let modify_intensity = args.constants.request_boolean("modify_intensity")?;
+        let motion_blur_steps = crate::requesters::request_usize("motion_blur_steps",&args.constants)?;
 
-        let theta0 = constants.request_float("theta0")?*PI/180.0;
-        let phi0 = constants.request_float("phi0")?*PI/180.0;
+        let theta0 = args.constants.request_float("theta0")?*PI/180.0;
+        let phi0 = args.constants.request_float("phi0")?*PI/180.0;
 
         let e0_x = -theta0.sin()*phi0.cos();
         let e0_y = -theta0.sin()*phi0.sin();
         let e0_z = -theta0.cos();
 
 
-        let x0_planar = constants.request_float("X0")?;
-        let y0_planar = constants.request_float("Y0")?;
-        let z0 = constants.request_float("z0")?;
-        let f = constants.request_float("f")?;
+        let x0_planar = args.constants.request_float("X0")?;
+        let y0_planar = args.constants.request_float("Y0")?;
+        let z0 = args.constants.request_float("z0")?;
+        let f = args.constants.request_float("f")?;
         if f<=0.0{
             return Err(ExecutionError::OtherError("Focal distance must be positive".into()));
         }
 
-        let sigma_x = constants.request_float("sigma_x")?;
-        let sigma_y = constants.request_float("sigma_y")?;
+        let sigma_x = args.constants.request_float("sigma_x")?;
+        let sigma_y = args.constants.request_float("sigma_y")?;
 
         let x0 = x0_planar*z0/f;
         let y0 = y0_planar*z0/f;
 
-        let v0 = constants.request_float("v0")?;
-        let a0 = constants.request_float("a0")?;
+        let v0 = args.constants.request_float("v0")?;
+        let a0 = args.constants.request_float("a0")?;
 
         data.0 = make_lao_box(super::ops::LazyGaussPSFMeteorTrack{
             motion_blur_steps,
@@ -69,7 +69,7 @@ impl GaussPSFMeteorTrackNode{
             sigma_y
         });
 
-        outputs.set_value("Signal", data.into())?;
+        args.outputs.set_value("Signal", data.into())?;
         Ok(())
     }
 }
@@ -124,7 +124,7 @@ impl CalculationNode for GaussPSFMeteorTrackNode{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
