@@ -10,8 +10,8 @@ use padamo_api::{ports,nodes_vec};
 pub struct Printer(pub ContentType);
 
 impl Printer{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let value = inputs.request_type(&self.0, "Value")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let value = args.inputs.request_type(&self.0, "Value")?;
         println!("Value: {:?}", value);
         Ok(())
     }
@@ -56,8 +56,8 @@ impl CalculationNode for Printer{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 
@@ -67,8 +67,8 @@ impl CalculationNode for Printer{
 pub struct StringCaster(pub ContentType);
 
 impl StringCaster{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let value = inputs.request_type(&self.0, "Value")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let value = args.inputs.request_type(&self.0, "Value")?;
         // let precision = constants.request_integer("Precision")?;
         // let precision:usize = precision.try_into().map_err(ExecutionError::from_error)?;
         let cast = match value {
@@ -78,7 +78,7 @@ impl StringCaster{
             Content::String(s)=>s.to_string(),
             _=>{return Err(ExecutionError::OtherError("Unsupported output".into()));}
         };
-        outputs.set_value("Value", cast.into())?;
+        args.outputs.set_value("Value", cast.into())?;
         // println!("Value: {:?}", value);
         Ok(())
     }
@@ -118,8 +118,8 @@ impl CalculationNode for StringCaster{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 
@@ -128,12 +128,12 @@ pub struct FloatToStringCaster;
 
 
 impl FloatToStringCaster{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let value = inputs.request_float("Value")?;
-        let precision = constants.request_integer("Precision")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let value = args.inputs.request_float("Value")?;
+        let precision = args.constants.request_integer("Precision")?;
         let precision:usize = precision.try_into().map_err(ExecutionError::from_error)?;
         let cast = format!("{:.1$}",value,precision);
-        outputs.set_value("Value", cast.into())?;
+        args.outputs.set_value("Value", cast.into())?;
         // println!("Value: {:?}", value);
         Ok(())
     }
@@ -175,8 +175,8 @@ impl CalculationNode for FloatToStringCaster{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 

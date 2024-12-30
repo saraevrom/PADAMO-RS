@@ -11,9 +11,9 @@ fn category() -> RVec<RString>where {
 pub struct TriggerExpandNode;
 
 impl TriggerExpandNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>where {
-        let mut data = inputs.request_detectorfulldata("Signal")?;
-        let expansion_signed = constants.request_integer("Expansion")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut data = args.inputs.request_detectorfulldata("Signal")?;
+        let expansion_signed = args.constants.request_integer("Expansion")?;
         let expansion:usize = match usize::try_from(expansion_signed) {
             Ok(v)=>{v}
             Err(_)=>{return Err(ExecutionError::OtherError("Cannot convert expansion to unsigned".into()));}
@@ -25,7 +25,7 @@ impl TriggerExpandNode{
             let conv = make_lao_box(conv);
             data.2 = ROption::RSome(conv);
         }
-        outputs.set_value("Signal", data.into())?;
+        args.outputs.set_value("Signal", data.into())?;
         Ok(())
     }
 }
@@ -77,8 +77,8 @@ impl CalculationNode for TriggerExpandNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 
 
@@ -89,9 +89,9 @@ pub struct TriggerExchangeNode;
 
 
 impl TriggerExchangeNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
-        let trigger_source = inputs.request_detectorfulldata("Trigger source")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
+        let trigger_source = args.inputs.request_detectorfulldata("Trigger source")?;
 
         if let ROption::RSome(trig) = trigger_source.2{
             if signal.0.length()==trig.length(){
@@ -102,7 +102,7 @@ impl TriggerExchangeNode{
             }
         }
 
-        outputs.set_value("Signal", signal.into())
+        args.outputs.set_value("Signal", signal.into())
     }
 }
 
@@ -137,8 +137,8 @@ impl CalculationNode for TriggerExchangeNode {
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -148,15 +148,15 @@ impl CalculationNode for TriggerExchangeNode {
 pub struct TriggerNegateNode;
 
 impl TriggerNegateNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
 
         if let ROption::RSome(trig) = signal.2{
             let trig = make_lao_box(crate::trigger_ops::LazyTriggerNegate::new(trig));
             signal.2 = ROption::RSome(trig);
         }
 
-        outputs.set_value("Signal", signal.into())
+        args.outputs.set_value("Signal", signal.into())
     }
 }
 
@@ -189,8 +189,8 @@ impl CalculationNode for TriggerNegateNode{
         constants!()
     }
 
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments)->RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }
 
@@ -198,9 +198,9 @@ impl CalculationNode for TriggerNegateNode{
 pub struct TriggerAndNode;
 
 impl TriggerAndNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
-        let mut signal_a = inputs.request_detectorfulldata("Main Signal")?;
-        let signal_b = inputs.request_detectorfulldata("Secondary signal")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal_a = args.inputs.request_detectorfulldata("Main Signal")?;
+        let signal_b = args.inputs.request_detectorfulldata("Secondary signal")?;
 
         if let ROption::RSome(trig_1) = signal_a.2{
             if let ROption::RSome(trig_2) = signal_b.2{
@@ -216,7 +216,7 @@ impl TriggerAndNode{
             }
         }
 
-        outputs.set_value("Signal", signal_a.into())
+        args.outputs.set_value("Signal", signal_a.into())
     }
 }
 
@@ -250,8 +250,8 @@ impl CalculationNode for TriggerAndNode{
         ]
     }
 
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments)->RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }
 
@@ -259,9 +259,9 @@ impl CalculationNode for TriggerAndNode{
 pub struct TriggerOrNode;
 
 impl TriggerOrNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>{
-        let mut signal_a = inputs.request_detectorfulldata("Main Signal")?;
-        let signal_b = inputs.request_detectorfulldata("Secondary signal")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal_a = args.inputs.request_detectorfulldata("Main Signal")?;
+        let signal_b = args.inputs.request_detectorfulldata("Secondary signal")?;
 
         if let ROption::RSome(trig_1) = signal_a.2{
             if let ROption::RSome(trig_2) = signal_b.2{
@@ -281,7 +281,7 @@ impl TriggerOrNode{
             }
         }
 
-        outputs.set_value("Signal", signal_a.into())
+        args.outputs.set_value("Signal", signal_a.into())
     }
 }
 
@@ -315,8 +315,8 @@ impl CalculationNode for TriggerOrNode{
         ]
     }
 
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments)->RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }
 

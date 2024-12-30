@@ -11,8 +11,8 @@ use std::path::Path;
 pub struct FileSplit;
 
 impl FileSplit{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let src:String = inputs.request_string("File path")?.into();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let src:String = args.inputs.request_string("File path")?.into();
         let fp = Path::new(&src);
         let basename = fp.file_name();
         let dirname= fp.parent();
@@ -20,8 +20,8 @@ impl FileSplit{
             if let (Some(bs), Some(ds)) = (b.to_str(), d.to_str()){
                 let bn:String = bs.into();
                 let dn:String = ds.into();
-                outputs.set_value("Basename",bn.into())?;
-                outputs.set_value("Dirname",dn.into())?;
+                args.outputs.set_value("Basename",bn.into())?;
+                args.outputs.set_value("Dirname",dn.into())?;
                 Ok(())
             }
             else{
@@ -75,8 +75,8 @@ impl CalculationNode for FileSplit{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 
@@ -94,13 +94,13 @@ pub fn nodes()->RVec<CalculationNodeBox>{
 pub struct FileMerge;
 
 impl FileMerge{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let f1:String = constants.request_string("Path 1")?.into();
-        let f2:String = constants.request_string("Path 2")?.into();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let f1:String = args.constants.request_string("Path 1")?.into();
+        let f2:String = args.constants.request_string("Path 2")?.into();
         let fp1 = Path::new(&f1);
         let fp2 = Path::new(&f2);
         let res:String = fp1.join(fp2).into_os_string().into_string().map_err(|x| ExecutionError::OtherError(format!("Could not convert {:?} into path",x).into()))?;
-        outputs.set_value("Path", res.into())?;
+        args.outputs.set_value("Path", res.into())?;
         Ok(())
     }
 }
@@ -145,7 +145,7 @@ impl CalculationNode for FileMerge{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }

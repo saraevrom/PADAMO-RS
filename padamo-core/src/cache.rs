@@ -6,10 +6,10 @@ use padamo_api::{constants, ports, prelude::*};
 pub struct ForcedCacheNode;
 
 impl ForcedCacheNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
         signal.0 = signal.0.cached();
-        outputs.set_value("Signal", signal.into())
+        args.outputs.set_value("Signal", signal.into())
     }
 }
 
@@ -42,7 +42,7 @@ impl CalculationNode for ForcedCacheNode{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }

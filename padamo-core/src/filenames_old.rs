@@ -22,13 +22,13 @@ pub fn nodes()->RVec<CalculationNodeBox>{
 pub struct FileMergeOld;
 
 impl FileMergeOld{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let f1:String = inputs.request_string("Path 1")?.into();
-        let f2:String = inputs.request_string("Path 2")?.into();
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let f1:String = args.inputs.request_string("Path 1")?.into();
+        let f2:String = args.inputs.request_string("Path 2")?.into();
         let fp1 = Path::new(&f1);
         let fp2 = Path::new(&f2);
         let res:String = fp1.join(fp2).into_os_string().into_string().map_err(|x| ExecutionError::OtherError(format!("Could not convert {:?} into path",x).into()))?;
-        outputs.set_value("Path", res.into())?;
+        args.outputs.set_value("Path", res.into())?;
         Ok(())
     }
 }
@@ -75,7 +75,7 @@ impl CalculationNode for FileMergeOld{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }

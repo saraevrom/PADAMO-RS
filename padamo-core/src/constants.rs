@@ -8,9 +8,9 @@ use padamo_api::ports;
 pub struct Constant(pub ConstantContentType);
 
 impl Constant{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let value = constants.request_type(&self.0, "Value")?;
-        outputs.set_value("Value", value.into())
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let value = args.constants.request_type(&self.0, "Value")?;
+        args.outputs.set_value("Value", value.into())
     }
 }
 
@@ -50,8 +50,8 @@ impl CalculationNode for Constant{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 

@@ -6,14 +6,14 @@ pub struct EnvOutputNode(pub ContentType);
 
 
 impl EnvOutputNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let key = constants.request_string("Key")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let key = args.constants.request_string("Key")?;
         // let value = constants.request_type(&self.0, "Value")?;
-        let value = match  environment.request_type(&self.0, &key){
+        let value = match  args.environment.request_type(&self.0, &key){
             Ok(v) => v,
             Err(e)=>{
                 if let Ok(d) = TryInto::<ConstantContentType>::try_into(self.0){
-                    let constant = constants.request_type(&d, "Default")?;
+                    let constant = args.constants.request_type(&d, "Default")?;
                     constant.into()
                 }
                 else{
@@ -22,7 +22,7 @@ impl EnvOutputNode{
             }
         };
 
-        outputs.set_value("Value", value.into())
+        args.outputs.set_value("Value", value.into())
     }
 }
 
@@ -63,8 +63,8 @@ impl CalculationNode for EnvOutputNode{
         res
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 
@@ -74,12 +74,12 @@ pub struct EnvInputNode(pub ContentType);
 
 
 impl EnvInputNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let key = constants.request_string("Key")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let key = args.constants.request_string("Key")?;
         // let value = constants.request_type(&self.0, "Value")?;
-        let value = inputs.request_type(&self.0, "Value")?;
+        let value = args.inputs.request_type(&self.0, "Value")?;
 
-        environment.0.insert(key, value.into());
+        args.environment.0.insert(key, value.into());
         Ok(())
     }
 }
@@ -121,8 +121,8 @@ impl CalculationNode for EnvInputNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>{
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>{
+        self.calculate(args).into()
     }
 }
 
