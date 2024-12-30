@@ -32,11 +32,11 @@ impl ANN3DNode {
         Ok(Self { name:name.into(), ann_model, size_hint, output_layer, id:id.to_owned(), old_name:old_name.to_owned() })
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let stride = request_usize(&constants,"Stride")?;
-        let threshold = constants.request_float("Threshold")? as f32;
-        let squeeze = constants.request_boolean("Squeeze")?;
-        let mut signal = inputs.request_detectorfulldata("Signal")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let stride = request_usize(&args.constants,"Stride")?;
+        let threshold = args.constants.request_float("Threshold")? as f32;
+        let squeeze = args.constants.request_boolean("Squeeze")?;
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
 
         signal.0 = crate::ops::LazyANNTrigger3D::align_data(signal.0, stride, self.size_hint).map_err(ExecutionError::from_error)?;
         signal.1 = crate::ops::LazyANNTrigger3D::align_data(signal.1, stride, self.size_hint).map_err(ExecutionError::from_error)?;
@@ -46,7 +46,7 @@ impl ANN3DNode {
                                               self.output_layer.clone(),squeeze).map_err(ExecutionError::from_dyn_error)?
         ));
 
-        outputs.set_value("Signal",signal.into())?;
+        args.outputs.set_value("Signal",signal.into())?;
 
         Ok(())
     }
@@ -99,7 +99,7 @@ impl CalculationNode for ANN3DNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }

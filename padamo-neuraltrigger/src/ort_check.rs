@@ -43,12 +43,12 @@ pub fn check_dylib() -> bool{
                 let base_getter: Result<libloading::Symbol<unsafe extern "C" fn() -> *const ort_sys::OrtApiBase>,_> = lib
                             .get(b"OrtGetApiBase");
                 match base_getter {
-                    Ok(v)=>{
+                    Ok(_v)=>{
                         println!("Check passed");
                         true
                     }
                     Err(e)=>{
-                        println!("Symbol error");
+                        println!("Symbol error: {}",e);
                         false
                     }
                 }
@@ -56,7 +56,7 @@ pub fn check_dylib() -> bool{
 
         }
         Err(e)=>{
-            println!("Library load error");
+            println!("Library load error: {}", e);
             false
         },
     }
