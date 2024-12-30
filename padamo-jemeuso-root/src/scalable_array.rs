@@ -1,4 +1,3 @@
-use ndarray::ArrayBase;
 use ndarray::IxDyn;
 use oxyroot::Unmarshaler;
 use oxyroot::RBuffer;
@@ -69,7 +68,7 @@ pub struct NDArrayRootWrapper{
 }
 
 impl Unmarshaler for NDArrayRootWrapper{
-    fn unmarshal(&mut self, r: &mut RBuffer) -> Result<(), oxyroot::rbytes::error::Error>{
+    fn unmarshal(&mut self, _r: &mut RBuffer) -> Result<(), oxyroot::rbytes::error::Error>{
         Err(oxyroot::rbytes::Error::Misc("Name required".into()))
     }
 
