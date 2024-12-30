@@ -14,10 +14,10 @@ pub struct SlidingMedianNode;
 
 
 impl SlidingMedianNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let window = constants.request_integer("Sliding window")? as usize;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let window = args.constants.request_integer("Sliding window")? as usize;
 
-        let source = inputs.request_detectorfulldata("Signal")?;
+        let source = args.inputs.request_detectorfulldata("Signal")?;
         let trigger = source.2.map(|x| LazyArrayOperationBox::from_value(LazySkipper::new(x, window), TD_Opaque));
 
         if source.0.length()<window{
@@ -39,8 +39,8 @@ impl SlidingMedianNode{
         let trisignal:LazyTriSignal = (detail,time.clone(),trigger.clone()).into();
         let bg_out:LazyTriSignal = (bg,time,trigger).into();
         //
-        outputs.set_value("Detail", Content::DetectorFullData(trisignal))?;
-        outputs.set_value("Background", Content::DetectorFullData(bg_out))?;
+        args.outputs.set_value("Detail", Content::DetectorFullData(trisignal))?;
+        args.outputs.set_value("Background", Content::DetectorFullData(bg_out))?;
         Ok(())
     }
 }
@@ -86,8 +86,8 @@ impl CalculationNode for SlidingMedianNode {
     }
 
     #[doc = " Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -98,12 +98,12 @@ impl CalculationNode for SlidingMedianNode {
 pub struct SlidingMedianNodeNormalizer;
 
 impl SlidingMedianNodeNormalizer{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let window = constants.request_integer("Sliding window")? as usize;
-        let source = inputs.request_detectorfulldata("Signal")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let window = args.constants.request_integer("Sliding window")? as usize;
+        let source = args.inputs.request_detectorfulldata("Signal")?;
         let trigger = source.2.map(|x| LazyArrayOperationBox::from_value(LazySkipper::new(x, window), TD_Opaque));
-        let gauss = constants.request_boolean("Gauss mode")?;
-        let variance = constants.request_boolean("Use Variance")?;
+        let gauss = args.constants.request_boolean("Gauss mode")?;
+        let variance = args.constants.request_boolean("Use Variance")?;
 
         if source.0.length()<window{
             return Err(ExecutionError::OtherError("Signal is too small".into()));
@@ -118,7 +118,7 @@ impl SlidingMedianNodeNormalizer{
         let time = source.1;//LazyArrayOperationBox::from_value(LazySkipper::new(source.1, window), TD_Opaque);
         let trisignal:LazyTriSignal = (norm,time,trigger).into();
         //
-        outputs.set_value("Normalized", Content::DetectorFullData(trisignal))?;
+        args.outputs.set_value("Normalized", Content::DetectorFullData(trisignal))?;
         Ok(())
     }
 }
@@ -165,7 +165,7 @@ impl CalculationNode for SlidingMedianNodeNormalizer {
     }
 
     #[doc = " Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }

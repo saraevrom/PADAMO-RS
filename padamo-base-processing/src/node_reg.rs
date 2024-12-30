@@ -21,11 +21,11 @@ fn check_quantile(q:f64)->Result<(),ExecutionError>{
 }
 
 impl SlidingQuantileNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let window = constants.request_integer("Sliding window")? as usize;
-        let quantile = constants.request_float("Quantile")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let window = args.constants.request_integer("Sliding window")? as usize;
+        let quantile = args.constants.request_float("Quantile")?;
         check_quantile(quantile)?;
-        let source = inputs.request_detectorfulldata("Signal")?;
+        let source = args.inputs.request_detectorfulldata("Signal")?;
         let trigger = source.2.map(|x| LazyArrayOperationBox::from_value(LazySkipper::new(x, window), TD_Opaque));
 
         if source.0.length()<window{
@@ -48,8 +48,8 @@ impl SlidingQuantileNode{
         let trisignal:LazyTriSignal = (detail,time.clone(),trigger.clone()).into();
         let bg_out:LazyTriSignal = (bg,time,trigger).into();
         //
-        outputs.set_value("Detail", Content::DetectorFullData(trisignal))?;
-        outputs.set_value("Background", Content::DetectorFullData(bg_out))?;
+        args.outputs.set_value("Detail", Content::DetectorFullData(trisignal))?;
+        args.outputs.set_value("Background", Content::DetectorFullData(bg_out))?;
         Ok(())
     }
 }
@@ -96,8 +96,8 @@ impl CalculationNode for SlidingQuantileNode {
     }
 
     #[doc = " Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -108,14 +108,14 @@ impl CalculationNode for SlidingQuantileNode {
 pub struct SlidingQuantileNodeNormalizer;
 
 impl SlidingQuantileNodeNormalizer{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let window = constants.request_integer("Sliding window")? as usize;
-        let quantile = constants.request_float("Quantile")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let window = args.constants.request_integer("Sliding window")? as usize;
+        let quantile = args.constants.request_float("Quantile")?;
         check_quantile(quantile)?;
-        let source = inputs.request_detectorfulldata("Signal")?;
+        let source = args.inputs.request_detectorfulldata("Signal")?;
         let trigger = source.2.map(|x| LazyArrayOperationBox::from_value(LazySkipper::new(x, window), TD_Opaque));
-        let gauss = constants.request_boolean("Gauss mode")?;
-        let variance = constants.request_boolean("Use Variance")?;
+        let gauss = args.constants.request_boolean("Gauss mode")?;
+        let variance = args.constants.request_boolean("Use Variance")?;
 
         if source.0.length()<window{
             return Err(ExecutionError::OtherError("Signal is too small".into()));
@@ -129,7 +129,7 @@ impl SlidingQuantileNodeNormalizer{
         let time = source.1;//LazyArrayOperationBox::from_value(LazySkipper::new(source.1, window), TD_Opaque);
         let trisignal:LazyTriSignal = (norm,time,trigger).into();
         //
-        outputs.set_value("Normalized", Content::DetectorFullData(trisignal))?;
+        args.outputs.set_value("Normalized", Content::DetectorFullData(trisignal))?;
         Ok(())
     }
 }
@@ -177,8 +177,8 @@ impl CalculationNode for SlidingQuantileNodeNormalizer {
     }
 
     #[doc = " Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -186,14 +186,14 @@ impl CalculationNode for SlidingQuantileNodeNormalizer {
 pub struct LazyFlashSuppression;
 
 impl LazyFlashSuppression{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let src = inputs.request_detectorfulldata("Signal")?;
-        let q = constants.request_float("Quantile")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let src = args.inputs.request_detectorfulldata("Signal")?;
+        let q = args.constants.request_float("Quantile")?;
         check_quantile(q)?;
         let newsignal = LazyFlashSuppress::new(src.0, q);
         let newsignal = LazyArrayOperationBox::from_value(newsignal, TD_Opaque);
         let tgt = (newsignal,src.1,src.2).into();
-        outputs.set_value("Signal", Content::DetectorFullData(tgt))?;
+        args.outputs.set_value("Signal", Content::DetectorFullData(tgt))?;
         Ok(())
     }
 }
@@ -233,8 +233,8 @@ impl CalculationNode for LazyFlashSuppression{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -243,18 +243,18 @@ impl CalculationNode for LazyFlashSuppression{
 pub struct LazyThresholdNode;
 
 impl LazyThresholdNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let mut src = inputs.request_detectorfulldata("Signal")?;
-        let threshold_value = constants.request_float("threshold_value")?;
-        let blank_value = constants.request_float("blank_value")?;
-        let invert = constants.request_boolean("invert")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut src = args.inputs.request_detectorfulldata("Signal")?;
+        let threshold_value = args.constants.request_float("threshold_value")?;
+        let blank_value = args.constants.request_float("blank_value")?;
+        let invert = args.constants.request_boolean("invert")?;
         src.0 = make_lao_box(LazyThreshold{
             source: src.0,
             threshold_value,
             blank_value,
             invert,
         });
-        outputs.set_value("Signal", Content::DetectorFullData(src))
+        args.outputs.set_value("Signal", Content::DetectorFullData(src))
     }
 }
 
@@ -307,7 +307,7 @@ impl CalculationNode for LazyThresholdNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
