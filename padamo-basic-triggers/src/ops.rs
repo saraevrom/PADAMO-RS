@@ -114,7 +114,13 @@ impl LazyArrayOperation<ndim_array::ArrayND<bool>> for LazyMedianTrigger{
             let slicing = SliceInfo::<&[SliceInfoElem],ndarray::Dim<ndarray::IxDynImpl>,ndarray::Dim<ndarray::IxDynImpl>>::try_from(slices.as_slice()).expect("Slicing error");
 
             let part = workon.slice(slicing);
-            let vector = part.to_owned().into_raw_vec();
+            let (vector,off_opt) = part.to_owned().into_raw_vec_and_offset();
+            let mut vector = vector;
+            if let Some(off) = off_opt{
+                vector.drain(..off);
+            }
+            let vector = vector;
+
             if let Ok(v) = vector.medf_checked(){
                 passed.lock().unwrap().flat_data[i] = v>thresh;
                 //res.flat_data[i] = v>thresh;

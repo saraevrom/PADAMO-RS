@@ -12,15 +12,15 @@ use padamo_api::lazy_array_operations::LazyArrayOperationBox;
 pub struct PixelThresholdTriggerNode;
 
 impl PixelThresholdTriggerNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let mut src = inputs.request_detectorfulldata("Signal")?;
-        let thresh = constants.request_float("Threshold")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut src = args.inputs.request_detectorfulldata("Signal")?;
+        let thresh = args.constants.request_float("Threshold")?;
         let source = src.0.clone();
         let boxed = LazyArrayOperationBox::from_value(LazyPixelThresholdTrigger::new(source,thresh),TD_Opaque);
 
         src.2 = ROption::RSome(boxed);
 
-        outputs.set_value("Signal", src.into())?;
+        args.outputs.set_value("Signal", src.into())?;
         Ok(())
     }
 }
@@ -58,8 +58,8 @@ impl CalculationNode for PixelThresholdTriggerNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -69,15 +69,15 @@ impl CalculationNode for PixelThresholdTriggerNode{
 pub struct LCThresholdTriggerNode;
 
 impl LCThresholdTriggerNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let mut src = inputs.request_detectorfulldata("Signal")?;
-        let thresh = constants.request_float("Threshold")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut src = args.inputs.request_detectorfulldata("Signal")?;
+        let thresh = args.constants.request_float("Threshold")?;
         let source = src.0.clone();
         let boxed = LazyArrayOperationBox::from_value(LazyLCThresholdTrigger::new(source,thresh),TD_Opaque);
 
         src.2 = ROption::RSome(boxed);
 
-        outputs.set_value("Signal", src.into())?;
+        args.outputs.set_value("Signal", src.into())?;
         Ok(())
     }
 }
@@ -115,8 +115,8 @@ impl CalculationNode for LCThresholdTriggerNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -125,15 +125,15 @@ impl CalculationNode for LCThresholdTriggerNode{
 pub struct MedianThresholdTriggerNode;
 
 impl MedianThresholdTriggerNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let mut src = inputs.request_detectorfulldata("Signal")?;
-        let thresh = constants.request_float("Threshold")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut src = args.inputs.request_detectorfulldata("Signal")?;
+        let thresh = args.constants.request_float("Threshold")?;
         let source = src.0.clone();
         let boxed = LazyArrayOperationBox::from_value(LazyMedianTrigger::new(source,thresh),TD_Opaque);
 
         src.2 = ROption::RSome(boxed);
 
-        outputs.set_value("Signal", src.into())?;
+        args.outputs.set_value("Signal", src.into())?;
         Ok(())
     }
 }
@@ -171,7 +171,7 @@ impl CalculationNode for MedianThresholdTriggerNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
