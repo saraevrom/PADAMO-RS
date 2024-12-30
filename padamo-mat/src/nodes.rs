@@ -6,9 +6,9 @@ use crate::ops::{self, ConstantArray};
 pub struct MatReadNode;
 
 impl MatReadNode{
-    pub fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let filename = inputs.request_string("Filename")?.to_string();
-        let field = constants.request_string("field")?.to_string();
+    pub fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let filename = args.inputs.request_string("Filename")?.to_string();
+        let field = args.constants.request_string("field")?.to_string();
         let file = std::fs::File::open(&filename).map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
         let mat_file = matfile::MatFile::parse(file).map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
         if let Some(d) = mat_file.find_by_name(&field){
@@ -17,7 +17,7 @@ impl MatReadNode{
             let data:padamo_api::lazy_array_operations::ArrayND<f64> = crate::compat::ndarray_to_arraynd(data);
 
             let data:ConstantArray<f64> = ops::ConstantArray::new(data);
-            outputs.set_value("Array", Content::DetectorSignal(make_lao_box(data)))?;
+            args.outputs.set_value("Array", Content::DetectorSignal(make_lao_box(data)))?;
             Ok(())
         }
         else{
@@ -71,7 +71,7 @@ impl CalculationNode for MatReadNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }
