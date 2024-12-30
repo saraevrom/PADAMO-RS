@@ -6,19 +6,19 @@ use padamo_api::{constants, lazy_array_operations::{LazyDetectorSignal, LazyTriS
 pub struct CSVNode;
 
 impl CSVNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let start = constants.request_integer("start")?;
-        let length = constants.request_integer("length")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let start = args.constants.request_integer("start")?;
+        let length = args.constants.request_integer("length")?;
         let start:usize = start.try_into().ok().unwrap_or(0);
         let length:Option<usize> = length.try_into().ok();
-        let tmpbase = constants.request_string("tmpbase")?.into_string();
-        let tmpres = constants.request_float("tmpres")?;
-        let input_file = inputs.request_string("Filename")?.to_string();
-        let separator = constants.request_string("separator")?.to_string();
-        let start_column:Option<usize> = constants.request_integer("col_start")?.try_into().ok();
-        let end_column:Option<usize> = constants.request_integer("col_end")?.try_into().ok();
+        let tmpbase = args.constants.request_string("tmpbase")?.into_string();
+        let tmpres = args.constants.request_float("tmpres")?;
+        let input_file = args.inputs.request_string("Filename")?.to_string();
+        let separator = args.constants.request_string("separator")?.to_string();
+        let start_column:Option<usize> = args.constants.request_integer("col_start")?.try_into().ok();
+        let end_column:Option<usize> = args.constants.request_integer("col_end")?.try_into().ok();
 
-        let spatial = if constants.request_boolean("transpose")?{
+        let spatial = if args.constants.request_boolean("transpose")?{
             let sp = crate::ops_transposed::CSVReaderTransposed::new(separator, input_file, start, length,start_column, end_column).map_err(ExecutionError::from_error)?;
             if sp.frame_size==0{
                 return Err(ExecutionError::OtherError("No spatial data".into()));
@@ -35,7 +35,7 @@ impl CSVNode{
 
         let temporal = pseudotime::ops::AddTime::new(spatial.length(), tmpres, &tmpbase).ok_or_else(|| ExecutionError::OtherError("Cannot parse datetime".into()))?;
         let signal:LazyTriSignal = (spatial,make_lao_box(temporal), RNone).into();
-        outputs.set_value("Signal", signal.into())
+        args.outputs.set_value("Signal", signal.into())
     }
 }
 
@@ -83,8 +83,8 @@ impl CalculationNode for CSVNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs,outputs,constants,environment,rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -94,17 +94,17 @@ pub struct CSVArrayNode;
 
 
 impl CSVArrayNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let start = constants.request_integer("start")?;
-        let length = constants.request_integer("length")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let start = args.constants.request_integer("start")?;
+        let length = args.constants.request_integer("length")?;
         let start:usize = start.try_into().ok().unwrap_or(0);
         let length:Option<usize> = length.try_into().ok();
-        let input_file = inputs.request_string("Filename")?.to_string();
-        let separator = constants.request_string("separator")?.to_string();
-        let start_column:Option<usize> = constants.request_integer("col_start")?.try_into().ok();
-        let end_column:Option<usize> = constants.request_integer("col_end")?.try_into().ok();
+        let input_file = args.inputs.request_string("Filename")?.to_string();
+        let separator = args.constants.request_string("separator")?.to_string();
+        let start_column:Option<usize> = args.constants.request_integer("col_start")?.try_into().ok();
+        let end_column:Option<usize> = args.constants.request_integer("col_end")?.try_into().ok();
 
-        let spatial = if constants.request_boolean("transpose")?{
+        let spatial = if args.constants.request_boolean("transpose")?{
             let sp = crate::ops_transposed::CSVReaderTransposed::new(separator, input_file, start, length,start_column, end_column).map_err(ExecutionError::from_error)?;
             if sp.frame_size==0{
                 return Err(ExecutionError::OtherError("No spatial data".into()));
@@ -120,7 +120,7 @@ impl CSVArrayNode{
         };
 
         let signal:LazyDetectorSignal = spatial.into();
-        outputs.set_value("Signal", signal.into())
+        args.outputs.set_value("Signal", signal.into())
     }
 }
 
@@ -168,8 +168,8 @@ impl CalculationNode for CSVArrayNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs,outputs,constants,environment,rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 

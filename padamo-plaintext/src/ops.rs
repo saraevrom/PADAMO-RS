@@ -1,7 +1,7 @@
-use std::{fs::File, io::{self, BufRead, BufReader}};
+use std::{fs::File, io::{BufRead, BufReader}};
 use abi_stable::rvec;
 
-use padamo_api::{lazy_array_operations::{merge::Merge, ArrayND, LazyArrayOperation}, prelude::*};
+use padamo_api::lazy_array_operations::{merge::Merge, ArrayND, LazyArrayOperation};
 use regex::Regex;
 
 use crate::errors::CSVError;
