@@ -12,7 +12,7 @@ use iced::font;
 pub enum PadamoAppMessage{
     Noop,
     TabSelect(usize),
-    FontLoaded(Result<(), font::Error>),
+    // FontLoaded(Result<(), font::Error>),
     EditorMessage(EditorMessage),
     ViewerMessage(ViewerMessage),
     PlotterMessage(PlotterMessage),

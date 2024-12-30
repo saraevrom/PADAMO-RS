@@ -313,7 +313,7 @@ where
     fn layout(
         &self,
         _tree: &mut iced::advanced::widget::Tree,
-        renderer: &Renderer,
+        _renderer: &Renderer,
         limits: &iced::advanced::layout::Limits,
     ) -> iced::advanced::layout::Node {
         // let mut bound = limits.fill();
