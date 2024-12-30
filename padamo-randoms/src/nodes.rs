@@ -6,11 +6,11 @@ use padamo_api::{constants, ports, prelude::*};
 pub struct UniformRandomNode;
 
 impl UniformRandomNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let a = constants.request_float("lower")?;
-        let b = constants.request_float("upper")?;
-        let v = rng.generate_uniform(a, b);
-        outputs.set_value("Value", v.into())?;
+    fn calculate(&self, args: CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let a = args.constants.request_float("lower")?;
+        let b = args.constants.request_float("upper")?;
+        let v = args.rng.generate_uniform(a, b);
+        args.outputs.set_value("Value", v.into())?;
         Ok(())
     }
 }
@@ -53,8 +53,8 @@ impl CalculationNode for UniformRandomNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args: CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -64,10 +64,10 @@ impl CalculationNode for UniformRandomNode{
 pub struct UUIDRandomNode;
 
 impl UUIDRandomNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+    fn calculate(&self, args: CalculationNodeArguments) -> Result<(),ExecutionError>where {
 
-        let v = rng.generate_uuid();
-        outputs.set_value("Value", v.into())?;
+        let v = args.rng.generate_uuid();
+        args.outputs.set_value("Value", v.into())?;
         Ok(())
     }
 }
@@ -104,8 +104,8 @@ impl CalculationNode for UUIDRandomNode{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args: CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -113,10 +113,10 @@ impl CalculationNode for UUIDRandomNode{
 pub struct RandomIntNode;
 
 impl RandomIntNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+    fn calculate(&self, args: CalculationNodeArguments) -> Result<(),ExecutionError>where {
 
-        let v = rng.generate_new();
-        outputs.set_value("Value", (v as i64).into())?;
+        let v = args.rng.generate_new();
+        args.outputs.set_value("Value", (v as i64).into())?;
         Ok(())
     }
 }
@@ -153,8 +153,8 @@ impl CalculationNode for RandomIntNode{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args: CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -164,12 +164,12 @@ impl CalculationNode for RandomIntNode{
 pub struct RandomIntRangeNode;
 
 impl RandomIntRangeNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
+    fn calculate(&self, args: CalculationNodeArguments) -> Result<(),ExecutionError>where {
 
-        let a = constants.request_integer("a")? as f64;
-        let b = constants.request_integer("b")? as f64;
-        let v = rng.generate_uniform(a,b).floor();
-        outputs.set_value("Value", (v as i64).into())?;
+        let a = args.constants.request_integer("a")? as f64;
+        let b = args.constants.request_integer("b")? as f64;
+        let v = args.rng.generate_uniform(a,b).floor();
+        args.outputs.set_value("Value", (v as i64).into())?;
         Ok(())
     }
 }
@@ -209,7 +209,7 @@ impl CalculationNode for RandomIntRangeNode{
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args: CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
