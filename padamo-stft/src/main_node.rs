@@ -6,10 +6,10 @@ use crate::ops::FilterOp;
 pub struct STFTNode;
 
 impl STFTNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let mut signal_in = inputs.request_detectorfulldata("Signal")?;
-        let filter = inputs.request_function("Filter")?;
-        let window = constants.request_integer("window")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut signal_in = args.inputs.request_detectorfulldata("Signal")?;
+        let filter = args.inputs.request_function("Filter")?;
+        let window = args.constants.request_integer("window")?;
         if window<0{
             return Err(ExecutionError::OtherError("STFT window must not be negative".into()));
         }
@@ -26,7 +26,7 @@ impl STFTNode{
         }).fold(0.0, |a,b| a+b)/(time_length as f64);
         let sample_rate = 1.0/sample_period;
         signal_in.0 = make_lao_box(FilterOp::new(signal_in.0, filter, window, sample_rate));
-        outputs.set_value("Signal", signal_in.into())?;
+        args.outputs.set_value("Signal", signal_in.into())?;
         Ok(())
     }
 }
@@ -63,8 +63,8 @@ impl CalculationNode for STFTNode{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 

@@ -18,10 +18,10 @@ fn default_ports() ->RVec<CalculationIO>{
 pub struct InvertFilterNode;
 
 impl InvertFilterNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let inner = inputs.request_function("Filter")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let inner = args.inputs.request_function("Filter")?;
         let output = inner.map(move |x| 1.0-x);
-        outputs.set_value("Filter", output.into())?;
+        args.outputs.set_value("Filter", output.into())?;
         Ok(())
     }
 }
@@ -51,8 +51,8 @@ impl CalculationNode for InvertFilterNode{
         constants![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -61,11 +61,11 @@ impl CalculationNode for InvertFilterNode{
 pub struct CombineANDFilterNode;
 
 impl CombineANDFilterNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let inner1 = inputs.request_function("Filter 1")?;
-        let inner2 = inputs.request_function("Filter 2")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let inner1 = args.inputs.request_function("Filter 1")?;
+        let inner2 = args.inputs.request_function("Filter 2")?;
         let output:DoubleFunctionOperatorBox = (move |x| {inner1.calculate(x)*inner2.calculate(x)}).into();
-        outputs.set_value("Filter", output.into())?;
+        args.outputs.set_value("Filter", output.into())?;
         Ok(())
     }
 }
@@ -98,8 +98,8 @@ impl CalculationNode for CombineANDFilterNode{
         constants![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -108,14 +108,14 @@ impl CalculationNode for CombineANDFilterNode{
 pub struct CombineORFilterNode;
 
 impl CombineORFilterNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let inner1 = inputs.request_function("Filter 1")?;
-        let inner2 = inputs.request_function("Filter 2")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let inner1 = args.inputs.request_function("Filter 1")?;
+        let inner2 = args.inputs.request_function("Filter 2")?;
         let output:DoubleFunctionOperatorBox = (move |x| {
             1.0-(1.0-inner1.calculate(x))*(1.0-inner2.calculate(x))
 
         }).into();
-        outputs.set_value("Filter", output.into())?;
+        args.outputs.set_value("Filter", output.into())?;
         Ok(())
     }
 }
@@ -148,8 +148,8 @@ impl CalculationNode for CombineORFilterNode{
         constants![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -158,9 +158,9 @@ impl CalculationNode for CombineORFilterNode{
 pub struct BandPassFilter;
 
 impl BandPassFilter{
-    fn calculate(&self, inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let freq = constants.request_float("frequency")?;
-        let band = constants.request_float("band_width")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let freq = args.constants.request_float("frequency")?;
+        let band = args.constants.request_float("band_width")?;
         let output:DoubleFunctionOperatorBox = (move |x:f64| {
             if (x.abs()-freq).abs()*2.0<band{
                 1.0
@@ -169,7 +169,7 @@ impl BandPassFilter{
                 0.0
             }
         }).into();
-        outputs.set_value("Filter", output.into())?;
+        args.outputs.set_value("Filter", output.into())?;
         Ok(())
     }
 }
@@ -202,8 +202,8 @@ impl CalculationNode for BandPassFilter{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -213,15 +213,15 @@ impl CalculationNode for BandPassFilter{
 pub struct ButtleworthLowPassFilter;
 
 impl ButtleworthLowPassFilter{
-    fn calculate(&self, inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let freq = constants.request_float("frequency")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let freq = args.constants.request_float("frequency")?;
         let f_cutoff = freq;
-        let power = constants.request_float("power")?;
+        let power = args.constants.request_float("power")?;
         let output:DoubleFunctionOperatorBox = (move |x:f64| {
             let f = x.abs();
             1./(1.+(f/f_cutoff).powf(2.*power)).sqrt()
         }).into();
-        outputs.set_value("Filter", output.into())?;
+        args.outputs.set_value("Filter", output.into())?;
         Ok(())
     }
 }
@@ -255,8 +255,8 @@ impl CalculationNode for ButtleworthLowPassFilter{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
