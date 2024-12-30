@@ -1,4 +1,4 @@
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use quote::{quote, format_ident};
 use syn::DeriveInput;
 
@@ -25,7 +25,7 @@ pub fn impl_content(_args:TokenStream,item:TokenStream)->TokenStream{
             let id_name = syn::Ident::new(&id_name, proc_macro2::Span::call_site());
 
             let function_name = format_ident!("request_{}",id_name);
-            println!("{} {}",bare_identifier, function_name);
+            //println!("{} {}",bare_identifier, function_name);
 
             let mut contained = None;
             if let syn::Fields::Unnamed(fs) = &var.fields{
@@ -142,7 +142,7 @@ pub fn impl_content(_args:TokenStream,item:TokenStream)->TokenStream{
         }.into()
     }
     else{
-        println!("trigger error");
+        //println!("trigger error");
         quote!{compile_error!("impl_content only works with enums")}.into()
     }
 }
