@@ -6,10 +6,10 @@ use padamo_api::{constants, ports, prelude::*};
 pub struct SignalLength;
 
 impl SignalLength{
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->Result<(),ExecutionError> {
-        let signal = inputs.request_detectorfulldata("Signal")?;
+    fn calculate(&self, args:CalculationNodeArguments)->Result<(),ExecutionError> {
+        let signal = args.inputs.request_detectorfulldata("Signal")?;
         let len = signal.0.length();
-        outputs.set_value("Length", (len as i64).into())?;
+        args.outputs.set_value("Length", (len as i64).into())?;
         Ok(())
     }
 }
@@ -39,8 +39,8 @@ impl CalculationNode for SignalLength{
         ]
     }
 
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->abi_stable::std_types::RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments)->abi_stable::std_types::RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 
     fn constants(&self)->RVec<CalculationConstant> {

@@ -2,7 +2,6 @@ use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
 use abi_stable::std_types::RVec;
 use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTimeSignal};
-use rayon::prelude::*;
 
 pub fn free_threads(threads: &mut VecDeque<thread::JoinHandle<()>>, threadcount:usize){
     while threads.len()>=threadcount{
@@ -48,14 +47,14 @@ impl LazySpaceConverter {
     }
 }
 
-fn compress<D:ndarray::Dimension+ndarray::RemoveAxis>(x:ndarray::ArrayBase<ndarray::ViewRepr<&f64>,D>, is_sum:bool)->ndarray::ArrayBase<ndarray::OwnedRepr<f64>,D::Smaller>{
-    if is_sum{
-        x.sum_axis(ndarray::Axis(0))
-    }
-    else{
-        x.mean_axis(ndarray::Axis(0)).unwrap()
-    }
-}
+// fn compress<D:ndarray::Dimension+ndarray::RemoveAxis>(x:ndarray::ArrayBase<ndarray::ViewRepr<&f64>,D>, is_sum:bool)->ndarray::ArrayBase<ndarray::OwnedRepr<f64>,D::Smaller>{
+//     if is_sum{
+//         x.sum_axis(ndarray::Axis(0))
+//     }
+//     else{
+//         x.mean_axis(ndarray::Axis(0)).unwrap()
+//     }
+// }
 
 impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverter{
 
@@ -69,8 +68,8 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverter{
     }
 
     fn request_range(&self,start:usize,end:usize,) -> ArrayND<f64>{
-        let start_src = start*self.divider;
-        let end_src = end*self.divider;
+        // let start_src = start*self.divider;
+        // let end_src = end*self.divider;
         let divider = self.divider;
         let is_sum = self.is_sum;
         // let raw_data:ArrayND<f64> = self.source.request_range(start_src,end_src);

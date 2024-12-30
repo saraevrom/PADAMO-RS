@@ -1,7 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
 use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyDetectorSignal};
-use rayon::prelude::*;
 use super::ops::free_threads;
 
 #[derive(Clone,Debug)]
@@ -9,20 +8,20 @@ pub struct LazySpaceConverterPerformant{
     divider:usize,
     source:LazyDetectorSignal,
     is_sum:bool,
-    frame_shape:Vec<usize>
+    // frame_shape:Vec<usize>
 }
 
 impl LazySpaceConverterPerformant {
     pub fn new(divider: usize, source: LazyDetectorSignal, is_sum:bool) -> Self {
-        let frame_shape:Vec<usize> = if source.length()>0{
-            let mut testframe_size = source.request_range(0,1).shape;
-            testframe_size.drain(1..).collect()
-        }
-        else{
-            vec![1]
-        };
+        // let frame_shape:Vec<usize> = if source.length()>0{
+        //     let mut testframe_size = source.request_range(0,1).shape;
+        //     testframe_size.drain(1..).collect()
+        // }
+        // else{
+        //     vec![1]
+        // };
 
-        Self { divider, source ,is_sum, frame_shape}
+        Self { divider, source ,is_sum}
 
     }
 }

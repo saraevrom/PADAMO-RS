@@ -8,9 +8,9 @@ use padamo_api::{constants, ports, prelude::*};
 pub struct StretchSignal;
 
 impl StretchSignal{
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->Result<(),ExecutionError> {
-        let main_signal = inputs.request_detectorfulldata("Signal")?;
-        let time_source = inputs.request_detectorfulldata("Time source")?;
+    fn calculate(&self, args:CalculationNodeArguments)->Result<(),ExecutionError> {
+        let main_signal = args.inputs.request_detectorfulldata("Signal")?;
+        let time_source = args.inputs.request_detectorfulldata("Time source")?;
 
         let new_signal = make_lao_box(super::ops_stretch::SyncedSignalStretcher::new(main_signal.0, main_signal.1.clone(), time_source.1.clone()));
         let new_time = time_source.1.clone();
@@ -25,7 +25,7 @@ impl StretchSignal{
 
         let new_signal = (new_signal,new_time,new_trig);
         let new_signal:LazyTriSignal = new_signal.into();
-        outputs.set_value("Signal", new_signal.into())?;
+        args.outputs.set_value("Signal", new_signal.into())?;
         Ok(())
     }
 }
@@ -60,7 +60,7 @@ impl CalculationNode for StretchSignal{
         constants!()
     }
 
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->abi_stable::std_types::RResult<(),ExecutionError> {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments)->abi_stable::std_types::RResult<(),ExecutionError> {
+        self.calculate(args).into()
     }
 }

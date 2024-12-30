@@ -11,15 +11,15 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 pub struct TimeResolutionReduceNode;
 
 impl TimeResolutionReduceNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let trisignal = inputs.request_detectorfulldata("Signal")?;
-        let divider = constants.request_integer("Divider")?;
-        let is_sum = constants.request_boolean("Is sum")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let trisignal = args.inputs.request_detectorfulldata("Signal")?;
+        let divider = args.constants.request_integer("Divider")?;
+        let is_sum = args.constants.request_boolean("Is sum")?;
         if divider<=0{
             return Err(ExecutionError::OtherError("Divider must be natural number".into()));
         }
         let divider = divider as usize;
-        let signal = if constants.request_boolean("performance_over_memory")?{
+        let signal = if args.constants.request_boolean("performance_over_memory")?{
             make_lao_box(LazySpaceConverterPerformant::new(divider,trisignal.0,is_sum))
         }
         else{
@@ -29,7 +29,7 @@ impl TimeResolutionReduceNode{
         //let signal = LazyArrayOperationBox::from_value(signal, TD_Opaque);
         let time = LazyArrayOperationBox::from_value(time, TD_Opaque);
         let trisignal = (signal,time,ROption::RNone);
-        outputs.set_value("Signal", Content::DetectorFullData(trisignal.into()))?;
+        args.outputs.set_value("Signal", Content::DetectorFullData(trisignal.into()))?;
 
         Ok(())
     }
@@ -68,12 +68,12 @@ impl CalculationNode for TimeResolutionReduceNode{
         constants!(
             ("Divider", 1000),
             ("Is sum", false),
-            ("performance_over_memory", "Performance over memory", false),
+            ("performance_over_memory", "Performance over memory", true),
         )
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -82,11 +82,11 @@ impl CalculationNode for TimeResolutionReduceNode{
 pub struct CutterNode;
 
 impl CutterNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> Result<(),ExecutionError>where {
-        let mut src = inputs.request_detectorfulldata("Signal")?;
-        let start = inputs.request_integer("Start")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let mut src = args.inputs.request_detectorfulldata("Signal")?;
+        let start = args.inputs.request_integer("Start")?;
         let start:usize = start.try_into().map_err(ExecutionError::from_error)?;
-        let end = inputs.request_integer("End")?;
+        let end = args.inputs.request_integer("End")?;
         let end:usize = end.try_into().map_err(ExecutionError::from_error)?;
         let l = src.0.length();
         if start>end{
@@ -101,7 +101,7 @@ impl CutterNode{
             Some(v)=>ROption::RSome(make_lao_box(crate::ops::CutterOperator::new(start, end, v))),
             None=>ROption::RNone,
         };
-        outputs.set_value("Signal", src.into())?;
+        args.outputs.set_value("Signal", src.into())?;
         Ok(())
     }
 }
@@ -140,7 +140,7 @@ impl CalculationNode for CutterNode{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
