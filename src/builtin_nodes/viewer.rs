@@ -11,9 +11,9 @@ pub const VIEWER_SIGNAL_VAR:&'static str = "ViewerSignal";
 pub const VIEWER_MASK_VAR:&'static str = "alive_pixels";
 
 impl ViewerNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>{
-        let signal = inputs.request_detectorfulldata("Signal")?;
-        environment.0.insert(VIEWER_SIGNAL_VAR.into(),Content::DetectorFullData(signal));
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let signal = args.inputs.request_detectorfulldata("Signal")?;
+        args.environment.0.insert(VIEWER_SIGNAL_VAR.into(),Content::DetectorFullData(signal));
         Ok(())
     }
 }
@@ -56,8 +56,8 @@ impl CalculationNode for ViewerNode{
         rvec![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut padamo_api::rng::RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -65,9 +65,9 @@ impl CalculationNode for ViewerNode{
 pub struct LoadedFileNode;
 
 impl LoadedFileNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let filename = environment.request_string(VIEWER_FILENAME_VAR).unwrap_or("file.h5".into());
-        outputs.set_value("File path".into(), filename.into())?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let filename = args.environment.request_string(VIEWER_FILENAME_VAR).unwrap_or("file.h5".into());
+        args.outputs.set_value("File path".into(), filename.into())?;
         Ok(())
     }
 }
@@ -106,8 +106,8 @@ impl CalculationNode for LoadedFileNode{
         rvec![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -115,9 +115,9 @@ impl CalculationNode for LoadedFileNode{
 pub struct ViewerMaskNode;
 
 impl ViewerMaskNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>{
-        let mask= environment.request_detectorsignal(VIEWER_MASK_VAR)?;
-        outputs.set_value("Alive pixels".into(), mask.into())?;
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mask= args.environment.request_detectorsignal(VIEWER_MASK_VAR)?;
+        args.outputs.set_value("Alive pixels".into(), mask.into())?;
         Ok(())
     }
 }
@@ -156,7 +156,7 @@ impl CalculationNode for ViewerMaskNode{
         rvec![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
