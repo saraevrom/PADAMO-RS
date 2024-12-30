@@ -1,6 +1,6 @@
 
 use abi_stable::std_types::{RString,RVec,RBox,RHashMap,RResult, ROption, Tuple2};
-use abi_stable::{StableAbi, rvec};
+use abi_stable::{rvec, RMut, StableAbi};
 use super::content::{Content, ContentContainer, ContentType, ConstantContent, ConstantContentContainer};
 use super::errors::ExecutionError;
 use super::graph::PortKey;
@@ -143,11 +143,22 @@ impl IOData{
 
 }
 
+#[repr(C)]
+#[derive(abi_stable::StableAbi)]
+pub struct CalculationNodeArguments<'a>{
+    pub inputs:ContentContainer,
+    pub outputs:&'a mut IOData,
+    pub constants:ConstantContentContainer,
+    pub environment:&'a mut ContentContainer,
+    pub rng:&'a mut RandomState,
+}
+
 #[allow(non_local_definitions)]
 pub mod traits{
     use abi_stable::std_types::{RVec,RString,ROption,RResult,RBox};
     use abi_stable::{rvec, sabi_trait};
-    use super::{CalculationIO,ContentContainer,IOData,CalculationConstant,RandomState,ExecutionError, ConstantContentContainer};
+    use super::{CalculationIO,CalculationConstant,ExecutionError};
+    use super::CalculationNodeArguments;
     /// Trait for calculation node
     #[sabi_trait]
     pub trait CalculationNode: Debug+Clone{
@@ -183,7 +194,7 @@ pub mod traits{
         fn constants(&self)->RVec<CalculationConstant>;
 
         /// Main calculation
-        fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError>;
+        fn calculate(&self, args:CalculationNodeArguments)->RResult<(),ExecutionError>;
 
 
         fn path(&self)->RVec<RString>{

@@ -27,10 +27,10 @@ impl AdHocInputNode{
         self
     }
 
-    fn calculate(&self,inputs:crate::ContentContainer,outputs: &mut crate::IOData,constants:crate::ConstantContentContainer,environment: &mut crate::ContentContainer,rng: &mut crate::RandomState,) -> Result<(),crate::ExecutionError>where {
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),crate::ExecutionError>where {
         for (k,v) in self.inputs_mapping.iter(){
-            let indata = inputs.request_type(v, k)?;
-            environment.0.insert(format!("out_{}",k).into(), indata);
+            let indata = args.inputs.request_type(v, k)?;
+            args.environment.0.insert(format!("out_{}",k).into(), indata);
         }
         Ok(())
     }
@@ -67,7 +67,7 @@ impl CalculationNode for AdHocInputNode{
         constants!()
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,rng: &mut RandomState,) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }

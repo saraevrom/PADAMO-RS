@@ -4,7 +4,7 @@ use abi_stable::std_types::RString;
 use topo_sort::{TopoSort,SortResults};
 
 use crate::rng::RandomState;
-use crate::ConstantContent;
+use crate::{CalculationNodeArguments, ConstantContent};
 
 use super::content::{Content, ContentContainer, ConstantContentContainer};
 use super::errors::ExecutionError;
@@ -81,7 +81,15 @@ impl CalculationSequenceStorage{
 
         let output_defs = node.calculator.outputs();
         let mut outputs = IOData::new(output_defs);
-        node.calculator.calculate(inputs, &mut outputs, consts,&mut self.environment, random_state).into_result()?;
+        let args = CalculationNodeArguments{
+            inputs,
+            outputs:&mut outputs,
+            constants:consts,
+            environment:&mut self.environment,
+            rng: random_state
+        };
+
+        node.calculator.calculate(args).into_result()?;
         let mut explicit_outputs:HashMap<RString,Content> = outputs.clarify()?.into();
         for (port,value) in explicit_outputs.drain(){
             let key = PortKey{

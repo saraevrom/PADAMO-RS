@@ -54,6 +54,7 @@ impl Into<ConstantContent> for &str{
 
 #[repr(C)]
 #[derive(abi_stable::StableAbi,Clone,Debug)]
+// #[sabi(Pre)]
 pub struct ContentContainer(pub RHashMap<RString,Content>);
 
 #[derive(Clone,Copy,Debug,PartialEq)]

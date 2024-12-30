@@ -26,9 +26,9 @@ impl AdHocOutputNode{
         self
     }
 
-    fn calculate(&self,inputs:crate::ContentContainer,outputs: &mut crate::IOData,constants:crate::ConstantContentContainer,environment: &mut crate::ContentContainer,rng: &mut crate::RandomState,) -> Result<(),crate::ExecutionError>where {
+    fn calculate(&self,args:CalculationNodeArguments) -> Result<(),crate::ExecutionError>where {
         for (k,v) in self.values.iter(){
-            outputs.set_value(k.as_str(), v.clone().into())?;
+            args.outputs.set_value(k.as_str(), v.clone().into())?;
         }
         Ok(())
     }
@@ -68,7 +68,7 @@ impl CalculationNode for AdHocOutputNode{
         constants!()
     }
 
-    fn calculate(&self,inputs:crate::ContentContainer,outputs: &mut crate::IOData,constants:crate::ConstantContentContainer,environment: &mut crate::ContentContainer,rng: &mut crate::RandomState,) -> abi_stable::std_types::RResult<(),crate::ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment, rng).into()
+    fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),crate::ExecutionError>where {
+        self.calculate(args).into()
     }
 }
