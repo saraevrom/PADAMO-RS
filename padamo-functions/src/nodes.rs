@@ -9,11 +9,11 @@ pub struct FCalculateNode;
 
 
 impl FCalculateNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let x = inputs.request_float("x")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let f0 = args.inputs.request_function("F")?;
+        let x = args.inputs.request_float("x")?;
         let y = f0.calculate(x);
-        outputs.set_value("y", y.into())?;
+        args.outputs.set_value("y", y.into())?;
         Ok(())
     }
 }
@@ -24,11 +24,11 @@ pub struct FCalculateNode2;
 
 
 impl FCalculateNode2{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let x = constants.request_float("x")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let f0 = args.inputs.request_function("F")?;
+        let x = args.constants.request_float("x")?;
         let y = f0.calculate(x);
-        outputs.set_value("y", y.into())?;
+        args.outputs.set_value("y", y.into())?;
         Ok(())
     }
 }
@@ -38,11 +38,11 @@ impl FCalculateNode2{
 #[derive(Clone,Debug)]
 pub struct ConstantNode;
 impl ConstantNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let v = inputs.request_float("Value")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let v = args.inputs.request_float("Value")?;
         //let f = make_function_box(crate::ops::Constant(v));
         let f:DoubleFunctionOperatorBox = (move |_| {v}).into();
-        outputs.set_value("F", f.into())?;
+        args.outputs.set_value("F", f.into())?;
         Ok(())
     }
 }
@@ -51,186 +51,16 @@ impl ConstantNode{
 #[derive(Clone,Debug)]
 pub struct ConstantNode2;
 impl ConstantNode2{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let v = constants.request_float("Value")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let v = args.constants.request_float("Value")?;
         //let f = make_function_box(crate::ops::Constant(v));
         let f:DoubleFunctionOperatorBox = (move |_| {v}).into();
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct LinearNode;
-
-impl LinearNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        //let v = inputs.request_float("Value")?;
-        //let f = make_function_box(crate::ops::Linear);
-        let f:DoubleFunctionOperatorBox = (|x| {x}).into();
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct SquareNode;
-
-impl SquareNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        //let v = inputs.request_float("Value")?;
-        //let f = make_function_box(crate::ops::Square);
-        let f:DoubleFunctionOperatorBox = (|x| {x*x}).into();
-
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct LowerStepNode;
-
-impl LowerStepNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        //let v = inputs.request_float("Value")?;
-        //let f = make_function_box(crate::ops::Square);
-        let f:DoubleFunctionOperatorBox = (|x| if x>0.0 {1.0} else {0.0}).into();
-
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct SumNode;
-
-impl SumNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-
-        let f1 = inputs.request_function("F1")?;
-        let f2 = inputs.request_function("F2")?;
-        //let f = make_function_box(crate::ops::TwoSum(f1,f2));
-        let f = f1.map2(f2, |x,y| x+y);
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct MultiplyNode;
-
-impl MultiplyNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        //let v = inputs.request_float("Value")?;
-        let f1 = inputs.request_function("F1")?;
-        let f2 = inputs.request_function("F2")?;
-        //let f = make_function_box(crate::ops::Multiply(f1,f2));
-        let f = f1.map2(f2, |x, y| x*y);
-        outputs.set_value("F", f.into())?;
+        args.outputs.set_value("F", f.into())?;
         Ok(())
     }
 }
 
 
-#[derive(Clone,Debug)]
-pub struct MinNode;
-
-impl MinNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        //let v = inputs.request_float("Value")?;
-        let f1 = inputs.request_function("F1")?;
-        let f2 = inputs.request_function("F2")?;
-        //let f = make_function_box(crate::ops::Multiply(f1,f2));
-        let f = f1.map2(f2, |x, y| x.min(y));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct MaxNode;
-
-impl MaxNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        //let v = inputs.request_float("Value")?;
-        let f1 = inputs.request_function("F1")?;
-        let f2 = inputs.request_function("F2")?;
-        //let f = make_function_box(crate::ops::Multiply(f1,f2));
-        let f = f1.map2(f2, |x, y| x.max(y));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct ExponentNode;
-
-
-impl ExponentNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let f = f0.map(|x| x.exp());
-        //let f = make_function_box(crate::ops::Exponent(f0));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-
-
-#[derive(Clone,Debug)]
-pub struct LogNode;
-
-
-impl LogNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let f = f0.map(|x| x.ln());
-        //let f = make_function_box(crate::ops::Log(f0));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct AbsNode;
-
-impl AbsNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let f = f0.map(|x| x.abs());
-        //let f = make_function_box(crate::ops::Log(f0));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct NegNode;
-
-impl NegNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let f = f0.map(|x| -x);
-        //let f = make_function_box(crate::ops::Log(f0));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
-
-
-#[derive(Clone,Debug)]
-pub struct InvNode;
-
-impl InvNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let f = f0.map(|x| if x==0.0 {0.0} else {1.0/x});
-        //let f = make_function_box(crate::ops::Log(f0));
-        outputs.set_value("F", f.into())?;
-        Ok(())
-    }
-}
 
 
 fn category() -> RVec<RString>where {
@@ -276,8 +106,8 @@ impl CalculationNode for ConstantNode{
         constants![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -312,8 +142,8 @@ impl CalculationNode for ConstantNode2{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -353,8 +183,8 @@ impl CalculationNode for FCalculateNode{
         constants![]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -389,39 +219,39 @@ impl CalculationNode for FCalculateNode2{
         ]
     }
 
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
-implement_onearg_function!(LinearNode, "X", category, "linear", "X");
-implement_onearg_function!(SquareNode, "X^2", category, "square", "X^2");
-implement_onearg_function!(LowerStepNode, "Lower step function", category, "lowerstep", "Lower step function");
+implement_onearg_function!(LinearNode, "X", category, "linear", "X", |x| {x});
+implement_onearg_function!(SquareNode, "X^2", category, "square", "X^2", |x| {x});
+implement_onearg_function!(LowerStepNode, "Lower step function", category, "lowerstep", "Lower step function", |x| if x>0.0 {1.0} else {0.0});
 
-implement_binary_combinator!(SumNode, "Sum", category, "sum", "Sum");
-implement_binary_combinator!(MultiplyNode, "Multiply", category, "mul", "Multiply");
-implement_binary_combinator!(MinNode,"Min",category, "min", "Min");
-implement_binary_combinator!(MaxNode,"Max",category, "max", "Max");
+implement_binary_combinator!(SumNode, "Sum", category, "sum", "Sum", |x,y| x+y);
+implement_binary_combinator!(MultiplyNode, "Multiply", category, "mul", "Multiply", |x,y| x*y);
+implement_binary_combinator!(MinNode,"Min",category, "min", "Min", |x,y| x.min(y));
+implement_binary_combinator!(MaxNode,"Max",category, "max", "Max", |x,y| x.max(y));
 
-implement_unary_combinator!(ExponentNode, "Exponent", category,"exp","Exponent");
-implement_unary_combinator!(LogNode, "Log", category,"log","Log");
-implement_unary_combinator!(AbsNode, "Abs", category,"abs","Abs");
-implement_unary_combinator!(NegNode, "Negate", category,"neg","Negate");
-implement_unary_combinator!(InvNode, "Invert", category,"inv","Invert");
+implement_unary_combinator!(ExponentNode, "Exponent", category,"exp","Exponent",|x| x.exp());
+implement_unary_combinator!(LogNode, "Log", category,"log","Log", |x| x.ln());
+implement_unary_combinator!(AbsNode, "Abs", category,"abs","Abs",|x| x.abs());
+implement_unary_combinator!(NegNode, "Negate", category,"neg","Negate", |x| -x);
+implement_unary_combinator!(InvNode, "Invert", category,"inv","Invert", |x| if x==0.0 {0.0} else {1.0/x});
 
 #[derive(Clone,Debug)]
 pub struct LinearModificationNode;
 
 
 impl LinearModificationNode{
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,) -> Result<(),ExecutionError>where {
-        let f0 = inputs.request_function("F")?;
-        let k = constants.request_float("coefficient")?;
-        let b = constants.request_float("offset")?;
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let f0 = args.inputs.request_function("F")?;
+        let k = args.constants.request_float("coefficient")?;
+        let b = args.constants.request_float("offset")?;
 
         let f = f0.map(move |x| x*k+b);
         //let f = make_function_box(crate::ops::Exponent(f0));
-        outputs.set_value("F", f.into())?;
+        args.outputs.set_value("F", f.into())?;
         Ok(())
     }
 }
@@ -472,7 +302,7 @@ impl CalculationNode for LinearModificationNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = r" Main calculation"]
-    fn calculate(&self,inputs:ContentContainer,outputs: &mut IOData,constants:ConstantContentContainer,environment: &mut ContentContainer,_:&mut RandomState) -> RResult<(),ExecutionError>where {
-        self.calculate(inputs, outputs, constants, environment).into()
+    fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
