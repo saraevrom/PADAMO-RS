@@ -10,16 +10,20 @@ use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub use ndim_array::ArrayND;
 
-#[abi_stable::sabi_trait]
-pub trait LazyArrayOperation<T>: Clone+Debug+Sync+Send
-{
-    fn length(&self)->usize;
-    fn request_range(&self,start:usize, end:usize)->T;
-    fn calculate_overhead(&self,start:usize, end:usize)->usize{
-        end-start
-    }
+#[allow(non_local_definitions)]
+pub mod traits{
+    #[abi_stable::sabi_trait]
+    pub trait LazyArrayOperation<T>: Clone+Debug+Sync+Send
+    {
+        fn length(&self)->usize;
+        fn request_range(&self,start:usize, end:usize)->T;
+        fn calculate_overhead(&self,start:usize, end:usize)->usize{
+            end-start
+        }
 
+    }
 }
+pub use traits::{LazyArrayOperation,LazyArrayOperation_TO};
 
 pub fn make_lao_box<T,U:LazyArrayOperation<T>+'static>(data:U)->LazyArrayOperationBox<T>{
     LazyArrayOperationBox::from_value(data, TD_Opaque)
