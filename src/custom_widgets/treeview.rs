@@ -178,9 +178,9 @@ pub struct Tree<T:std::fmt::Debug+Clone>{
     last_height:RefCell<f32>
 }
 
-fn new_node<T:std::fmt::Debug+Clone>(name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>)->Rc<RefCell<TreeNode<T>>>{
-    Rc::new(RefCell::new(TreeNode::new(name.to_string(), parent, metadata)))
-}
+// fn new_node<T:std::fmt::Debug+Clone>(name:&str, parent:Weak<RefCell<TreeNode<T>>>,metadata:Option<T>)->Rc<RefCell<TreeNode<T>>>{
+//     Rc::new(RefCell::new(TreeNode::new(name.to_string(), parent, metadata)))
+// }
 
 impl<T:std::fmt::Debug+Clone> Tree<T>{
     pub fn new()->Self{

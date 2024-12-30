@@ -4,6 +4,7 @@ mod form;
 
 use super::PadamoTool;
 use abi_stable::std_types::ROption;
+use iced_font_awesome::FaIcon;
 use padamo_api::calculation_nodes::content::Content;
 use padamo_api::lazy_array_operations::make_lao_box;
 use padamo_detectors::Detector;
@@ -27,15 +28,25 @@ use form::AnimationParameters;
 
 use form::ViewerForm;
 
+use iced_font_awesome::{fa_icon_solid, fa_icon};
+
+fn get_icon(icon:&'static str)->FaIcon{
+    fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])
+}
+
 pub fn make_player_pad<'a>()->iced::widget::Container<'a, ViewerMessage>{
     iced::widget::container(
         row![
             //iced::widget::button("<<").width(40),
-            iced::widget::button("<").on_press(ViewerMessage::Backward).width(40),
-            iced::widget::button("<|").on_press(ViewerMessage::StepBack).width(40),
-            iced::widget::button("||").on_press(ViewerMessage::Stop).width(40),
-            iced::widget::button("|>").on_press(ViewerMessage::StepFwd).width(40),
-            iced::widget::button(">").on_press(ViewerMessage::Forward).width(40),
+            iced::widget::button(get_icon("backward-fast")).on_press(ViewerMessage::JumpToStart).width(40),
+            iced::widget::button(get_icon("backward")).on_press(ViewerMessage::Backward).width(40),
+            iced::widget::button(get_icon("backward-step")).on_press(ViewerMessage::StepBack).width(40),
+            iced::widget::button(get_icon("pause").size(20.0)).on_press(ViewerMessage::Stop).width(40),
+            iced::widget::button(get_icon("forward-step")).on_press(ViewerMessage::StepFwd).width(40),
+            iced::widget::button(get_icon("play")).on_press(ViewerMessage::Forward).width(40),
+
+                            // iced::widget::button("Reset").on_press(ViewerMessage::Reset).width(225),
+            iced::widget::button(get_icon("forward-fast")).on_press(ViewerMessage::JumpToEnd).width(40),
             //iced::widget::button(">>").width(40),
         ],
 
@@ -607,53 +618,55 @@ impl PadamoTool for PadamoViewer{
         let view_transform: iced::Element<'_,_> = self.view_transform.view().width(300).into();
         let lower_col:iced::Element<'a, ViewerMessage> = column![
             //self.chart.view(frame,self.plot_scale, Some(ViewerMessage::plot_pixel(self.start, self.end))),
-            row![
-                iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(ViewerMessage::SetAutoscale),
-                iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
-                iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
-                iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
-                iced::widget::Space::new(10,10).width(iced::Length::Fill),
-                view_transform.map(ViewerMessage::PlotZoomMessage),
-            ],
-            row![
-                iced::widget::Container::new(
-                    iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
-                ).center_x(iced::Length::Fill).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(100),
 
-                //iced::widget::container(
-                    column![
-                        row![
-                            iced::widget::button("Set start").on_press(ViewerMessage::SetStart).width(100),
-                            iced::widget::TextInput::new("",start_frame.as_str())
-                                .on_input(ViewerMessage::SetViewStartText)
-                                .on_submit(ViewerMessage::SubmitTimeline)
-                                .width(75),
-                            iced::widget::TextInput::new("",frame_num.as_str())
-                                .on_input(ViewerMessage::SetViewPositionText)
-                                .on_submit(ViewerMessage::SubmitTimeline)
-                                .width(75),
-                            iced::widget::TextInput::new("",end_frame.as_str())
-                                .on_input(ViewerMessage::SetViewEndText)
-                                .on_submit(ViewerMessage::SubmitTimeline)
-                                .width(75),
-                            iced::widget::button("Set end").on_press(ViewerMessage::SetEnd).width(100),
-                        ],
-                        row![
-                            iced::widget::button("To start").on_press(ViewerMessage::JumpToStart).width(100),
-                            iced::widget::button("Reset").on_press(ViewerMessage::Reset).width(225),
-                            iced::widget::button("To end").on_press(ViewerMessage::JumpToEnd).width(100),
-                        ],
-                        row![
-                            iced::widget::TextInput::new("Enter datetime",self.datetime_entry.as_str())
-                                .on_input(ViewerMessage::EditDatetime)
-                                .on_submit(ViewerMessage::SubmitDatetime)
-                                .width(100),
-
-                        ],
+            row![
+                column![
+                    row![
+                        iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(ViewerMessage::SetAutoscale),
+                        iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
+                        iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
+                        iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
+                        iced::widget::Space::new(10,10).width(iced::Length::Fill),
+                        view_transform.map(ViewerMessage::PlotZoomMessage),
+                        // iced::widget::Space::new(10,10).width(iced::Length::Fill),
                     ],
+                    iced::widget::Container::new(
+                        iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
+                    ).center_x(iced::Length::Fill).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(iced::Length::Fill),
+                ],
 
-                //).center_x(iced::Length::Shrink).center_y(iced::Length::Shrink).width(iced::Length::Fill),
-            ],
+                iced::widget::container(column![
+                    row![
+                        iced::widget::TextInput::new("",start_frame.as_str())
+                            .on_input(ViewerMessage::SetViewStartText)
+                            .on_submit(ViewerMessage::SubmitTimeline)
+                            .width(100),
+                        iced::widget::TextInput::new("",frame_num.as_str())
+                            .on_input(ViewerMessage::SetViewPositionText)
+                            .on_submit(ViewerMessage::SubmitTimeline)
+                            .width(100),
+                        iced::widget::TextInput::new("",end_frame.as_str())
+                            .on_input(ViewerMessage::SetViewEndText)
+                            .on_submit(ViewerMessage::SubmitTimeline)
+                            .width(100),
+                    ],
+                    row![
+                        //iced::widget::button("To start").on_press(ViewerMessage::JumpToStart).width(100),
+                        iced::widget::button("Set start").on_press(ViewerMessage::SetStart).width(100),
+                        iced::widget::button("Reset").on_press(ViewerMessage::Reset).width(100),
+                        iced::widget::button("Set end").on_press(ViewerMessage::SetEnd).width(100),
+                        //iced::widget::button("To end").on_press(ViewerMessage::JumpToEnd).width(100),
+                    ],
+                    // row![
+                        iced::widget::TextInput::new("Enter datetime",self.datetime_entry.as_str())
+                            .on_input(ViewerMessage::EditDatetime)
+                            .on_submit(ViewerMessage::SubmitDatetime)
+                            .width(300),
+                        make_player_pad().center_x(iced::Length::Shrink)
+                    // ],
+                ]).style(iced::widget::container::bordered_box),
+
+            ].height(iced::Length::Shrink),
         ].into();
         let lower_col = lower_col.map(crate::messages::PadamoAppMessage::ViewerMessage);
 
