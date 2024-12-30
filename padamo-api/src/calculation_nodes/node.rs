@@ -5,7 +5,7 @@ use super::content::{Content, ContentContainer, ContentType, ConstantContent, Co
 use super::errors::ExecutionError;
 use super::graph::PortKey;
 use crate::rng::RandomState;
-
+use abi_stable::sabi_trait;
 
 
 #[repr(C)]
@@ -143,55 +143,62 @@ impl IOData{
 
 }
 
+#[allow(non_local_definitions)]
+pub mod traits{
+    use abi_stable::std_types::{RVec,RString,ROption,RResult,RBox};
+    use abi_stable::{rvec, sabi_trait};
+    use super::{CalculationIO,ContentContainer,IOData,CalculationConstant,RandomState,ExecutionError, ConstantContentContainer};
+    /// Trait for calculation node
+    #[sabi_trait]
+    pub trait CalculationNode: Debug+Clone{
 
-/// Trait for calculation node
-#[abi_stable::sabi_trait]
-pub trait CalculationNode: Debug+Clone{
+        /// Name of node displayed in graph editor or node list
+        fn name(&self)->RString;
 
-    /// Name of node displayed in graph editor or node list
-    fn name(&self)->RString;
+        /// Category to place node in node list
+        fn category(&self)->RVec<RString>{
+            rvec![]
+        }
 
-    /// Category to place node in node list
-    fn category(&self)->RVec<RString>{
-        rvec![]
+        fn identifier(&self)->RString{
+            self.path().join("/").into()
+        }
+
+        fn old_identifier(&self)->ROption<RString>{
+            ROption::RNone
+        }
+
+        /// If node requires calculation by anyway. Set it to true if node is outputting data in environment or somewhere else
+        fn is_primary(&self)->bool{
+            false
+        }
+
+        /// Input definitions of node
+        fn inputs(&self)->RVec<CalculationIO>;
+
+        /// Output definition of node
+        fn outputs(&self)->RVec<CalculationIO>;
+
+        /// Constants definition of node with default values.
+        fn constants(&self)->RVec<CalculationConstant>;
+
+        /// Main calculation
+        fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError>;
+
+
+        fn path(&self)->RVec<RString>{
+            let mut category = self.category();
+            let name = self.name();
+            category.push(name);
+            category
+        }
     }
 
-    fn identifier(&self)->RString{
-        self.path().join("/").into()
-    }
-
-    fn old_identifier(&self)->ROption<RString>{
-        ROption::RNone
-    }
-
-    /// If node requires calculation by anyway. Set it to true if node is outputting data in environment or somewhere else
-    fn is_primary(&self)->bool{
-        false
-    }
-
-    /// Input definitions of node
-    fn inputs(&self)->RVec<CalculationIO>;
-
-    /// Output definition of node
-    fn outputs(&self)->RVec<CalculationIO>;
-
-    /// Constants definition of node with default values.
-    fn constants(&self)->RVec<CalculationConstant>;
-
-    /// Main calculation
-    fn calculate(&self, inputs:ContentContainer, outputs:&mut IOData, constants:ConstantContentContainer, environment:&mut ContentContainer, rng:&mut RandomState)->RResult<(),ExecutionError>;
-
-
-    fn path(&self)->RVec<RString>{
-        let mut category = self.category();
-        let name = self.name();
-        category.push(name);
-        category
-    }
+    //pub type CalculationNodeStatic = CalculationNode_TO<'static, StaticRef<()>>;
+    pub type CalculationNodeBox = CalculationNode_TO<'static, RBox<()>>;
 }
 
-//pub type CalculationNodeStatic = CalculationNode_TO<'static, StaticRef<()>>;
-pub type CalculationNodeBox = CalculationNode_TO<'static, RBox<()>>;
+pub use traits::{CalculationNode,CalculationNodeBox,CalculationNode_TO};
 
 
 #[repr(C)]
