@@ -51,7 +51,7 @@ where
         // let mut bounds = limits.();
         // //bounds.height = 100.0;
         // iced::advanced::layout::Node::new(bounds)
-        iced::advanced::layout::atomic(limits, iced::Length::Fill, 100)
+        iced::advanced::layout::atomic(limits, iced::Length::Fill, iced::Length::Fill)
     }
 
     fn draw(
