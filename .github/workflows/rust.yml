@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install fontconfig
-      run: sudo apt install fontconfig
+      run: sudo apt install libfontconfig-dev
     - name: Build
       run: bash universal_build.sh release
     - name: Prepare release
