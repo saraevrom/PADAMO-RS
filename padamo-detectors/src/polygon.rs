@@ -394,10 +394,17 @@ impl<'a> RectIterator<'a>{
             plotters::style::colors::BLACK.filled()
         }
         else if let Some((arr,_)) = self.source{
-            let (min_,max_) = self.scale.get_bounds(arr,self.alive_pixels);
+            let (min_, mut max_) = self.scale.get_bounds(arr,self.alive_pixels);
+            max_ = if max_>min_ {max_} else {min_+0.1};
             //println!("COORDS {},{}",self.i,self.j);
             if let Some(v) = arr.try_get(&poly.index){
-                plotters::style::colors::colormaps::ViridisRGB::get_color_normalized(*v,min_,max_).filled()
+                if !(v.is_nan() || min_.is_nan() || max_.is_nan()){
+                    //println!("GET CMAP {}, [{}, {}]",*v,min_,max_);
+                    plotters::style::colors::colormaps::ViridisRGB::get_color_normalized(*v,min_,max_).filled()
+                }
+                else{
+                    plotters::style::colors::RED.filled()
+                }
             }
             else{
                 plotters::style::colors::RED.filled()

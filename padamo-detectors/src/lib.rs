@@ -143,11 +143,13 @@ impl<Message> Detector<Message>{
             let ut_ns = ((ut-ut_s as f64)*1e9) as u32;
             //println!("Datetime from {}=>{}; {}",ut,ut_s,ut_ns);
             //Makes datetime skipping naive
-            let datetime = chrono::DateTime::from_timestamp(ut_s,ut_ns).unwrap();
-
-            // Format the datetime how you want
-            let newdate = datetime.format("%Y-%m-%d %H:%M:%S.%f");
-            newdate.to_string()
+            if let Some(datetime) = chrono::DateTime::from_timestamp(ut_s,ut_ns){
+                let newdate = datetime.format("%Y-%m-%d %H:%M:%S.%f");
+                newdate.to_string()
+            }
+            else{
+                format!("Invalid unixtime: {}", ut)
+            }
         }
         else{
             "View".to_string()
@@ -383,6 +385,7 @@ struct ColorbarRects{
 
 impl ColorbarRects{
     pub fn new(min:f64, max:f64)->Self{
+        let max = if max>min {max} else {min+0.1};
         Self { min, max, index: 0 }
     }
 }
