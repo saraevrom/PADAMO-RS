@@ -19,6 +19,13 @@ pub struct SignalTimeEmbeddedMergingNode<T:CalculationNode, U:CalculationNode>{
 }
 
 impl<T:CalculationNode, U:CalculationNode> SignalTimeEmbeddedMergingNode<T,U>{
+    pub fn new<N:Into<RString>,I:Into<RString>>(signal:T, time:U, name:N, identifier:I)->Self{
+        Self { signal, time, name:name.into() ,
+            identifier:identifier.into(),
+            category:rvec!["Data sources".into()]
+        }
+    }
+
     fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>{
         //let inputs = args.inputs;
         let env = args.environment;
