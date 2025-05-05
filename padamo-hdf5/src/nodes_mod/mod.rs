@@ -4,8 +4,11 @@ pub use singular::LazyHDF5SignalNode;
 pub mod joined;
 pub use joined::LazyHDF5DirSignalNode;
 
-pub mod array;
-pub use array::LazyHDF5ArrayNode;
+pub mod array_source;
+pub use array_source::LazyHDF5ArrayNode;
+
+pub mod time_source;
+pub use time_source::LazyHDF5TimeNode;
 
 pub mod save;
 pub use save::SaveHDF5Node;

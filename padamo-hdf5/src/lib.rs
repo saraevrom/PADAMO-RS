@@ -16,9 +16,12 @@ pub fn plugin_root()->PadamoModule_Ref{
 #[sabi_extern_fn]
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
-        crate::nodes_mod::LazyHDF5SignalNode,
+        // crate::nodes_mod::LazyHDF5SignalNode,
+        padamo_api::SignalTimeEmbeddedMergingNode::new(crate::nodes_mod::LazyHDF5ArrayNode,crate::nodes_mod::LazyHDF5TimeNode,
+                                                       "HDF5 Signal node", "padamohdf5.file_reader"),
         crate::nodes_mod::LazyHDF5DirSignalNode,
         crate::nodes_mod::LazyHDF5ArrayNode,
+        crate::nodes_mod::LazyHDF5TimeNode,
         crate::nodes_mod::SaveHDF5Node,
         crate::nodes_mod::SaveHDF5ArrayNode
     )

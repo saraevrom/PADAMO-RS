@@ -151,12 +151,12 @@ impl LazyHDF5DirSignalNode{
 
 impl CalculationNode for LazyHDF5DirSignalNode{
     fn name(&self,) -> RString where {
-        "Lazy HDF5 Signal directory node".into()
+        "HDF5 Signal directory node".into()
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
         rvec![
-            "HDF5".into()
+            "Data sources".into()
         ]
     }
 
