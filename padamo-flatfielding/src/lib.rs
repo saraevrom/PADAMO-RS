@@ -22,6 +22,8 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         nodes::PhysicalFFNode,
         nodes::MapMultiplyNode,
         nodes::MapDivideNode,
+        nodes::AddMapNode,
+        nodes::SubMapNode,
         nodes_estimate::QuantileNode
     )
 }
