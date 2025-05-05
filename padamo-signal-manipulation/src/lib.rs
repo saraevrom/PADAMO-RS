@@ -18,6 +18,8 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
         node_reg::CutterNode,
         nodes_stretch::StretchSignal,
         signal_length::SignalLength,
+        signal_length::SignalArrayLength,
+        signal_length::SignalTimeLength,
     )
 }
 
