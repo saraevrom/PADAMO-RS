@@ -150,7 +150,7 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
         });
 
         overlay_content.extend(quote! {
-            iced::widget::Button::new(iced::widget::Text::new(#new_display_name)).on_press(#choose_message_name::#choose_variant_name),
+            iced::widget::Button::new(iced::widget::Text::new(#new_display_name)).width(100).on_press(#choose_message_name::#choose_variant_name),
         });
 
         set_content.extend(quote! {
@@ -292,39 +292,40 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
 
                 let label = title.unwrap_or_default();
 
-                // let underlay = iced::widget::Row::new()
-                // //.push(iced::widget::Text::new(label))
-                // .push(iced::widget::Button::new(iced::widget::Text::new(display_name)).on_press(#message_name::Expand));
-                //
-                // let overlay:iced::Element<'a,#choose_message_name,iced::Theme,iced::Renderer> = iced::widget::column![
-                //     #overlay_content
-                // ].into();
-                //
-                // // underlay.into()
-                //
-                // let drop_down = iced_aw::DropDown::new(underlay, overlay.map(#message_name::Choose), self.expanded)
-                //     .width(iced::Length::Fill)
-                //     .on_dismiss(#message_name::Dismiss)
-                //     .alignment(iced_aw::drop_down::Alignment::Bottom);
-                //let underlay = iced::widget::checkbox(display_name, self.expanded).on_toggle(#message_name::SetExpanded);
-                let underlay = if self.expanded{
-                    iced::widget::Button::new("Dismiss").on_press(padamo_iced_forms::ActionOrUpdate::Update(#message_name::Dismiss))
-                }
-                else{
-                    iced::widget::Button::new(iced::widget::Text::new(display_name)).on_press(padamo_iced_forms::ActionOrUpdate::Update(#message_name::Expand))
-                };
+                let underlay = iced::widget::Row::new()
+                    // .push(iced::widget::Text::new(label))
+                    .push(iced::widget::Button::new(iced::widget::Text::new(display_name)).width(100).on_press(#message_name::Expand));
+
                 let overlay:iced::Element<'a,#choose_message_name,iced::Theme,iced::Renderer> = iced::widget::column![
                     #overlay_content
                 ].into();
+                //
+                // // underlay.into()
+                //
+                let drop_down = iced_aw::DropDown::new(underlay, overlay.map(#message_name::Choose), self.expanded)
+                    .width(iced::Length::Fill)
+                    .on_dismiss(#message_name::Dismiss);
+                    // .alignment(iced_aw::drop_down::Alignment::Bottom);
+                //let underlay = iced::widget::checkbox(display_name, self.expanded).on_toggle(#message_name::SetExpanded);
+                // let underlay = if self.expanded{
+                //     iced::widget::Button::new("Dismiss").on_press(padamo_iced_forms::ActionOrUpdate::Update(#message_name::Dismiss))
+                // }
+                // else{
+                //     iced::widget::Button::new(iced::widget::Text::new(display_name)).on_press(padamo_iced_forms::ActionOrUpdate::Update(#message_name::Expand))
+                // };
+                // let overlay:iced::Element<'a,#choose_message_name,iced::Theme,iced::Renderer> = iced::widget::column![
+                //     #overlay_content
+                // ].into();
 
-                let mut dropdown = iced::widget::Column::new();
-                dropdown = dropdown.push(underlay);
-                if self.expanded{
-                    dropdown = dropdown.push(overlay.map(#message_name::Choose).map(padamo_iced_forms::ActionOrUpdate::Update));
-                }
+                // let mut dropdown = iced::widget::Column::new();
+                // dropdown = dropdown.push(underlay);
+                // if self.expanded{
+                //     dropdown = dropdown.push(overlay.map(#message_name::Choose).map(padamo_iced_forms::ActionOrUpdate::Update));
+                // }
 
 
                 // drop_down.into()
+                let drop_down:iced::Element<'a,#message_name,iced::Theme, iced::Renderer> = drop_down.into();
 
                 let selected_element:iced::Element<'a,padamo_iced_forms::ActionOrUpdate<#update_message_name>,iced::Theme,iced::Renderer> = match &self.state{
                     #element_view
@@ -333,7 +334,7 @@ pub fn impl_icedform_enum(input: syn::DataEnum,name:syn::Ident) -> TokenStream {
                 let selected_element = selected_element.map(|outer| outer.map(#message_name::Update));
                 let res = iced::widget::column![
                     iced::widget::Text::new(label),
-                    dropdown,
+                    drop_down.map(padamo_iced_forms::ActionOrUpdate::Update),
                     // iced::widget::row![,drop_down].spacing(5),
                     selected_element
                 ];
