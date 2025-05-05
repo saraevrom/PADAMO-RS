@@ -349,7 +349,7 @@ pub enum Scaling{
 
 impl Scaling{
     pub fn get_bounds(&self, frame:&ArrayND<f64>, alive_pixels:&ArrayND<bool>)->(f64,f64){
-        let first = frame.flat_data[0];
+        let first = frame.flat_data.get(0).map(|x|*x).unwrap_or(0.0);
         match self{
             Self::Autoscale=>{
                 let (min,max) = frame.flat_data.iter()

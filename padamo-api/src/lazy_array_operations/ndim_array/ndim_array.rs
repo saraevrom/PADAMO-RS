@@ -42,7 +42,8 @@ where
     pub fn try_get<'a>(&self, index:&[usize])->Option<&T>{
         if self.index_compatible(index){
             let index_flat = self.remap_indices(index);
-            Some(&self.flat_data[index_flat])
+            // Some(&self.flat_data[index_flat])
+            self.flat_data.get(index_flat)
         }
         else{
             None
