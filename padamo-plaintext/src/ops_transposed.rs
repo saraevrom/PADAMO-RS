@@ -109,7 +109,7 @@ impl LazyArrayOperation<ArrayND<f64>> for CSVReaderTransposed{
     }
 
     fn request_range(&self,start:usize,end:usize,) -> ArrayND<f64> where {
-        let mut res = self.read_columns_csv(start+self.start_line, end-start).unwrap();
+        let mut res = self.read_columns_csv(start+self.row_bounds.0, end-start).unwrap();
         let res = res
             .drain(..)
             .map(|x| ArrayND{flat_data: x.into(), shape:rvec![1,self.length]})
