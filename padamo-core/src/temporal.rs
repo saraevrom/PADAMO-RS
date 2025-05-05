@@ -99,73 +99,12 @@ impl CalculationNode for SplitSpacetime{
 
 
 
-#[derive(Clone,Debug)]
-pub struct PseudoTime;
-
-impl PseudoTime{
-    fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>{
-        let start = args.inputs.request_string("tmpbase")?;
-        let length = args.inputs.request_integer("tmpcount")?;
-        if length<0{
-            return Err(ExecutionError::OtherError("time length must be nonnegative".into()));
-        }
-        let length = length as usize;
-        let resolution = args.inputs.request_float("tmpres")?;
-
-        let time = pseudotime::ops::AddTime::new(length, resolution, &start);
-        if let Some(t) = time{
-            args.outputs.set_value("Time", make_lao_box(t).into())
-        }
-        else{
-            Err(ExecutionError::OtherError("Could not create pseudotime (check start datetime format)".into()))
-        }
-    }
-}
-
-impl CalculationNode for PseudoTime {
-    fn name(&self) -> RString where {
-        "Pseudo time".into()
-    }
-
-    fn category(&self) -> RVec<RString>{
-        rvec!["Time sources".into()]
-    }
-
-    fn identifier(&self) -> RString{
-        "padamocore.pseudotime".into()
-    }
-
-    fn inputs(&self) -> RVec<CalculationIO>{
-        ports!()
-    }
-
-    fn outputs(&self) -> RVec<CalculationIO>{
-        ports!(
-            ("Time", ContentType::DetectorTime)
-        )
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        let now = chrono::Utc::now();
-        let dat = now.format("%Y-%m-%d %H:%M:%S.0");
-        let formatted = format!("{}", dat);
-        constants!(
-            ("tmpbase","Start datetime", formatted),
-            ("tmpres","Temporal resolution", 0.000256),
-            ("tmpcount","Length", 100),
-        )
-    }
-
-    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
-        self.calculate(args).into()
-    }
-}
 
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec![
         CombineSpacetime,
         SplitSpacetime,
-        PseudoTime
+        pseudotime::nodes::PseudoTime
         //StringReplaceRegexNode
     ]
 }
