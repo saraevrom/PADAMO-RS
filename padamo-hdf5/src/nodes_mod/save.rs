@@ -60,9 +60,7 @@ impl CalculationNode for SaveHDF5Node{
         "Save HDF5 signal".into()
     }
     fn category(&self,) -> RVec<RString>{
-        rvec![
-            "HDF5".into()
-        ]
+        padamo_api::common_categories::data_savers()
     }
 
     fn old_identifier(&self,) -> ROption<RString>where {
@@ -147,9 +145,7 @@ impl CalculationNode for SaveHDF5ArrayNode{
         "Save HDF5 array".into()
     }
     fn category(&self,) -> RVec<RString>{
-        rvec![
-            "HDF5".into()
-        ]
+        padamo_api::common_categories::data_savers()
     }
 
     fn old_identifier(&self,) -> ROption<RString>where {

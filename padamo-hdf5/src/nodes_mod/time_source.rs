@@ -29,9 +29,7 @@ impl CalculationNode for LazyHDF5TimeNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Time sources".into()
-        ]
+        padamo_api::common_categories::time_sources()
     }
 
 

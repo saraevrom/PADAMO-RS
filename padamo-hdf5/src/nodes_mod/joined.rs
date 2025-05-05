@@ -154,10 +154,8 @@ impl CalculationNode for LazyHDF5DirSignalNode{
         "HDF5 Signal directory node".into()
     }
 
-    fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Data sources".into()
-        ]
+    fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString> {
+        padamo_api::common_categories::data_sources()
     }
 
     fn old_identifier(&self,) -> ROption<RString>where {
