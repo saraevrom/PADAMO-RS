@@ -354,7 +354,7 @@ impl Scaling{
             Self::Autoscale=>{
                 let (min,max) = frame.flat_data.iter()
                     .enumerate()
-                    .filter(|x| alive_pixels.flat_data[x.0])
+                    .filter(|x| alive_pixels.flat_data.get(x.0).map(|y|*y).unwrap_or(false))
                     .map(|x| x.1)
                     .fold((first,first), |a,b| (a.0.min(*b),a.1.max(*b)));
                 if max<=min{
