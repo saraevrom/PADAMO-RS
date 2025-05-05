@@ -6,6 +6,9 @@ use regex::Regex;
 
 use crate::errors::CSVError;
 
+
+// Each ROW is separate frame
+
 #[derive(Clone,Debug)]
 pub struct CSVReader{
     pub separator:Regex,

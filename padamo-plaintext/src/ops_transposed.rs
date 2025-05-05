@@ -6,6 +6,9 @@ use regex::Regex;
 
 use crate::errors::CSVError;
 
+
+// Each COLUMN is separate frame
+
 #[derive(Clone,Debug)]
 pub struct CSVReaderTransposed{
     pub separator:Regex,

@@ -6,8 +6,11 @@ use abi_stable::sabi_extern_fn;
 
 pub mod ops;
 pub mod ops_transposed;
+pub mod ops_temporal;
+
 pub mod errors;
 pub mod nodes;
+pub mod nodes_legacy;
 
 #[export_root_module]
 pub fn plugin_root()->PadamoModule_Ref{
@@ -17,7 +20,8 @@ pub fn plugin_root()->PadamoModule_Ref{
 #[sabi_extern_fn]
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
-        crate::nodes::CSVNode,
-        crate::nodes::CSVArrayNode
+        crate::nodes_legacy::CSVNode,
+        crate::nodes::CSVArrayNode,
+        crate::nodes::CSVTimeNode
     )
 }
