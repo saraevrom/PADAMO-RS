@@ -15,6 +15,7 @@ pub mod strings;
 pub mod strings_old;
 pub mod cache;
 pub mod io_nodes;
+pub mod temporal;
 
 #[export_root_module]
 pub fn plugin_root()->PadamoModule_Ref{
@@ -32,6 +33,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     node_list.extend(strings_old::nodes());
     node_list.extend(trigger_nodes::nodes());
     node_list.extend(io_nodes::nodes());
+    node_list.extend(temporal::nodes());
     // node_list.push(make_node_box(trigger_nodes::TriggerExpandNode));
     // node_list.push(make_node_box(trigger_nodes::TriggerExchangeNode));
     node_list.push(make_node_box(cache::ForcedCacheNode));
