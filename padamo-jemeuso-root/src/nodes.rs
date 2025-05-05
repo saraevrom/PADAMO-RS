@@ -1,11 +1,11 @@
 use abi_stable::std_types::{ROption::RNone, RVec};
 use padamo_api::{constants, lazy_array_operations::{LazyArrayOperation, LazyTriSignal}, ports, prelude::*};
-use crate::ops::{AddTime,LazyROOTSpatialReader};
+use crate::ops::{AddTime,LazyROOTSpatialReader, LazyROOTTemporalReader};
 
 #[derive(Clone,Debug)]
-pub struct EUSOROOTNode;
+pub struct EUSOROOTArrayNode;
 
-impl EUSOROOTNode{
+impl EUSOROOTArrayNode{
     fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
         let filename:String = args.inputs.request_string("Filename")?.into();
         let tree:String = args.constants.request_string("Tree")?.into();
@@ -14,32 +14,23 @@ impl EUSOROOTNode{
         if spatial.length()==0{
             return Err(ExecutionError::OtherError("ROOT file length is zero".into()));
         }
-        let length = spatial.length();
-        let tmpbase:String = args.constants.request_string("tmpbase")?.into();
-        let tmpres = args.constants.request_float("tmpres")?;
-        let temporal = if let Some(v) = AddTime::new(length, tmpres, &tmpbase) {v}
-            else {return Err(ExecutionError::OtherError("Cannot parse datetime".into()));};
-        // let dt = if let Some(v) = datetime_parser::parse_datetimes(&tmpbase, chrono::Utc::now()) {v}
-        //     else {return Err(ExecutionError::OtherError("Cannot parse datetime".into()));};
-        // let tmpbase = (dt.naive_utc().and_utc().timestamp_micros() as f64)*1e-6;
-        // let temporal = AddTime::new(length, tmpres, tmpbase);
-        let signal:LazyTriSignal = (make_lao_box(spatial), make_lao_box(temporal), RNone).into();
-        args.outputs.set_value("Signal", signal.into())?;
+
+        args.outputs.set_value("Array", make_lao_box(spatial).into())?;
         Ok(())
     }
 }
 
-impl CalculationNode for EUSOROOTNode{
+impl CalculationNode for EUSOROOTArrayNode{
     fn name(&self,) -> abi_stable::std_types::RString where {
-        "Basic ROOT file reader".into()
+        "Basic ROOT file array reader".into()
     }
 
     fn identifier(&self,) -> abi_stable::std_types::RString where {
-        "padamoroot.basic_root_reader".into()
+        "padamoroot.basic_root_array_reader".into()
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        vec!["ROOT".into()].into()
+        padamo_api::common_categories::array_sources()
     }
 
     fn inputs(&self,) -> abi_stable::std_types::RVec<CalculationIO>where {
@@ -50,19 +41,71 @@ impl CalculationNode for EUSOROOTNode{
 
     fn outputs(&self) -> RVec<CalculationIO> {
         ports!(
-            ("Signal", ContentType::DetectorFullData)
+            ("Array", ContentType::DetectorSignal)
         )
     }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
-        let now = chrono::Utc::now();
-        let dat = now.format("%Y-%m-%d %H:%M:%S.0");
-        let formatted = format!("{}", dat);
         constants!(
-            ("Tree", "tevent"),
-            ("Branch", "photon_count_data"),
-            ("tmpbase","Temporal unixtime base", formatted),
-            ("tmpres","Temporal resolution", 0.000256),
+            ("Tree", "Signal tree", "tevent"),
+            ("Branch", "Signal branch", "photon_count_data"),
+        )
+    }
+
+    fn calculate(&self, args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
+        self.calculate(args).into()
+    }
+
+}
+
+
+#[derive(Clone,Debug)]
+pub struct EUSOROOTTimeNode;
+
+impl EUSOROOTTimeNode{
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>where {
+        let filename:String = args.inputs.request_string("Filename")?.into();
+        let tree:String = args.constants.request_string("Tree_time")?.into();
+        let branch:String = args.constants.request_string("Branch_time")?.into();
+        let temporal= LazyROOTTemporalReader::new(filename, tree, branch);
+        if temporal.length()==0{
+            return Err(ExecutionError::OtherError("ROOT file length is zero".into()));
+        }
+
+        args.outputs.set_value("Time", make_lao_box(temporal).into())?;
+        Ok(())
+    }
+}
+
+impl CalculationNode for EUSOROOTTimeNode{
+    fn name(&self,) -> abi_stable::std_types::RString where {
+        "Basic ROOT file time reader".into()
+    }
+
+    fn identifier(&self,) -> abi_stable::std_types::RString where {
+        "padamoroot.basic_root_time_reader".into()
+    }
+
+    fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
+        padamo_api::common_categories::time_sources()
+    }
+
+    fn inputs(&self,) -> abi_stable::std_types::RVec<CalculationIO>where {
+        ports![
+            ("Filename", ContentType::String)
+        ]
+    }
+
+    fn outputs(&self) -> RVec<CalculationIO> {
+        ports!(
+            ("Time", ContentType::DetectorTime)
+        )
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!(
+            ("Tree_time", "Time tree", "tevent"),
+            ("Branch_time", "Time branch", "photon_count_data"),
         )
     }
 
