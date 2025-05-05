@@ -3,6 +3,7 @@ pub mod prelude;
 pub mod lazy_array_operations;
 //pub mod parsers;
 pub mod function_operator;
+pub mod common_categories;
 pub mod rng;
 
 #[cfg(feature = "headless")]
@@ -16,6 +17,7 @@ use abi_stable::sabi_trait::TD_Opaque;
 use abi_stable::std_types::{RString, RVec};
 use abi_stable::{StableAbi, library::RootModule, package_version_strings, sabi_types::VersionStrings, declare_root_module_statics};
 use crate::prelude::*;
+
 
 pub fn make_node_box<T:CalculationNode+'static>(x:T)->CalculationNodeBox{
     CalculationNode_TO::from_value(x,TD_Opaque)

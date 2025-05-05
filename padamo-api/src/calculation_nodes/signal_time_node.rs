@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use abi_stable::rvec;
-use abi_stable::std_types::ROption::RNone;
+use abi_stable::std_types::ROption::{self, RNone, RSome};
 use abi_stable::std_types::{RResult, RString, RVec};
 use crate::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal, LazyTriSignal};
 use crate::prelude::*;
@@ -15,16 +15,24 @@ pub struct SignalTimeEmbeddedMergingNode<T:CalculationNode, U:CalculationNode>{
     pub time:U,
     pub name:RString,
     pub identifier:RString,
-    pub category:RVec<RString>
+    pub category:RVec<RString>,
+    pub legacy_id:ROption<RString>,
 }
 
 impl<T:CalculationNode, U:CalculationNode> SignalTimeEmbeddedMergingNode<T,U>{
     pub fn new<N:Into<RString>,I:Into<RString>>(signal:T, time:U, name:N, identifier:I)->Self{
         Self { signal, time, name:name.into() ,
             identifier:identifier.into(),
-            category:rvec!["Data sources".into()]
+            category:crate::common_categories::data_sources(),
+            legacy_id:RNone,
         }
     }
+
+    pub fn with_legacy_id<V:Into<RString>>(mut self, legacy_id:V)->Self{
+        self.legacy_id = RSome(legacy_id.into());
+        self
+    }
+
 
     fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>{
         //let inputs = args.inputs;
@@ -106,6 +114,10 @@ impl<T:CalculationNode, U:CalculationNode> CalculationNode for SignalTimeEmbedde
 
     fn identifier(&self,) -> RString{
         self.identifier.clone()
+    }
+
+    fn old_identifier(&self,) -> ROption<RString>{
+        self.legacy_id.clone()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>{
