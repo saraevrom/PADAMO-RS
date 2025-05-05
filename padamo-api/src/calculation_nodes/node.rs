@@ -125,6 +125,10 @@ impl IOData{
         }
     }
 
+    pub fn take_value(&mut self, key:&str)->Option<Content>{
+        self.data.remove(key.into()).into_option().map(|x| x.into_option()).flatten()
+    }
+
     pub fn clarify(mut self)->Result<RHashMap<RString, Content>,ExecutionError>{
         let mut res:RHashMap<RString, Content> = RHashMap::new();
         for entry in self.data.drain(){

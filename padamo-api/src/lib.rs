@@ -10,6 +10,7 @@ pub mod headless_helpers;
 
 pub use calculation_nodes::ad_hoc_input_node::AdHocInputNode;
 pub use calculation_nodes::ad_hoc_output_node::AdHocOutputNode;
+pub use calculation_nodes::signal_time_node::SignalTimeEmbeddedMergingNode;
 
 use abi_stable::sabi_trait::TD_Opaque;
 use abi_stable::std_types::{RString, RVec};
@@ -64,6 +65,8 @@ macro_rules! nodes_vec {
         }
     };
 }
+
+
 
 // #[abi_stable::sabi_trait]
 // pub trait PadamoModuleState{
