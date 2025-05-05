@@ -1,28 +1,8 @@
 [
   {
-    "connections": {
-      "Filename": {
-        "node_index": 1,
-        "port": "File path"
-      }
-    },
-    "constants": {
-      "Spatial": {
-        "Text": "pdm_2d_rot_global"
-      },
-      "Temporal": {
-        "Text": "unixtime_dbl_global"
-      }
-    },
-    "identifier": "padamohdf5.file_reader",
-    "position": {
-      "x": 350.25006103515625,
-      "y": 42.75
-    }
-  },
-  {
     "connections": {},
     "constants": {},
+    "constants_external_flags": {},
     "identifier": "builtin.viewer.opened_file",
     "position": {
       "x": 155.99998474121094,
@@ -32,15 +12,41 @@
   {
     "connections": {
       "Signal": {
-        "node_index": 0,
+        "node_index": 2,
         "port": "Signal"
       }
     },
     "constants": {},
+    "constants_external_flags": {},
     "identifier": "builtin.viewer.view",
     "position": {
       "x": 570.0000610351562,
       "y": 42.0
+    }
+  },
+  {
+    "connections": {
+      "Filename": {
+        "node_index": 0,
+        "port": "File path"
+      }
+    },
+    "constants": {
+      "Field": {
+        "Text": "pdm_2d_rot_global"
+      },
+      "Temporal": {
+        "Text": "unixtime_dbl_global"
+      }
+    },
+    "constants_external_flags": {
+      "Field": false,
+      "Temporal": false
+    },
+    "identifier": "padamohdf5.file_reader_composed",
+    "position": {
+      "x": 352.140625,
+      "y": 37.29844665527344
     }
   }
 ]
