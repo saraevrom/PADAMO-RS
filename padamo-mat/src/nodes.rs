@@ -34,7 +34,7 @@ impl CalculationNode for MatReadNode{
     }
 
     fn category(&self,) -> RVec<RString>where {
-        rvec!["MAT".into()]
+        padamo_api::common_categories::array_sources()
     }
 
     fn identifier(&self,) -> RString where {
