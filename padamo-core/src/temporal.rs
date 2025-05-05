@@ -7,7 +7,7 @@ use abi_stable::{rvec, std_types::{ROption::RNone, RResult, RString, RVec}};
 pub struct CombineSpacetime;
 
 
-fn merge_spacetime(args:&mut CalculationNodeArguments)->Result<(),ExecutionError>{
+fn merge_spacetime(args:CalculationNodeArguments)->Result<(),ExecutionError>{
     let signal = args.inputs.request_detectorsignal("Signal")?;
     let time = args.inputs.request_detectortime("Time")?;
     let res:LazyTriSignal = (signal, time, RNone).into();
@@ -45,13 +45,13 @@ impl CalculationNode for CombineSpacetime{
     }
 
     fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
-        merge_spacetime(&mut args).into()
+        merge_spacetime(args).into()
     }
 }
 
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec![
-
+        CombineSpacetime
         //StringReplaceRegexNode
     ]
 }
