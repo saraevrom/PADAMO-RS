@@ -1,5 +1,5 @@
-use abi_stable::{rvec, std_types::{ROption::RNone, RVec}};
-use padamo_api::{constants, lazy_array_operations::{LazyDetectorSignal, LazyTriSignal}, ports, prelude::*};
+use abi_stable::std_types::RVec;
+use padamo_api::{constants, lazy_array_operations::LazyDetectorSignal, ports, prelude::*};
 
 #[derive(Clone,Debug)]
 pub struct CSVArrayNode;

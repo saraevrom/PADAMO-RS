@@ -1,6 +1,6 @@
-use abi_stable::std_types::{ROption::RNone, RVec};
-use padamo_api::{constants, lazy_array_operations::{LazyArrayOperation, LazyTriSignal}, ports, prelude::*};
-use crate::ops::{AddTime,LazyROOTSpatialReader, LazyROOTTemporalReader};
+use abi_stable::std_types::RVec;
+use padamo_api::{constants, lazy_array_operations::LazyArrayOperation, ports, prelude::*};
+use crate::ops::{LazyROOTSpatialReader, LazyROOTTemporalReader};
 
 #[derive(Clone,Debug)]
 pub struct EUSOROOTArrayNode;

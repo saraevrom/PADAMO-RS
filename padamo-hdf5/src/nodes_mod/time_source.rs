@@ -1,5 +1,4 @@
-use abi_stable::rvec;
-use abi_stable::std_types::{RString,ROption};
+use abi_stable::std_types::RString;
 use padamo_api::prelude::*;
 use padamo_api::{ports, constants};
 use abi_stable::std_types::RVec;

@@ -1,5 +1,5 @@
 use abi_stable::{rvec, std_types::{ROption::RNone, RVec}};
-use padamo_api::{constants, lazy_array_operations::{LazyDetectorSignal, LazyTriSignal}, ports, prelude::*};
+use padamo_api::{constants, lazy_array_operations::LazyTriSignal, ports, prelude::*};
 
 
 #[derive(Clone,Debug)]

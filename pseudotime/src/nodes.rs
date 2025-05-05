@@ -1,4 +1,4 @@
-use abi_stable::{rvec, std_types::{RResult, RString, RVec}};
+use abi_stable::std_types::{RResult, RString, RVec};
 use padamo_api::{constants, ports, prelude::*};
 
 
