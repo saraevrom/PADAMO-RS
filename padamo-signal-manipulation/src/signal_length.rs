@@ -64,7 +64,7 @@ impl SignalArrayLength{
 
 impl CalculationNode for SignalArrayLength{
     fn name(&self)->abi_stable::std_types::RString {
-        "Get array length".into()
+        "Get signal array length".into()
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<RString> where {
