@@ -8,7 +8,7 @@ use super::errors::ExecutionError;
 use padamo_api_macros_internal::impl_content;
 use abi_stable::std_types::RHashMap;
 use super::node::CalculationConstant;
-use crate::lazy_array_operations::{LazyDetectorSignal, LazyTriSignal};
+use crate::lazy_array_operations::{LazyDetectorSignal, LazyTriSignal, LazyTimeSignal};
 
 #[repr(C)]
 #[derive(StableAbi,Clone,Debug)]
@@ -21,6 +21,7 @@ pub enum Content{
     Function(DoubleFunctionOperatorBox),
     DetectorSignal(LazyDetectorSignal),
     DetectorFullData(LazyTriSignal),
+    DetectorTime(LazyTimeSignal)
 }
 
 
@@ -74,7 +75,8 @@ impl ContentType{
             ContentType::Float => Color { r: 0.0, g: 0.0, b: 1.0, a: 1.0 },
             ContentType::Function => Color { r: 1.0, g: 1.0, b: 0.0, a: 1.0 },
             ContentType::DetectorSignal => Color { r: 1.0, g: 0.33333, b: 0.0, a: 1.0 },
-            ContentType::DetectorFullData => Color { r: 0.3333333, g: 0.5, b: 0.0, a: 1.0 }
+            ContentType::DetectorFullData => Color { r: 0.3333333, g: 0.5, b: 0.0, a: 1.0 },
+            ContentType::DetectorTime => Color { r: 0.34, g: 0.55, b: 0.69, a: 1.0 },
             //ContentType::Array => iced::Color { r: 1.0, g: 1./3., b: 0.0, a: 1.0 },
         }
     }
