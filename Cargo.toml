@@ -27,7 +27,7 @@ plotters_video = { path = "./plotters_video" }
 chrono = "0.4"
 regex = "1.10.3"
 once_cell = "1.19.0"
-iced_aw = { version = "0.11", features = ["menu", "tabs", "card", "selection_list"] }
+iced_aw = { version = "0.12.2", features = ["menu", "tabs", "card", "selection_list"] }
 ndarray = "0.15.6"
 ndarray-stats = "0.5.1"
 hdf5 = "0.8.1"
