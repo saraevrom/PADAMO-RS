@@ -6,7 +6,6 @@ use abi_stable::sabi_extern_fn;
 
 pub mod ops;
 pub mod nodes;
-pub mod compat;
 
 
 #[export_root_module]
@@ -17,6 +16,7 @@ pub fn plugin_root()->PadamoModule_Ref{
 #[sabi_extern_fn]
 pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
-        nodes::MatReadNode
+        nodes::MatReadNode,
+        nodes::MatReadTimeNode
     )
 }
