@@ -4,7 +4,6 @@ use abi_stable::{std_types::RVec, export_root_module, prefix_type::PrefixTypeTra
 use padamo_api::nodes_vec;
 use abi_stable::sabi_extern_fn;
 
-pub mod compat;
 pub mod nodes_mod;
 pub mod ops;
 

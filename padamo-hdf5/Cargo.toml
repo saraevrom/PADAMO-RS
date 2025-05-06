@@ -16,15 +16,10 @@ crate-type = ["dylib"]
 abi_stable = "0.11.3"
 # Main padamo api
 padamo-api = { path = "../padamo-api", features = [] } # Tough crate. HDF5 uses ndarray 0.15 but padamo api uses up to date version.
-ndarray = "0.15.6"
+ndarray = "0.16.1"
 
-# Config to make sure that .mat is readable
-# Cool thing you don't need "threadsafe" feature to make crate actually thread-safe
 
-hdf5 = "0.8.1"
-hdf5-sys = { version = "0.8.1", features = ["static", "zlib"] }
-hdf5-src = { version = "0.8.1", features = ["zlib"] }
-libz-sys = { version = "1.1.15", features = ["zlib-ng"] }
+hdf5 = { package = "hdf5-metno", version = "0.10.1", features = ["static", "zlib"]  }
 
 #hdf5 = { git = "https://github.com/mulimoen/hdf5-rust", features = ["static", "zlib"] }
 #hdf5-src = { git = "https://github.com/mulimoen/hdf5-rust", features = [ "zlib", "deprecated"] }

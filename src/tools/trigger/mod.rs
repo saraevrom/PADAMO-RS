@@ -446,7 +446,7 @@ impl PadamoTool for PadamoTrigger{
                                             }
                                         }
 
-                                        let frame = crate::compat::arraynd_to_ndarray(spatial.request_range(interval.start,interval.end));
+                                        let frame = spatial.request_range(interval.start,interval.end).to_ndarray();
                                         let tim:Vec<f64> = temporal.request_range(interval.start,interval.end).into();
                                         let time_of_event = tim[0];
                                         let time_of_event_secs:i64 = time_of_event as i64;

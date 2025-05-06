@@ -9,7 +9,6 @@ mod builtin_nodes;
 // mod datetime_parser;
 mod time_search;
 mod popup_message;
-mod compat;
 mod assets;
 mod transform_widget;
 

@@ -256,7 +256,7 @@ impl PadamoViewer{
 
                                 tx_status.send(format!("{}/{}",i-start,end-start)).unwrap();
 
-                                let frame = crate::compat::arraynd_to_ndarray(spatial.request_range(i,i+size));
+                                let frame = spatial.request_range(i,i+size).to_ndarray();
                                 let tim = temporal.request_range(i,i+size);
 
                                 let mut slabs:Vec<hdf5::SliceOrIndex> = Vec::with_capacity(frame_shape.len());
