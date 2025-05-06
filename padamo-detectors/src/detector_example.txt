@@ -1,8 +1,0 @@
-
-# Common square pixel
-PIXEL [0,0]
-SQUARE (0.0,0.0) 1.0
-
-PIXEL [0,1]
-RECT (1.0,0.0) WH (1.0,1.0)
-# RECT (1.0,0.0) TR (1.0,1.0)
