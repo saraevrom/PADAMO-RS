@@ -10,6 +10,9 @@ pub struct CombineSpacetime;
 fn merge_spacetime(args:CalculationNodeArguments)->Result<(),ExecutionError>{
     let signal = args.inputs.request_detectorsignal("Signal")?;
     let time = args.inputs.request_detectortime("Time")?;
+    if time.length()!=signal.length(){
+        return Err(ExecutionError::OtherError(format!("Signal and time length mismatch ({}!={})",time.length(), signal.length()).into()));
+    }
     let res:LazyTriSignal = (signal, time, RNone).into();
     args.outputs.set_value("Combined signal", res.into())
 }
