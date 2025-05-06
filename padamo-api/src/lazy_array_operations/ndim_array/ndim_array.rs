@@ -3,6 +3,7 @@ use abi_stable::{StableAbi, std_types::RVec, rvec};
 #[cfg(feature = "ndarray")]
 use ndarray::{IxDyn, OwnedRepr};
 
+use std::fmt::Debug;
 //use ndarray::{IxDyn, OwnedRepr};
 use std::ops::{IndexMut, Index};
 //use ndarray::prelude::*;
@@ -182,6 +183,16 @@ where
         }
     }
 
+    pub fn flip_indices(&self)->ArrayND<T>{
+        let shape:RVec<usize> = self.shape.as_ref().iter().cloned().rev().collect::<Vec<usize>>().into();
+        let mut res = self.clone();
+        res.shape = shape;
+        for index in self.enumerate(){
+            let target_index:Vec<usize> = index.iter().cloned().rev().collect();
+            res.set(&target_index, self[&index].clone());
+        }
+        res
+    }
 }
 
 
@@ -192,6 +203,7 @@ where
     D: ndarray::Dimension
 {
     fn from(value: ndarray::ArrayBase<OwnedRepr<T>,D>) -> Self {
+        let value = value.as_standard_layout().to_owned(); // Standartize layout
         let shape:Vec<usize> = value.shape().into();
         let (flat_data,offset) = value.into_raw_vec_and_offset();
         if let Some(off) = offset{
