@@ -1,0 +1,12 @@
+[package]
+name = "index_remapper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+abi_stable = "0.11.3"
+#ndarray = "0.16.1"
+nom = "8.0.0"
+nom-language = "0.1.0"
+padamo-api = { path = "../padamo-api", features = [] }
+thiserror = "2.0.12"
