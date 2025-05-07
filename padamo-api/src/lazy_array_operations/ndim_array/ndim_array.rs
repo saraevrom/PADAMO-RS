@@ -208,7 +208,7 @@ where
         let frame_size:usize = new_shape.iter().product();
         // println!("Frame size {}", frame_size);
 
-        println!("Frame size {}", frame_size);
+        // println!("Frame size {}", frame_size);
 
         let flat_part:RVec<T> = self.flat_data.drain(..frame_size).collect();
         if flat_part.len()==frame_size{
