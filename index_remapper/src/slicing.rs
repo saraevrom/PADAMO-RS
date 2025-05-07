@@ -17,13 +17,28 @@ impl SliceDefFull{
         let end =  try_calculate(&self.end, index_src, index_lens);
         let stride = try_calculate(&self.stride, index_src, index_lens).unwrap_or(1);
         let x = operand.calculate(index_src, index_lens)?;
-        let x_off = usize::checked_sub(x, start)?;
+        if x<start{
+            return None;
+        }
         if let Some(e) = end{
-            if x_off>=e{
+            if x>=e {
                 return None;
             }
         }
-        return usize::checked_div(x_off, stride);
+        if (x - start)%stride==0{
+            Some(x)
+        }
+        else{
+            None
+        }
+
+        // let x_off = usize::checked_sub(x, start)?;
+        // if let Some(e) = end{
+        //     if x_off>=e{
+        //         return None;
+        //     }
+        // }
+        // return usize::checked_div(x_off, stride);
     }
 }
 
