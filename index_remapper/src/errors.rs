@@ -8,8 +8,10 @@ pub enum ReindexError{
     PixelRaceError(Vec<usize>,Vec<usize>,Vec<usize>),
     #[error("Target shape is empty")]
     TargetIsEmpty,
-    #[error("Shape {0:?} is not compatible with shape {0:?}")]
+    #[error("Shape {0:?} is not compatible with shape {1:?}")]
     IncompatibleShapes(Vec<usize>,Vec<usize>),
+    #[error("Index with length {0:?} is not compatible with shape length {1:?}")]
+    IncompatibleIndexWithShape(usize,usize),
     #[error("Parsing error: {0}")]
     ParsingError(String)
 
