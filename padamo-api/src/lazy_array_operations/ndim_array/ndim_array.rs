@@ -124,7 +124,9 @@ where
 
     pub fn set(&mut self, index:&[usize], value:T){
         let index_flat = self.remap_indices(index);
-        self.flat_data[index_flat] = value;
+        if index_flat<self.flat_data.len() {
+            self.flat_data[index_flat] = value;
+        }
     }
 
 
@@ -192,6 +194,30 @@ where
             res.set(&target_index, self[&index].clone());
         }
         res
+    }
+
+    pub fn take_frame(&mut self)->Option<Self>{
+        if self.shape.len()==0{
+            return None;
+        }
+        if self.shape[0]==0{
+            return None;
+        }
+
+        let new_shape:Vec<usize> = self.shape.as_slice().iter().skip(1).copied().collect();
+        let frame_size:usize = new_shape.iter().product();
+        // println!("Frame size {}", frame_size);
+
+        println!("Frame size {}", frame_size);
+
+        let flat_part:RVec<T> = self.flat_data.drain(..frame_size).collect();
+        if flat_part.len()==frame_size{
+            self.shape[0] -= 1;
+            Some(ArrayND { flat_data:flat_part, shape: new_shape.into() })
+        }
+        else{
+            None
+        }
     }
 }
 
