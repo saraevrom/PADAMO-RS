@@ -7,7 +7,7 @@ use nom::branch::alt;
 
 use crate::utils::IndexCalculator;
 use crate::binary_ops::{BinaryOperation, BinaryOperator};
-use crate::indices::{parse_index, parse_constant};
+use crate::indices::{parse_constant, parse_index, parse_index_width};
 use crate::slicing::{parse_slice, SliceDef, Slice};
 
 pub fn parse_expression(i: &str) -> IResult<&str, Box<dyn IndexCalculator>> {
@@ -23,6 +23,7 @@ pub fn parse_expression(i: &str) -> IResult<&str, Box<dyn IndexCalculator>> {
       binary_op(3, Assoc::Left, tag("%")),
     )),
     alt((
+      parse_index_width,
       parse_index,
       parse_constant,
       delimited(tag("("), parse_expression, tag(")")),

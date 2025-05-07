@@ -1,5 +1,7 @@
 use crate::utils::IndexCalculator;
 
+
+#[derive(Debug)]
 pub enum BinaryOperation{
     Add,
     Sub,
@@ -22,6 +24,8 @@ impl BinaryOperation{
     }
 }
 
+
+#[derive(Debug)]
 pub struct BinaryOperator{
     operation:BinaryOperation,
     lhs:Box<dyn IndexCalculator>,

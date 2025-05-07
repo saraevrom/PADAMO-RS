@@ -4,6 +4,7 @@ use nom::{
 };
 
 
+#[derive(Debug)]
 pub struct SliceDefFull{
     start:Option<Box<dyn IndexCalculator>>,
     end:Option<Box<dyn IndexCalculator>>,
@@ -26,6 +27,8 @@ impl SliceDefFull{
     }
 }
 
+
+#[derive(Debug)]
 pub struct SliceDefEq{
     value:Box<dyn IndexCalculator>,
 }
@@ -43,11 +46,15 @@ impl SliceDefEq{
     }
 }
 
+
+#[derive(Debug)]
 pub enum SliceDef{
     Full(SliceDefFull),
     Eq(SliceDefEq)
 }
 
+
+#[derive(Debug)]
 pub struct Slice{
     def:SliceDef,
     operand:Box<dyn IndexCalculator>,
@@ -120,7 +127,7 @@ pub fn parse_one_num(input: &str) -> IResult<&str, SliceDef> {
 
 pub fn parse_two_num(input: &str) -> IResult<&str, SliceDef> {
     let (input, start) = crate::expression::parse_expression(input)?;
-    let (input, _) = crate::utils::parse_comma_sep(input)?;
+    let (input, _) = crate::utils::parse_colon_sep(input)?;
 
     let (input, end) = crate::expression::parse_expression.parse(input)?;
 
@@ -131,10 +138,10 @@ pub fn parse_two_num(input: &str) -> IResult<&str, SliceDef> {
 
 pub fn parse_three_num(input: &str) -> IResult<&str, SliceDef> {
     let (input, start) = crate::expression::parse_expression(input)?;
-    let (input, _) = crate::utils::parse_comma_sep(input)?;
+    let (input, _) = crate::utils::parse_colon_sep(input)?;
 
     let (input, end) = crate::expression::parse_expression.parse(input)?;
-    let (input, _) = crate::utils::parse_comma_sep(input)?;
+    let (input, _) = crate::utils::parse_colon_sep(input)?;
 
     let (input, stride) = crate::expression::parse_expression.parse(input)?;
 

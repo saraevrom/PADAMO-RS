@@ -4,9 +4,16 @@ use nom::{
 };
 
 
+#[derive(Debug)]
 pub struct IndexSource(pub usize);
+
+#[derive(Debug)]
 pub struct IndexWidthSource(pub usize);
+
+#[derive(Debug)]
 pub struct ConstantSource(pub usize);
+
+#[derive(Debug)]
 pub struct NothingSource;
 
 
@@ -41,6 +48,14 @@ pub fn parse_index(input: &str) -> IResult<&str, Box<dyn IndexCalculator>> {
     let (input,_) = tag("i")(input)?;
     let (input, id) = cut(character::complete::usize).parse(input)?;
     Ok((input, Box::new(IndexSource(id))))
+}
+
+pub fn parse_index_width(input: &str) -> IResult<&str, Box<dyn IndexCalculator>> {
+    let (input,_) = tag("i")(input)?;
+    let (input, id) = character::complete::usize.parse(input)?;
+    let (input,_) = tag("w").parse(input)?;
+
+    Ok((input, Box::new(IndexWidthSource(id))))
 }
 
 pub fn parse_constant(input: &str) -> IResult<&str, Box<dyn IndexCalculator>> {

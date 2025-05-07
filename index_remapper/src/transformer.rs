@@ -35,11 +35,12 @@ impl<T:Clone+Debug+abi_stable::StableAbi> Transformer<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct BakedTransformer<T:Clone+Debug+abi_stable::StableAbi>{
-    source_shape:Vec<usize>,
-    target_shape:Vec<usize>,
-    mapping:HashMap<Vec<usize>, Vec<usize>>,
-    fill_value:T,
+    pub source_shape:Vec<usize>,
+    pub target_shape:Vec<usize>,
+    pub mapping:HashMap<Vec<usize>, Vec<usize>>,
+    pub fill_value:T,
 }
 
 impl<T:Clone+Debug+abi_stable::StableAbi> BakedTransformer<T>{
@@ -48,10 +49,11 @@ impl<T:Clone+Debug+abi_stable::StableAbi> BakedTransformer<T>{
         let mut target_shape:Vec<usize> = Vec::new();
         for index in ShapeIterator::new(source_shape.clone()){
             if let Some(target_index) = t.transform_indices(&index, &source_shape){
+                println!("{:?}->{:?}", index, target_index);
                 if let Some(p1) = mapping.insert(target_index.clone(), index.clone()){
                     return Err(crate::errors::ReindexError::PixelRaceError(p1, index, target_index));
                 }
-                if target_index.is_empty(){
+                if target_shape.is_empty(){
                     target_shape = target_index.iter().map(|x| x+1).collect();
                 }
                 else{
@@ -60,11 +62,15 @@ impl<T:Clone+Debug+abi_stable::StableAbi> BakedTransformer<T>{
                     });
                 }
             }
+            else{
+                println!("{:?}->OOB", index);
+            }
         }
         if target_shape.is_empty(){
             Err(crate::errors::ReindexError::TargetIsEmpty)
         }
         else{
+            println!("Target shape: {:?}", target_shape);
             Ok(Self{source_shape, target_shape, mapping, fill_value:t.fill_value})
         }
     }
@@ -72,11 +78,15 @@ impl<T:Clone+Debug+abi_stable::StableAbi> BakedTransformer<T>{
     pub fn apply(&self, src:&ArrayND<T>)->Result<ArrayND<T>,crate::errors::ReindexError>{
         if src.form_compatible(&self.source_shape){
             let mut res = ArrayND::new(self.target_shape.clone(), self.fill_value.clone());
-            for (target_index, source_index) in self.mapping.iter(){
+            // println!("{:?}", self.mapping);
+
+            for (target_index, source_index) in &self.mapping{
+                // println!("Applying {:?} -> {:?}", source_index, target_index);
                 if let Some(got) = src.try_get(source_index){
                     res.set(target_index, got.clone());
                 }
             }
+            println!("Apply success");
             Ok(res)
         }
         else{
