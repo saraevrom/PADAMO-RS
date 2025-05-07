@@ -17,6 +17,9 @@ Supported operations +-*/%()
 It is possible to set custom fill value. Write it before indices and separate it with semicolon (;). See in common syntax
 Specifying target shape is done the same way.
 
+If two source pixels are trying to write to same target pixel a error occurs.
+If target pixel lands outside of array it is neglected
+
 # EXAMPLES
 
 MiniEUSO removing extra indices ([0,0,48,48] -> [48,48])
@@ -31,5 +34,5 @@ i2[16:32]-16, i3[16:32]-16
 Cut center pixels from  MiniEuso ([0,0,48,48] -> [16,16]). However we want to pad it with zeros conserving shape
 (48,48); i2[16:32], i3[16:32]
 
-If two source pixels are trying to write to same target pixel a error occurs.
-If target pixel lands outside of array it is neglected
+Inverse axis 0 on VTL ([16,16] -> [16,16])
+i0w-1-i0, i1
