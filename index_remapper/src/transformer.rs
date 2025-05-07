@@ -2,11 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 use nom::multi::separated_list1;
-use nom::{character, IResult, Parser};
-use nom::combinator::{cut, fail, map_res};
-use nom::sequence::delimited;
-use nom::bytes::complete::tag;
-use nom::branch::alt;
+use nom::{IResult, Parser};
 use padamo_api::lazy_array_operations::ArrayND;
 use crate::errors::ReindexError;
 use crate::expression::parse_expression;

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use padamo_api::{lazy_array_operations::{ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal}, prelude::*};
+use padamo_api::lazy_array_operations::{ArrayND, LazyArrayOperation, LazyArrayOperationBox};
 
 
 #[derive(Clone, Debug)]

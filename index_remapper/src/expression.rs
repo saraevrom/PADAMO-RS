@@ -1,6 +1,6 @@
-use nom_language::precedence::{binary_op, precedence, unary_op, Assoc, Operation, Unary};
-use nom::{character, IResult, Parser};
-use nom::combinator::{map_res, fail};
+use nom_language::precedence::{binary_op, precedence, unary_op, Assoc, Operation};
+use nom::IResult;
+use nom::combinator::fail;
 use nom::sequence::delimited;
 use nom::bytes::complete::tag;
 use nom::branch::alt;

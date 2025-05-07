@@ -1,6 +1,6 @@
 use super::utils::IndexCalculator;
 use nom::{
-  bytes::complete::tag, character::{self, complete::digit1}, combinator::{cut, map_res}, Finish, IResult, Parser
+  bytes::complete::tag, character::{self, complete::digit1}, combinator::{cut, map_res}, IResult, Parser
 };
 
 

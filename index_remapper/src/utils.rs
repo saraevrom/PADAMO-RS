@@ -2,10 +2,8 @@ use std::fmt::Debug;
 
 use nom::multi::separated_list1;
 use nom::{character, IResult, Parser};
-use nom::combinator::{cut, fail, map_res};
-use nom::sequence::delimited;
+use nom::combinator::cut;
 use nom::bytes::complete::tag;
-use nom::branch::alt;
 
 pub trait IndexCalculator: Debug{
     fn calculate(&self, index_src:&[usize], index_sizes:&[usize])->Option<i64>;
