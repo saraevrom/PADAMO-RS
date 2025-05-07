@@ -29,7 +29,8 @@ macro_rules! impl_operator {
                 if signal.0.length()==0{
                     return Err(ExecutionError::OtherError("Cannot check signal shape compatibility".into()));
                 }
-                let test_data = signal.0.request_range(0,1).squeeze();
+                let mut test_data = signal.0.request_range(0,1);
+                test_data.shape.drain(..1);
 
                 if !test_data.is_compatible(&coeffs){
                     return Err(ExecutionError::OtherError(format!("coefficient matrix with shape {:?} is not compatible with signal with shape {:?}", coeffs.shape,test_data.shape).into()));
