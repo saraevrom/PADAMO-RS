@@ -273,12 +273,8 @@ impl LazyArrayOperation<ArrayND<f64>> for AddMap{
             pixel_index.drain(0..1);
             let x =src_data[&i];
             let coeff = coeffs[&pixel_index];
-            let v = if coeff != 0.0{
-                x+coeff
-            }
-            else{
-                0.0
-            };
+
+            let v = x+coeff;
 
             tgt.lock().unwrap()[&i] = v;
         });
@@ -321,12 +317,7 @@ impl LazyArrayOperation<ArrayND<f64>> for SubMap{
             pixel_index.drain(0..1);
             let x =src_data[&i];
             let coeff = coeffs[&pixel_index];
-            let v = if coeff != 0.0{
-                x-coeff
-            }
-            else{
-                0.0
-            };
+            let v = x-coeff;
 
             tgt.lock().unwrap()[&i] = v;
         });
