@@ -44,7 +44,8 @@ impl<T:Clone+Debug+abi_stable::StableAbi> Transformer<T> {
     pub fn transform_indices(&self, indices:&[usize], indices_len:&[usize])->Option<Vec<usize>>{
         let mut res = Vec::with_capacity(self.transformers.len());
         for t in self.transformers.iter(){
-            let item = t.calculate(indices, indices_len)?;
+            let item:i64 = t.calculate(indices, indices_len)?;
+            let item:usize = item.try_into().ok()?;
             res.push(item);
         }
         Some(res)

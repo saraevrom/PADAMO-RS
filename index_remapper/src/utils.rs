@@ -8,7 +8,7 @@ use nom::bytes::complete::tag;
 use nom::branch::alt;
 
 pub trait IndexCalculator: Debug{
-    fn calculate(&self, index_src:&[usize], index_sizes:&[usize])->Option<usize>;
+    fn calculate(&self, index_src:&[usize], index_sizes:&[usize])->Option<i64>;
 }
 
 pub fn parse_comma_sep(input:&str)->IResult<&str, ()>{

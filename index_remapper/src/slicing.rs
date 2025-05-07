@@ -12,7 +12,7 @@ pub struct SliceDefFull{
 }
 
 impl SliceDefFull{
-    pub fn calculate(&self, operand: &Box<dyn IndexCalculator>, index_src:&[usize], index_lens:&[usize]) -> Option<usize>{
+    pub fn calculate(&self, operand: &Box<dyn IndexCalculator>, index_src:&[usize], index_lens:&[usize]) -> Option<i64>{
         let start = try_calculate(&self.start, index_src, index_lens).unwrap_or(0);
         let end =  try_calculate(&self.end, index_src, index_lens);
         let stride = try_calculate(&self.stride, index_src, index_lens).unwrap_or(1);
@@ -49,7 +49,7 @@ pub struct SliceDefEq{
 }
 
 impl SliceDefEq{
-    pub fn calculate(&self, operand: &Box<dyn IndexCalculator>, index_src:&[usize], index_lens:&[usize]) -> Option<usize>{
+    pub fn calculate(&self, operand: &Box<dyn IndexCalculator>, index_src:&[usize], index_lens:&[usize]) -> Option<i64>{
         let x0 = self.value.calculate(index_src, index_lens)?;
         let x = operand.calculate(index_src, index_lens)?;
         if x != x0{
@@ -102,7 +102,7 @@ impl SliceDefFull{
     }
 }
 
-fn try_calculate(x:&Option<Box<dyn IndexCalculator>>, index_src:&[usize], index_lens:&[usize])->Option<usize>{
+fn try_calculate(x:&Option<Box<dyn IndexCalculator>>, index_src:&[usize], index_lens:&[usize])->Option<i64>{
     if let Some(op) = x{
         op.calculate(index_src, index_lens)
     }
@@ -112,7 +112,7 @@ fn try_calculate(x:&Option<Box<dyn IndexCalculator>>, index_src:&[usize], index_
 }
 
 impl IndexCalculator for Slice{
-    fn calculate(&self, index_src:&[usize], index_lens:&[usize])->Option<usize> {
+    fn calculate(&self, index_src:&[usize], index_lens:&[usize])->Option<i64> {
         // let start = try_calculate(&self.start, index_src, index_lens).unwrap_or(0);
         // let end =  try_calculate(&self.end, index_src, index_lens);
         // let stride = try_calculate(&self.stride, index_src, index_lens).unwrap_or(1);

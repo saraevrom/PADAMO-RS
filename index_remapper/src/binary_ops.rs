@@ -12,14 +12,14 @@ pub enum BinaryOperation{
 }
 
 impl BinaryOperation{
-    pub fn perform(&self, a:usize, b:usize) -> Option<usize>{
+    pub fn perform(&self, a:i64, b:i64) -> Option<i64>{
         match self {
-            Self::Add=>usize::checked_add(a, b),
-            Self::Sub=>usize::checked_sub(a, b),
-            Self::Mul=>usize::checked_mul(a, b),
-            Self::Div=>usize::checked_div(a, b),
-            Self::Mod=>usize::checked_rem(a, b),
-            Self::Pow=>usize::checked_pow(a, b.try_into().ok()?),
+            Self::Add=>i64::checked_add(a, b),
+            Self::Sub=>i64::checked_sub(a, b),
+            Self::Mul=>i64::checked_mul(a, b),
+            Self::Div=>i64::checked_div(a, b),
+            Self::Mod=>i64::checked_rem(a, b),
+            Self::Pow=>i64::checked_pow(a, b.try_into().ok()?),
         }
     }
 }
@@ -39,7 +39,7 @@ impl BinaryOperator {
 }
 
 impl IndexCalculator for BinaryOperator{
-    fn calculate(&self, index_src:&[usize],index_sizes:&[usize])->Option<usize> {
+    fn calculate(&self, index_src:&[usize],index_sizes:&[usize])->Option<i64> {
         let l = self.lhs.calculate(index_src,index_sizes)?;
         let r = self.rhs.calculate(index_src,index_sizes)?;
         self.operation.perform(l, r)
