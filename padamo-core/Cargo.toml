@@ -21,3 +21,4 @@ num_cpus = "1.16.0"
 padamo-api = { path = "../padamo-api", features = [] } # No need for ndarray
 regex = "1.10.5"
 pseudotime = { path = "../pseudotime"}
+index_remapper = { path = "../index_remapper"}
