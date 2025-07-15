@@ -1,6 +1,7 @@
 pub mod calculation_nodes;
 pub mod prelude;
 pub mod lazy_array_operations;
+pub mod trigger_operations;
 //pub mod parsers;
 pub mod function_operator;
 pub mod common_categories;
