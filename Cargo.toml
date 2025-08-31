@@ -41,6 +41,28 @@ plotters-backend = "0.3.7"
 datetime-parser = { path = "./datetime-parser"}
 iced_font_awesome = "0.2.1"
 
+[features]
+default = ["all_tools", "all_controls", "all_features"]
+
+# Application parts
+all_tools = ["viewer", "editor", "trigger", "plotter", "detector_manager"]
+viewer = []
+editor = []
+trigger = []
+plotter = []
+detector_manager =[]
+
+# Controls
+all_controls = ["button_clear", "button_choose_detector", "buttons_edit", "buttons_random"]
+button_clear = []
+button_choose_detector = []
+buttons_edit = []
+buttons_random = []
+
+#Additional config
+all_features = ["feature_workspace"]
+feature_workspace = []
+
 [workspace]
 members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime", "padamo-iced-forms", "index_remapper"]
 resolver = "2"

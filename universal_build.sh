@@ -18,21 +18,21 @@
 #
 
 BUILD_TARGET=$1
+shift 1
 
 case "${BUILD_TARGET}" in
  debug)
-    cargo build --workspace || exit 1
+    cargo build --workspace $@ || exit 1
     cargo build || exit 1
     ;;
  release)
-    cargo build --release --workspace || exit 1
-    cargo build --release || exit 1
+    cargo build --release --workspace $@ || exit 1
+    cargo build --release $@ || exit 1
     ;;
  *)
  echo "Unsupported target"
 
 esac
-cargo build --release --workspace || exit 1
 
 
 cp  -rv "./assets" "./target/${BUILD_TARGET}/"
@@ -64,4 +64,4 @@ mv -v libpadamotrackgen.so              plugins/
 mv -v libpadamorandom.so                plugins/
 mv -v libpadamostft.so                  plugins/
 mv -v libpadamoeusoroot.so              plugins/
-mv -v libpadamoplaintext.so              plugins/
+mv -v libpadamoplaintext.so             plugins/

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./universal_build.sh release
+./universal_build.sh release $@

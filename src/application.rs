@@ -224,13 +224,39 @@ impl Padamo{
         //     }
         // }
 
-        let tools: Vec<Box<dyn crate::tools::PadamoTool>> = vec![
-            Box::new(ctools::PadamoViewer::new()),
-            Box::new(ctools::PadamoEditor::new(nodes.make_tree())),
-            Box::new(ctools::PadamoTrigger::new()),
-            Box::new(ctools::Plotter::new()),
-            Box::new(ctools::PadamoDetectorManager::new())
-        ];
+        let mut tools: Vec<Box<dyn crate::tools::PadamoTool>> = Vec::new();
+
+        #[cfg(feature = "viewer")]
+        {
+            tools.push(Box::new(ctools::PadamoViewer::new()));
+            println!("Viewer present");
+        }
+
+        #[cfg(feature = "editor")]
+        {
+            tools.push(Box::new(ctools::PadamoEditor::new(nodes.make_tree())));
+            println!("Editor present");
+        }
+
+        #[cfg(feature = "trigger")]
+        {
+            tools.push(Box::new(ctools::PadamoTrigger::new()));
+            println!("Editor present");
+        }
+
+        #[cfg(feature = "plotter")]
+        {
+            tools.push(Box::new(ctools::Plotter::new()));
+            println!("Plotter present");
+        }
+
+        #[cfg(feature = "detector_manager")]
+        {
+            tools.push(Box::new(ctools::PadamoDetectorManager::new()));
+            println!("Detectors present");
+        }
+
+
         let mut compute_graph = padamo_api::calculation_nodes::graph::CalculationSequenceStorage::new();
 
         let det = serde_json::to_string(&padamo_detectors::polygon::DetectorContent::default_vtl()).unwrap();
@@ -324,31 +350,52 @@ impl Padamo{
         let mut vlist = iced::widget::Column::new();
         vlist = vlist.spacing(10);
 
-        let file_menu = Item::with_menu(title_menu_button("File"), Menu::new(vec![
-            Item::new(menu_button("Open", PadamoAppMessage::Open)),
-            Item::new(menu_button("Save", PadamoAppMessage::Save)),
-            Item::new(menu_button("Choose detector", PadamoAppMessage::ChooseDetector)),
-            Item::new(menu_button("Clean up", PadamoAppMessage::ClearState)),
-        ]).max_width(100.0).offset(0.0).spacing(5.0));
+        let mut file_menu = Vec::new();
+        file_menu.push(Item::new(menu_button("Open", PadamoAppMessage::Open)));
+        file_menu.push(Item::new(menu_button("Save", PadamoAppMessage::Save)));
+        #[cfg(feature = "button_choose_detector")]
+        file_menu.push(Item::new(menu_button("Choose detector", PadamoAppMessage::ChooseDetector)));
+        #[cfg(feature = "button_clear")]
+        file_menu.push(Item::new(menu_button("Clean up", PadamoAppMessage::ClearState)));
 
-        let edit_menu = Item::with_menu(title_menu_button("Edit"), Menu::new(vec![
-            Item::new(menu_button("Select all", PadamoAppMessage::SelectAll)),
-            Item::new(menu_button("Copy", PadamoAppMessage::Copy)),
-            Item::new(menu_button("Paste", PadamoAppMessage::Paste)),
-        ]).max_width(100.0).offset(0.0).spacing(5.0));
+        let file_menu = Item::with_menu(title_menu_button("File"), Menu::new(file_menu).max_width(100.0).offset(0.0).spacing(5.0));
+
+        let mut edit_menu = Vec::new();
+
+        //#[cfg(feature = "buttons_edit")]
+        {
+            edit_menu.push(Item::new(menu_button("Select all", PadamoAppMessage::SelectAll)));
+            edit_menu.push(Item::new(menu_button("Copy", PadamoAppMessage::Copy)));
+            edit_menu.push(Item::new(menu_button("Paste", PadamoAppMessage::Paste)));
+        }
+
+
+        let edit_menu = Item::with_menu(title_menu_button("Edit"), Menu::new(edit_menu).max_width(100.0).offset(0.0).spacing(5.0));
 
         //let v = self.state.current_seed.view_row("Seed", "Seed", )
-        let run_menu = Item::with_menu(title_menu_button("Run"), Menu::new(vec![
-            Item::new(menu_button("Run", PadamoAppMessage::Run)),
-            Item::new(menu_button("Reroll and run", PadamoAppMessage::RerollRun)),
-            Item::new(self.state.current_seed.view_row("Seed","0 or maybe 42",PadamoAppMessage::SetSeed))
-        ]).max_width(150.0).offset(0.0).spacing(5.0));
+        let mut run_menu = Vec::new();
+        run_menu.push(Item::new(menu_button("Run", PadamoAppMessage::Run)));
+        #[cfg(feature = "buttons_random")]
+        {
+            run_menu.push(Item::new(menu_button("Reroll and run", PadamoAppMessage::RerollRun)));
+            run_menu.push(Item::new(self.state.current_seed.view_row("Seed","0 or maybe 42",PadamoAppMessage::SetSeed)));
+        }
+
+
+        let run_menu = Item::with_menu(title_menu_button("Run"), Menu::new(run_menu).max_width(150.0).offset(0.0).spacing(5.0));
 
         let settings_menu = Item::with_menu(title_menu_button("Settings"), Menu::new(vec![
             Item::new(menu_button("Choose workspace directory", PadamoAppMessage::ResetWorkspace)),
         ]).max_width(200.0).offset(0.0).spacing(5.0));
 
-        let menu_bar = MenuBar::new(vec![file_menu,edit_menu,run_menu,settings_menu])
+        let mut menu_bar = Vec::new();//vec![file_menu,edit_menu,run_menu,settings_menu]
+        menu_bar.push(file_menu);
+        #[cfg(feature = "buttons_edit")]
+        menu_bar.push(edit_menu);
+        menu_bar.push(run_menu);
+        #[cfg(feature = "feature_workspace")] // because currently it has only button
+        menu_bar.push(settings_menu);
+        let menu_bar = MenuBar::new(menu_bar)
             .draw_path(iced_aw::menu::DrawPath::Backdrop)
             .style(|theme:&iced::Theme, status| iced_aw::menu::Style{
                     path_border: iced::Border{
