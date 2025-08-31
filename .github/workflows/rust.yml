@@ -44,7 +44,7 @@ jobs:
     - name: Install fontconfig
       run: sudo apt install libfontconfig-dev
     - name: Build
-      run: bash build-lite.sh
+      run: bash builder-lite.sh
     - name: Prepare release
       run: |
        mkdir -pv release-linux
