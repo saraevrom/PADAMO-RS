@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
-use padamo_api::lazy_array_operations::{ArrayND, LazyArrayOperation, LazyDetectorSignal, LazyTimeSignal, LazyTrigger};
+use padamo_api::{lazy_array_operations::{ArrayND, LazyArrayOperation, LazyDetectorSignal, LazyTimeSignal, LazyTrigger}, trigger_operations::SparseTagArray};
 use super::ops::free_threads;
 
 
@@ -208,7 +208,7 @@ impl SyncedTriggerStretcher {
     }
 }
 
-impl LazyArrayOperation<ArrayND<bool>> for SyncedTriggerStretcher{
+impl LazyArrayOperation<SparseTagArray> for SyncedTriggerStretcher{
     fn length(&self)->usize {
         self.target_time.length()
     }
@@ -219,58 +219,74 @@ impl LazyArrayOperation<ArrayND<bool>> for SyncedTriggerStretcher{
         self.source.calculate_overhead(src_start,src_end)
     }
 
-    fn request_range(&self,start:usize, end:usize)->ArrayND<bool> {
+    fn request_range(&self,start:usize, end:usize)->SparseTagArray {
         let (src_start,src_end) = get_bounds(&self.source_time, &self.target_time, start, end);
-        let src_spatial = self.source.request_range(src_start,src_end);
-        let src_temporal = self.source_time.request_range(src_start,src_end);
+        let mut events = self.source.request_range(src_start,src_end);
 
-        let mut target_shape:Vec<usize> = src_spatial.shape.clone().into();
-        target_shape[0] = end-start;
-        println!("Request transformation: {}-{} -> {}-{}",start,end,src_start,src_end);
-
-        let threadcount = num_cpus::get();
-        let mut threads:VecDeque<thread::JoinHandle<()>> = VecDeque::with_capacity(10);
-        let frame_size = target_shape.iter().skip(1).fold(1usize,|a,b| a*b);
-
-        let target = Arc::new(Mutex::new(ArrayND::new(target_shape.clone(), false)));
-        let spatial_source = Arc::new(src_spatial);
-        let temporal_source = Arc::new(src_temporal);
-        let temporal_target = Arc::new(self.target_time.request_range(start, end));
-
-        for pixel in 0usize..frame_size{
-            free_threads(&mut threads, threadcount);
-            let length = end-start;
-            let small_length = src_end-src_start;
-            let sp_src = spatial_source.clone();
-            let tmp_src = temporal_source.clone();
-            let tmp_tgt = temporal_target.clone();
-
-            let tgt = target.clone();
-            let handle = thread::spawn(move || {
-                let mut src_sliced:Vec<bool> = Vec::with_capacity(small_length);
-                for j in 0..small_length{
-                    src_sliced.push(sp_src.flat_data[j*frame_size+pixel])
-                }
-                let res = resample_bool(tmp_src.as_ref(), &src_sliced, tmp_tgt.as_ref());
-                // let mut scan_index:usize = 0;
-                // for j in 0..length{
-                //     // if {
-                //         while scan_index<tmp_src.len()-1 && tmp_tgt[j]>tmp_src[scan_index]{
-                //             scan_index += 1;
-                //         }
-                //     // }
-                //     res.push(src_sliced[scan_index]);
-                // }
-                let mut tgt_lock = tgt.lock().unwrap();
-                for j in 0..length{
-                    tgt_lock.flat_data[j*frame_size+pixel] = res[j];
-                }
-            });
-            threads.push_back(handle);
+        for event in events.tags.iter_mut(){
+            let start_time = self.source_time.request_range(event.position,event.position+1)[0];
+            let new_position = self.target_time.find_unixtime(start_time);
+            let end_time = self.source_time.request_range(event.position,event.position+event.duration)[0];
+            let mut new_end = self.target_time.find_unixtime(end_time);
+            if new_end<=new_position{
+                new_end = new_position+1;
+                event.tag = format!("(W) {}",event.tag).into();
+            }
+            let new_duration = new_end - new_position;
+            event.position = new_position;
+            event.duration = new_duration;
         }
+        events
 
-        free_threads(&mut threads, 1);
-        let lock = Arc::try_unwrap(target).unwrap();
-        lock.into_inner().unwrap()
+        // let src_temporal = self.source_time.request_range(src_start,src_end);
+
+        // let mut target_shape:Vec<usize> = src_spatial.shape.clone().into();
+        // target_shape[0] = end-start;
+        // println!("Request transformation: {}-{} -> {}-{}",start,end,src_start,src_end);
+        //
+        // let threadcount = num_cpus::get();
+        // let mut threads:VecDeque<thread::JoinHandle<()>> = VecDeque::with_capacity(10);
+        // let frame_size = target_shape.iter().skip(1).fold(1usize,|a,b| a*b);
+        //
+        // let target = Arc::new(Mutex::new(ArrayND::new(target_shape.clone(), false)));
+        // let spatial_source = Arc::new(src_spatial);
+        // let temporal_source = Arc::new(src_temporal);
+        // let temporal_target = Arc::new(self.target_time.request_range(start, end));
+        //
+        // for pixel in 0usize..frame_size{
+        //     free_threads(&mut threads, threadcount);
+        //     let length = end-start;
+        //     let small_length = src_end-src_start;
+        //     let sp_src = spatial_source.clone();
+        //     let tmp_src = temporal_source.clone();
+        //     let tmp_tgt = temporal_target.clone();
+        //
+        //     let tgt = target.clone();
+        //     let handle = thread::spawn(move || {
+        //         let mut src_sliced:Vec<bool> = Vec::with_capacity(small_length);
+        //         for j in 0..small_length{
+        //             src_sliced.push(sp_src.flat_data[j*frame_size+pixel])
+        //         }
+        //         let res = resample_bool(tmp_src.as_ref(), &src_sliced, tmp_tgt.as_ref());
+        //         // let mut scan_index:usize = 0;
+        //         // for j in 0..length{
+        //         //     // if {
+        //         //         while scan_index<tmp_src.len()-1 && tmp_tgt[j]>tmp_src[scan_index]{
+        //         //             scan_index += 1;
+        //         //         }
+        //         //     // }
+        //         //     res.push(src_sliced[scan_index]);
+        //         // }
+        //         let mut tgt_lock = tgt.lock().unwrap();
+        //         for j in 0..length{
+        //             tgt_lock.flat_data[j*frame_size+pixel] = res[j];
+        //         }
+        //     });
+        //     threads.push_back(handle);
+        // }
+        //
+        // free_threads(&mut threads, 1);
+        // let lock = Arc::try_unwrap(target).unwrap();
+        // lock.into_inner().unwrap()
     }
 }

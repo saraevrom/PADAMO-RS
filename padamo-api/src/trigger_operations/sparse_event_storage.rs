@@ -2,7 +2,7 @@ use abi_stable::{std_types::{RString,RVec}, StableAbi};
 use crate::lazy_array_operations::merge::Merge;
 
 #[repr(C)]
-#[derive(StableAbi,Clone)]
+#[derive(StableAbi, Clone, Debug)]
 pub struct SparseTag{
     pub tag:RString,
     pub position:usize,
@@ -17,7 +17,7 @@ impl SparseTag {
 }
 
 #[repr(C)]
-#[derive(StableAbi,Clone)]
+#[derive(StableAbi, Clone, Debug)]
 pub struct SparseTagArray{
     pub tags:RVec<SparseTag>
 }
