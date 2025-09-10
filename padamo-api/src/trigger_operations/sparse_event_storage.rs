@@ -150,6 +150,21 @@ mod tests{
     }
 
     #[test]
+    fn test_merging_cross(){
+        let mut events1 = SparseTagArray::new();
+        events1.push("C", 2, 10);
+        events1.push("D", 3, 10);
+        events1.push("B", 1, 10);
+
+        let mut events2 = SparseTagArray::new();
+        events2.push("A", 0, 10);
+        events2.push("E", 4, 10);
+        events2.push("F", 5, 10);
+        let events = events1.merge(events2);
+        assert_eq!(events.view_tags(), vec!["A", "B", "C", "D", "E", "F"])
+    }
+
+    #[test]
     fn test_retaining(){
         let mut events = SparseTagArray::new();
         events.push("A", 0, 10);
