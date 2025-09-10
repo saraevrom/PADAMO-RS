@@ -9,6 +9,7 @@ pub mod cutter;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
 
 pub use ndim_array::ArrayND;
+use super::trigger_operations::SparseTagArray;
 
 #[allow(non_local_definitions)]
 pub mod traits{
@@ -36,7 +37,7 @@ pub fn make_lao_box<T,U:LazyArrayOperation<T>+'static>(data:U)->LazyArrayOperati
 pub type LazyArrayOperationBox<T> = LazyArrayOperation_TO<'static,RBox<()>,T>;
 //pub type LazyArrayOperationArc<T> = LazyArrayOperation_TO<'static,RArc<()>,T>;
 pub type LazyDetectorSignal = LazyArrayOperationBox<ndim_array::ArrayND<f64>>;
-pub type LazyTrigger = LazyArrayOperationBox<ndim_array::ArrayND<bool>>;
+pub type LazyTrigger = LazyArrayOperationBox<SparseTagArray>;
 pub type LazyTimeSignal = LazyArrayOperationBox<RVec<f64>>;
 
 pub type LazyTriSignal = Tuple3<LazyDetectorSignal,LazyTimeSignal,ROption<LazyTrigger>>;
