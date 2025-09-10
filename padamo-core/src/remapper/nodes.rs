@@ -22,19 +22,19 @@ impl RemapperNode{
             src_signal.0 = make_lao_box(LazyRemapper::new(src_signal.0, remapper));
         }
 
-        if let RSome(trigger) = src_signal.2.take(){
-            let mut testframe = src_signal.0.request_range(0,1);
-            testframe.shape.drain(..1);
-
-            let remapper_src = args.constants.request_string("remapper_trigger")?;
-            if !remapper_src.is_empty(){
-                let remapper = parse_bool_remapper(&remapper_src, testframe.shape.clone().into(), false).map_err(ExecutionError::from_error)?;
-                src_signal.2 = RSome(make_lao_box(LazyRemapper::new(trigger, remapper)));
-            }
-            else{
-                src_signal.2 = RSome(trigger);
-            }
-        }
+        // if let RSome(trigger) = src_signal.2.take(){
+        //     let mut testframe = src_signal.0.request_range(0,1);
+        //     testframe.shape.drain(..1);
+        //
+        //     let remapper_src = args.constants.request_string("remapper_trigger")?;
+        //     if !remapper_src.is_empty(){
+        //         let remapper = parse_bool_remapper(&remapper_src, testframe.shape.clone().into(), false).map_err(ExecutionError::from_error)?;
+        //         src_signal.2 = RSome(make_lao_box(LazyRemapper::new(trigger, remapper)));
+        //     }
+        //     else{
+        //         src_signal.2 = RSome(trigger);
+        //     }
+        // }
 
 
         args.outputs.set_value("Signal", src_signal.into())
@@ -69,7 +69,7 @@ impl CalculationNode for RemapperNode{
     fn constants(&self,) -> abi_stable::std_types::RVec<CalculationConstant>{
         constants!(
             ("remapper_f64", "Pixels remap", "0.0; i0, i1"),
-            ("remapper_trigger", "Trigger remap", "")
+            //("remapper_trigger", "Trigger remap", "")
         )
     }
 

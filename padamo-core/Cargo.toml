@@ -22,3 +22,4 @@ padamo-api = { path = "../padamo-api", features = [] } # No need for ndarray
 regex = "1.10.5"
 pseudotime = { path = "../pseudotime"}
 index_remapper = { path = "../index_remapper"}
+runtime-format = "0.1.3"

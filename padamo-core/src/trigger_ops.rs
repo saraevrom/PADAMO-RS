@@ -2,174 +2,113 @@ use abi_stable::rvec;
 use padamo_api::lazy_array_operations::cache::Cache;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyTrigger};
+use padamo_api::trigger_operations::SparseTagArray;
+use padamo_api::lazy_array_operations::merge::Merge;
 
 #[derive(Clone,Debug)]
-pub struct LazyTriggerExpand{
-    source:LazyTrigger,
-    expansion:usize,
+pub struct LazyTriggerMerge{
+    source1:LazyTrigger,
+    source2:LazyTrigger,
     //src_shape:Vec<usize>
 }
 
-impl LazyTriggerExpand{
-    pub fn new(source: LazyTrigger, expansion:usize) -> Self {
-        Self { source, expansion}
+impl LazyTriggerMerge {
+    pub fn new(source1: LazyTrigger, source2: LazyTrigger) -> Self {
+        Self { source1, source2 }
     }
-
 }
 
-fn convolve_bools(source:ArrayND<bool>,expansion:usize)->ArrayND<bool>{
-    let mut res = ArrayND::new(source.shape.clone().into(), false);
-    let full_len = source.shape[0];
-    for index in res.enumerate(){
-        let start_i = if index[0]<expansion{
-            0
-        }
-        else{
-            index[0]-expansion
-        };
-
-        let end_i = if index[0]>=(full_len-expansion){
-            full_len
-        }
-        else{
-            index[0]+expansion
-        };
-
-        for i in start_i..end_i{
-            let mut src_index = index.clone();
-            src_index[0] = i;
-            res[&index] = res[&index] || source[&src_index];
-        }
-
-    }
-    res
-}
-
-
-impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerExpand{
+impl LazyArrayOperation<SparseTagArray> for LazyTriggerMerge{
     #[allow(clippy::let_and_return)]
-    fn length(&self) -> usize where {
+    fn length(&self,) -> usize where {
+        self.source1.length()
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn request_range(&self,start:usize,end:usize,) -> SparseTagArray where {
+        let a = self.source1.request_range(start,end);
+        let b = self.source2.request_range(start,end);
+        a.merge(b)
+    }
+
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
+        let a = self.source1.calculate_overhead(start,end);
+        let b = self.source2.calculate_overhead(start,end);
+        a.max(b)
+    }
+
+}
+
+#[derive(Clone,Debug)]
+pub struct LazyTriggerRemoveOverlap{
+    source:LazyTrigger,
+    template:String,
+    //src_shape:Vec<usize>
+}
+
+impl LazyTriggerRemoveOverlap {
+    pub fn new(source: LazyTrigger, template:String) -> Self {
+        Self { source, template }
+    }
+}
+
+impl LazyArrayOperation<SparseTagArray> for LazyTriggerRemoveOverlap{
+    #[allow(clippy::let_and_return)]
+    fn length(&self,) -> usize where {
         self.source.length()
     }
 
     #[allow(clippy::let_and_return)]
-    fn request_range(&self,start:usize,end:usize) -> ArrayND<bool> {
+    fn request_range(&self,start:usize,end:usize,) -> SparseTagArray where {
+        let mut res = self.source.request_range(start,end);
+        let mut deduplicating = true;
+        let mut extending = true;
+        if res.tags.is_empty(){
+            return SparseTagArray::new();
+        }
+        while deduplicating || extending{
+            deduplicating = false;
+            let mut i:usize = 0;
+            while i+1<res.tags.len(){
+                if res.tags[i].position+res.tags[i].duration >= res.tags[i+1].position{
+                    let new_end = res.tags[i+1].position+res.tags[i+1].duration;
+                    let new_length = new_end - res.tags[i].position;
+                    res.tags[i+1].position = res.tags[i].position;
+                    res.tags[i+1].duration = new_length;
+                    res.tags.remove(i);
+                    deduplicating = true;
+                }
+                else{
+                    i += 1;
+                }
+            }
 
-        let full_len = self.length();
-        let expansion = self.expansion;
+            extending = false;
+            let mut is_running = true;
+            while is_running{
+                let addenum = res.tags.last().unwrap();
+                let sub_start = addenum.position;
+                let sub_end = sub_start+addenum.duration;
+                let mut addenum_tags = self.source.request_range(sub_start, sub_end);
+                while !addenum_tags.tags.is_empty() && addenum_tags.tags[0].position==sub_start{
+                    addenum_tags.tags.remove(0);
+                }
 
+                is_running = false;
+                if !addenum_tags.tags.is_empty(){
+                    extending = true;
+                    is_running = true;
+                }
+                res = res.merge(addenum_tags);
+            }
 
-        if full_len<2*expansion+1{
-            let data = self.source.request_range(0,full_len);
-            let res_data = convolve_bools(data, expansion);
-            return res_data.cut_end(full_len-(end-start));
         }
 
-        let (src_start,cut_start) = if start<expansion{
-            (0,start)
-        }
-        else{
-            (start-expansion,expansion)
-        };
-
-        let (src_end,cut_end) = if end>=full_len-expansion{
-            (full_len,full_len-end)
-        }
-        else{
-            (end+expansion,expansion)
-        };
-
-
-        let src_data = self.source.request_range(src_start,src_end);
-        let convolved = convolve_bools(src_data, expansion);
-        let convolved = convolved.cut_front(cut_start);
-        let convolved = convolved.cut_end(cut_end);
-
-        assert_eq!(convolved.shape[0],end-start);
-        convolved
+        res
     }
 
-    #[allow(clippy::let_and_return)]
-    fn calculate_overhead(&self,start:usize,end:usize) -> usize where {
-        end-start+self.expansion
-    }
-}
-
-
-#[derive(Clone,Debug)]
-pub struct LazyTriggerNegate{
-    source:LazyTrigger,
-    //src_shape:Vec<usize>
-}
-
-impl LazyTriggerNegate{
-    pub fn new(source: LazyTrigger) -> Self {
-        Self { source}
-    }
-}
-
-impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerNegate{
-    fn length(&self)->usize {
-        self.source.length()
-    }
-
-    fn calculate_overhead(&self,start:usize, end:usize)->usize {
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
         self.source.calculate_overhead(start,end)
     }
 
-    fn request_range(&self,start:usize, end:usize)->ArrayND<bool> {
-        let mut pre = self.source.request_range(start,end);
-        pre.flat_data.iter_mut().for_each(|x| {*x = !*x;});
-        pre
-    }
-}
-
-
-#[derive(Clone,Debug)]
-pub struct LazyTriggerAnd{
-    source_a:LazyTrigger,
-    source_b:LazyTrigger,
-}
-
-impl LazyTriggerAnd {
-    pub fn new(source_a: LazyTrigger, source_b: LazyTrigger) -> Self {
-        Self { source_a, source_b }
-    }
-}
-
-fn flatten_trigger(x:ArrayND<bool>)->Vec<bool>{
-    let mut res:Vec<bool> = Vec::with_capacity(x.shape[0]);
-    res.resize(x.shape[0], false);
-    for i in x.enumerate(){
-        res[i[0]] |= x[&i];
-    }
-    res
-}
-
-impl LazyArrayOperation<ArrayND<bool>> for LazyTriggerAnd{
-    fn length(&self)->usize {
-        self.source_a.length()
-    }
-    fn calculate_overhead(&self,start:usize, end:usize)->usize {
-        self.source_a.calculate_overhead(start,end)+self.source_b.calculate_overhead(start,end)
-    }
-
-    fn request_range(&self,start:usize, end:usize)->ArrayND<bool> {
-        let mut result = flatten_trigger(self.source_a.request_range(start,end));
-        let mut start_i:usize = 0;
-        let mut current_state = false;
-        for i in 0..=result.len(){
-            let value = result.get(i).map(|x| *x).unwrap_or(false);
-            if !current_state && value{
-                current_state = true;
-                start_i = i;
-            }
-            if current_state && !value{
-                current_state = false;
-                let aux_interval = flatten_trigger(self.source_b.request_range(start_i+start,i+start));
-                (start_i..i).for_each(|j| result[j] = result[j] && aux_interval[j-start_i]);
-            }
-        }
-        ArrayND{shape:rvec![result.len()], flat_data:result.into()}
-    }
 }

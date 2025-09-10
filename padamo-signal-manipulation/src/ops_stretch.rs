@@ -226,8 +226,8 @@ impl LazyArrayOperation<SparseTagArray> for SyncedTriggerStretcher{
         for event in events.tags.iter_mut(){
             let start_time = self.source_time.request_range(event.position,event.position+1)[0];
             let new_position = self.target_time.find_unixtime(start_time);
-            let end_time = self.source_time.request_range(event.position,event.position+event.duration)[0];
-            let mut new_end = self.target_time.find_unixtime(end_time);
+            let end_time = self.source_time.request_range(event.position+event.duration-1,event.position+event.duration)[0];
+            let mut new_end = self.target_time.find_unixtime(end_time)+1;
             if new_end<=new_position{
                 new_end = new_position+1;
                 event.tag = format!("(W) {}",event.tag).into();

@@ -8,8 +8,11 @@ pub mod output;
 pub mod constants;
 pub mod filenames;
 pub mod filenames_old;
+
+// New event-based triggers have some issues with boolean operators
 pub mod trigger_ops;
 pub mod trigger_nodes;
+
 pub mod boolconv;
 pub mod strings;
 pub mod strings_old;

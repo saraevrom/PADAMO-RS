@@ -219,6 +219,38 @@ where
             None
         }
     }
+
+
+}
+impl<T> ArrayND<T>
+where
+    T: Clone + StableAbi + Copy
+{
+    pub fn fold_frames<F:Clone+Copy+FnMut(T,&T)->T>(&self, initial_value:T, f:F)->Vec<T>{
+        if self.shape.is_empty(){
+            return vec![];
+        }
+        let new_shape:Vec<usize> = self.shape.as_slice().iter().skip(1).copied().collect();
+        let frame_size:usize = new_shape.iter().product();
+        let mut res = Vec::with_capacity(self.shape[0]);
+        for i in 0..self.shape[0]{
+            res.push(self.flat_data[i*frame_size..(i+1)*frame_size].iter().fold(initial_value, f));
+        }
+        res
+    }
+
+    pub fn apply_on_frames<F:Clone+Copy+FnMut(&[T])->T>(&self, mut f:F)->Vec<T>{
+        if self.shape.is_empty(){
+            return vec![];
+        }
+        let new_shape:Vec<usize> = self.shape.as_slice().iter().skip(1).copied().collect();
+        let frame_size:usize = new_shape.iter().product();
+        let mut res = Vec::with_capacity(self.shape[0]);
+        for i in 0..self.shape[0]{
+            res.push(f(&self.flat_data[i*frame_size..(i+1)*frame_size]));
+        }
+        res
+    }
 }
 
 
