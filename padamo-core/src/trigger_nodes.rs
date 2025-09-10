@@ -146,7 +146,7 @@ pub struct TriggerRemoveOverlapNode;
 
 impl TriggerRemoveOverlapNode{
     fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
-        let mut signal = args.inputs.request_detectorfulldata("Signal 1")?;
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
         let template = args.constants.request_string("Format")?;
 
         signal.2 = if let ROption::RSome(x) = signal.2{
