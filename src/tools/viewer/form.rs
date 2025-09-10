@@ -40,7 +40,7 @@ pub struct FrameParameters{
 
 #[derive(Clone,Debug,IcedForm)]
 pub struct ViewerForm{
-    #[field_name("Stop on trigger")] pub stop_on_trigger:bool,
+    //#[field_name("Stop on trigger")] pub stop_on_trigger:bool,
     #[field_name("Animation")] pub animation:AnimationParameters,
     #[field_name("Export")] pub export:ExportParameters,
     #[field_name("Single Frame")] pub single_frame:FrameParameters
@@ -75,7 +75,7 @@ impl Default for ViewerActions{
 
 impl Default for ViewerForm{
     fn default() -> Self {
-        Self { stop_on_trigger: false, animation: Default::default(), export: Default::default(), single_frame: Default::default() }
+        Self {animation: Default::default(), export: Default::default(), single_frame: Default::default() }
     }
 }
 

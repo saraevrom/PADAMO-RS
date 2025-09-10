@@ -520,16 +520,16 @@ impl PadamoViewer{
                 let t = time_stop.as_millis() as u64;
                 p.add_delay_ms = t*3;
             }
-            if self.form_instance.stop_on_trigger{
-                if let ROption::RSome(v) = &signal.2{
-                    let trig = v.request_range(self.pointer,self.pointer+1);
-                    let muststop:bool = trig.flat_data.iter().fold(false, |a,b| a||*b);
-                    if muststop{
-                        println!("Triggered!");
-                        self.playstate = PlayState::Stop;
-                    }
-                }
-            }
+            // if self.form_instance.stop_on_trigger{
+            //     if let ROption::RSome(v) = &signal.2{
+            //         let trig = v.request_range(self.pointer,self.pointer+1);
+            //         let muststop:bool = trig.flat_data.iter().fold(false, |a,b| a||*b);
+            //         if muststop{
+            //             println!("Triggered!");
+            //             self.playstate = PlayState::Stop;
+            //         }
+            //     }
+            // }
         }
     }
 
