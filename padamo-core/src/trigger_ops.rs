@@ -1,4 +1,8 @@
+use std::collections::HashMap;
+
 use abi_stable::rvec;
+use runtime_format::{FormatArgs, FormatKey, FormatKeyError};
+
 use padamo_api::lazy_array_operations::cache::Cache;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_api::lazy_array_operations::{LazyArrayOperation,LazyTrigger};
@@ -61,6 +65,7 @@ impl LazyArrayOperation<SparseTagArray> for LazyTriggerRemoveOverlap{
     #[allow(clippy::let_and_return)]
     fn request_range(&self,start:usize,end:usize,) -> SparseTagArray where {
         let mut res = self.source.request_range(start,end);
+        let mut current_end = end;
         let mut deduplicating = true;
         let mut extending = true;
         if res.tags.is_empty(){
@@ -73,8 +78,14 @@ impl LazyArrayOperation<SparseTagArray> for LazyTriggerRemoveOverlap{
                 if res.tags[i].position+res.tags[i].duration >= res.tags[i+1].position{
                     let new_end = res.tags[i+1].position+res.tags[i+1].duration;
                     let new_length = new_end - res.tags[i].position;
+
+                    let mut formatter:HashMap<&str, String> = HashMap::new();
+                    formatter.insert("a", res.tags[i].tag.clone().into());
+                    formatter.insert("b", res.tags[i+1].tag.clone().into());
                     res.tags[i+1].position = res.tags[i].position;
                     res.tags[i+1].duration = new_length;
+                    let args = runtime_format::FormatArgs::new(self.template.as_str(), &formatter);
+                    res.tags[i+1].tag = args.to_string().into();
                     res.tags.remove(i);
                     deduplicating = true;
                 }
@@ -89,16 +100,19 @@ impl LazyArrayOperation<SparseTagArray> for LazyTriggerRemoveOverlap{
                 let addenum = res.tags.last().unwrap();
                 let sub_start = addenum.position;
                 let sub_end = sub_start+addenum.duration;
-                let mut addenum_tags = self.source.request_range(sub_start, sub_end);
-                while !addenum_tags.tags.is_empty() && addenum_tags.tags[0].position==sub_start{
-                    addenum_tags.tags.remove(0);
+                if current_end>=sub_end{
+                    break;
                 }
+                println!("Adding {}={}",current_end, sub_end);
+                let addenum_tags = self.source.request_range(current_end, sub_end);
 
                 is_running = false;
                 if !addenum_tags.tags.is_empty(){
+                    println!("{:?}", addenum_tags.tags);
                     extending = true;
                     is_running = true;
                 }
+                current_end = sub_end;
                 res = res.merge(addenum_tags);
             }
 
