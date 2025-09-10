@@ -1,2 +1,2 @@
 #!/bin/bash
-./universal_build.sh debug
+./universal_build.sh debug $@

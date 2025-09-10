@@ -1,6 +1,6 @@
 @echo off
 
-cargo build --release --workspace
+cargo build --release --workspace %*
 
 xcopy /y /e assets\* target\release\assets\*
 

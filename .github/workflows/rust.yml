@@ -37,6 +37,33 @@ jobs:
         name: release-linux 
         path: release-linux.zip
 
+  build-linux-lite:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install fontconfig
+      run: sudo apt install libfontconfig-dev
+    - name: Build
+      run: bash builder-lite.sh
+    - name: Prepare release
+      run: |
+       mkdir -pv release-linux
+       cp target/release/padamo-rs release-linux/
+       cp -r target/release/plugins release-linux/
+       cp -r target/release/assets release-linux/
+       cp target/release/libonnx*.so release-linux
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: 'release-linux-lite.zip'
+        path: './release-linux'
+    - name: Upload build
+      uses: actions/upload-artifact@master
+      with:
+        name: release-linux-lite
+        path: release-linux-lite.zip
+
   build-windows:
     runs-on: windows-latest
     steps:
@@ -63,6 +90,33 @@ jobs:
       with: 
         name: release-windows
         path: release-windows.zip
+
+  build-windows-lite:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      shell: cmd
+      run: builder-lite.bat
+    - name: Prepare release
+      shell: bash
+      run: |
+       mkdir -pv release-windows
+       cp target/release/padamo-rs.exe release-windows/
+       cp -r target/release/plugins release-windows/
+       cp -r target/release/assets release-windows/
+       cp target/release/onnx*.dll release-windows/
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.5
+      with:
+        type: 'zip'
+        filename: 'release-windows-lite.zip'
+        path: './release-windows'
+    - name: Upload build
+      uses: actions/upload-artifact@master
+      with:
+        name: release-windows-lite
+        path: release-windows-lite.zip
   
   upload: 
     runs-on: ubuntu-latest 
@@ -76,8 +130,16 @@ jobs:
         uses: actions/download-artifact@master 
         with: 
           name: release-windows
+      - name: Download linux (lite) artifact
+        uses: actions/download-artifact@master
+        with:
+          name: release-linux-lite
+      - name: Download windows (lite) artifact
+        uses: actions/download-artifact@master
+        with:
+          name: release-windows-lite
       - name: Upload Release
         uses: ncipollo/release-action@v1.12.0
         with:
-          tag: v5.2.2
-          artifacts: 'release-linux.zip,release-windows.zip'
+          tag: v5.3.0
+          artifacts: 'release-linux.zip,release-windows.zip, release-linux-lite.zip, release-windows-lite.zip'
