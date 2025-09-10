@@ -678,6 +678,8 @@ impl PadamoTool for PadamoTrigger{
                                 let deserialized: Result<SavedData,serde_json::Error> = serde_json::from_str(&s);
                                 match deserialized {
                                     Ok(obj)=>{
+
+                                        self.reset_intervals(signal.1.length());
                                         for (start,end, tag) in obj.events{
                                             let start_index = crate::time_search::find_unixtime(&signal.1, start);
                                             let end_index = crate::time_search::find_unixtime(&signal.1, end)+1;
@@ -685,10 +687,10 @@ impl PadamoTool for PadamoTrigger{
                                                 continue;
                                             }
                                             let event = SparseTag::new(tag.into(),start_index, end_index-start_index);
+                                            //println!("INTERVAL {} {}", start_index, end_index);
                                             self.events.push_tag(event);
                                         }
                                         let intervals = IntervalStorage::from_unixtime_storage(&obj.unmarked,&signal.1);
-                                        self.reset_intervals(signal.1.length());
                                         for interval in intervals.container.iter(){
                                             self.unmarked_intervals.take_interval(*interval);
                                         }
