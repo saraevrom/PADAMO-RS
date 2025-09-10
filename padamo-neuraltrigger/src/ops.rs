@@ -1,6 +1,6 @@
 use std::{fmt::Debug, sync::Arc};
 
-use padamo_api::lazy_array_operations::{cutter::CutError, ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal};
+use padamo_api::{lazy_array_operations::{cutter::CutError, ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal}, trigger_operations::SparseTagArray};
 // use tract_core::ndarray::{IxDyn, OwnedRepr};
 // use tract_onnx::prelude::*;
 use ndarray::prelude::*;
@@ -49,7 +49,8 @@ pub struct LazyANNTrigger3D{
     stride:usize,
     size_hint:(usize,usize,usize),
     output_layer:String,
-    squeeze_source:bool
+    squeeze_source:bool,
+    tag_prefix:String,
     //output_shape:Vec<usize>,
 }
 
@@ -68,7 +69,7 @@ impl LazyANNTrigger3D{
         source.cut(0, aligned_length)
     }
 
-    pub fn new(model: Arc<ort::Session>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool)-> Result<Self, Box<dyn std::error::Error>>{
+    pub fn new(model: Arc<ort::Session>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool, tag_prefix:String)-> Result<Self, Box<dyn std::error::Error>>{
         let source_length = source.length();
         if source_length==0{
             return Err(Box::new(ANNError::EmptySource));
@@ -118,36 +119,57 @@ impl LazyANNTrigger3D{
             return Err(Box::new(ANNError::Misaligned));
         }
 
-        Ok(Self { model, source,threshold, stride,size_hint, output_layer, squeeze_source})
+        Ok(Self { model, source,threshold, stride,size_hint, output_layer, squeeze_source, tag_prefix})
     }
 }
 
-impl LazyArrayOperation<ArrayND<bool>> for LazyANNTrigger3D{
+impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
     #[allow(clippy::let_and_return)]
     fn length(&self,) -> usize {
         self.source.length()
     }
 
     #[allow(clippy::let_and_return)]
-    fn request_range(&self,start:usize,end:usize,) -> ArrayND<bool> where {
+    fn request_range(&self,start:usize,end:usize,) -> SparseTagArray where {
         let window = self.size_hint.0;
         let len = self.length();
         let snapped_start = start/self.stride*self.stride;
 
-        let cut_start = if snapped_start+self.stride>=window{
-            snapped_start+self.stride-window
+        // let cut_start = if snapped_start+self.stride>=window{
+        //     snapped_start+self.stride-window
+        // }
+        // else{
+        //     0
+        // };
+        let cut_start = if snapped_start<start{
+            snapped_start+self.stride
         }
         else{
-            0
+            snapped_start
         };
 
-        let snapped_end = end/self.stride*self.stride;
-        let mut cut_end = snapped_end+window;
-        //println!("Precut {}, {}", cut_start,cut_end);
+        let mut cut_end = end/self.stride*self.stride+window;
         if cut_end>len{
-            cut_end = len;
+            cut_end -=window;
         }
-        let cut_end = cut_end;
+        // let mut cut_end = if end<snapped_end{
+        //     snapped_end
+        // }
+        // else{
+        //     snapped_end-
+        // };
+
+        if cut_start>=cut_end{
+            return SparseTagArray::new();
+        }
+
+        // let mut cut_end = snapped_end+window;
+        // //println!("Precut {}, {}", cut_start,cut_end);
+        // if cut_end>len{
+        //     cut_end = len;
+        // }
+        // let cut_end = cut_end;
+
         println!("Cut {}, {}", cut_start,cut_end);
 
         let mut source_data = self.source.request_range(cut_start,cut_end);
@@ -171,7 +193,7 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyANNTrigger3D{
 
         //assert_eq!((src_time-self.size_hint.0)/self.stride,0);
 
-        let mut res = Array::<bool,_>::default((end-start,blocks_w,blocks_h));
+        let mut res = SparseTagArray::new();
 
         println!("Blocks {}, {}", blocks_w, blocks_h);
 
@@ -204,27 +226,35 @@ impl LazyArrayOperation<ArrayND<bool>> for LazyANNTrigger3D{
                 // let found_array = found.to_array_view::<f32>().unwrap();
 
                 let triggered = output.map(|x| *x>self.threshold);
-                let triggered = triggered.fold_axis(Axis(1), false, |a,b| {*a || *b});
+                let triggered = triggered.fold_axis(Axis(1), 0u64, |a,b| {((*a)<<1) + (if *b {1} else {0})});
                 println!("ANN threshold OK {:?}",triggered);
 
 
-                let mut expanded = Array::<bool,_>::default(src_time);
                 triggered.iter().enumerate().for_each(|(i,v)|{
-                    let base = i*self.stride;
-                    //println!("BASE {}..{}",base,base+self.size_hint.0);
-                    expanded.slice_mut(ndarray::s![base..base+self.size_hint.0]).mapv_inplace(|x|{
-                        x || *v
-                    });
+                    if *v>0{
+                        let position = i*self.stride+cut_start;
+                        let tag = format!("{}(Block {} {}): {}",self.tag_prefix, i,j,v);
+                        println!("{}",tag);
+                        res.push(tag, position, self.size_hint.0);
+                    }
                 });
-                println!("ANN deconv OK");
-
-                let needed_part = expanded.slice(ndarray::s![start-cut_start..end-cut_start]);
-                res.slice_mut(ndarray::s![..,i,j]).zip_mut_with(&needed_part, |a,b| {*a = *b;});
+                // let mut expanded = Array::<bool,_>::default(src_time);
+                // triggered.iter().enumerate().for_each(|(i,v)|{
+                //     let base = i*self.stride;
+                //     //println!("BASE {}..{}",base,base+self.size_hint.0);
+                //     expanded.slice_mut(ndarray::s![base..base+self.size_hint.0]).mapv_inplace(|x|{
+                //         x || *v
+                //     });
+                // });
+                // println!("ANN deconv OK");
+                //
+                // let needed_part = expanded.slice(ndarray::s![start-cut_start..end-cut_start]);
+                // res.slice_mut(ndarray::s![..,i,j]).zip_mut_with(&needed_part, |a,b| {*a = *b;});
 
             }
         }
 
-        res.into()
+        res
     }
 
     #[allow(clippy::let_and_return)]
