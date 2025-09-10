@@ -7,7 +7,7 @@ use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorag
 use super::PadamoTool;
 use chrono::{Datelike, Timelike};
 use iced::{widget, Font};
-use padamo_api::lazy_array_operations::ArrayND;
+use padamo_api::{lazy_array_operations::ArrayND, trigger_operations::{sparse_event_storage::SparseTag, SparseTagArray}};
 use padamo_detectors::Detector;
 pub mod messages;
 use messages::TriggerMessage;
@@ -20,20 +20,29 @@ use interval_selector::IntervalSelectionDialog;
 // use padamo_iced_forms::IcedFormInterface;
 use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 use crate::tools::viewer::Worker;
-use sparse_intervals::split_intervals;
+use sparse_intervals::{split_intervals, UnixIntervalStorage};
 use iced_aw::selection_list;
 use super::plotter::{spawn_loader,data_state::DataCache, get_maxes};
 
 use std::fs;
 
+
 pub enum TriggerProcessMessage{
     Status(String),
-    MarkPositive(sparse_intervals::Interval),
-    MarkNegative(sparse_intervals::Interval),
+    MarkEvent(SparseTag),
+    IntervalDone(Interval),
+    // MarkPositive(sparse_intervals::Interval),
+    // MarkNegative(sparse_intervals::Interval),
 }
 
 pub enum ExportProcessMessage{
     Status(String)
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SavedData{
+    pub events:Vec<(f64, f64, String)>,
+    pub unmarked:UnixIntervalStorage,
 }
 
 pub struct PadamoTrigger{
@@ -41,15 +50,17 @@ pub struct PadamoTrigger{
     signal:Option<padamo_api::lazy_array_operations::LazyTriSignal>,
     //buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
     unmarked_intervals:sparse_intervals::IntervalStorage,
-    positive_intervals:sparse_intervals::IntervalStorage,
-    negative_intervals:sparse_intervals::IntervalStorage,
+    events: SparseTagArray,
+    // positive_intervals:sparse_intervals::IntervalStorage,
+    // negative_intervals:sparse_intervals::IntervalStorage,
 
-    positive_strings:Vec<String>,
-    negative_strings:Vec<String>,
+    // positive_strings:Vec<String>,
+    // negative_strings:Vec<String>,
+    event_strings:Vec<String>,
 
     selection:Option<usize>,
-    selected_interval:Option<Interval>,
-    selection_positive:bool,
+    selected_event:Option<SparseTag>,
+    // selection_positive:bool,
     //negative_select:Option<usize>,
 
     //interval_storage: Arc<Mutex<IntervalsContainer>>,
@@ -94,14 +105,15 @@ impl PadamoTrigger{
             //buffer:None,
             //interval_storage:Arc::new(Mutex::new(IntervalsContainer::new())),
             unmarked_intervals:IntervalStorage::new_full(100),
-            positive_intervals:IntervalStorage::new_empty(),
-            negative_intervals:IntervalStorage::new_empty(),
-            positive_strings:vec![],
-            negative_strings:vec![],
+            events:SparseTagArray::new(),
+            // positive_intervals:IntervalStorage::new_empty(),
+            // negative_intervals:IntervalStorage::new_empty(),
+            // positive_strings:vec![],
+            // negative_strings:vec![],
+            event_strings:vec![],
 
             selection:None,
-            selected_interval:None,
-            selection_positive:true,
+            selected_event:None,
 
             trigger_interval_selector:None,
             trigger_form_buffer: Default::default(),
@@ -119,12 +131,12 @@ impl PadamoTrigger{
 
     pub fn reset_intervals(&mut self, length:usize){
         self.unmarked_intervals = IntervalStorage::new_full(length);
-        self.positive_intervals = IntervalStorage::new_empty();
-        self.negative_intervals = IntervalStorage::new_empty();
+        // self.positive_intervals = IntervalStorage::new_empty();
+        // self.negative_intervals = IntervalStorage::new_empty();
+        self.events = SparseTagArray::new();
 
         self.selection = None;
-        self.selected_interval = None;
-        self.selection_positive = true;
+        self.selected_event = None;
         self.data = None;
         self.update_interval_strings();
     }
@@ -143,28 +155,15 @@ impl PadamoTrigger{
         self.export_status = "IDLE".into();
     }
 
-    pub fn mark_positive(&mut self,interval:Interval){
-        //println!("Trying to insert positive {}",interval);
-        if self.unmarked_intervals.take_interval(interval){
-            //println!("TRIGGERED {}",interval);
-            self.positive_intervals.insert_interval(interval);
-        }
-        //self.unmarked_intervals.print_contents();
-    }
-
-
-    pub fn mark_negative(&mut self,interval:Interval){
-        //println!("Trying to insert negative {}",interval);
-        if self.unmarked_intervals.take_interval(interval){
-            //println!("NOT TRIGGERED {}",interval);
-            self.negative_intervals.insert_interval(interval);
-        }
-        //self.unmarked_intervals.print_contents();
-    }
+    // pub fn mark_event(&mut self, event:SparseTag){
+    //     //self.unmarked_intervals.take_point(event.position); // Just ensure that this point won't be selected later.
+    //     self.events.push_tag(event);
+    // }
 
     pub fn update_interval_strings(&mut self){
-        self.positive_strings = self.positive_intervals.container.iter().map(|x| format!("{}",x)).collect();
-        self.negative_strings = self.negative_intervals.container.iter().map(|x| format!("{}",x)).collect();
+        self.event_strings = self.events.format_tags();
+        // self.positive_strings = self.positive_intervals.container.iter().map(|x| format!("{}",x)).collect();
+        // self.negative_strings = self.negative_intervals.container.iter().map(|x| format!("{}",x)).collect();
     }
 
     fn select_event(&mut self){
@@ -172,24 +171,28 @@ impl PadamoTrigger{
         if let Some(signal) = &self.signal{
             if let Some(sel) = self.selection{
 
-                let interval = if self.selection_positive{
-                    println!("Selected positive {}",sel);
-                    self.positive_intervals.container[sel]
+                // let interval = if self.selection_positive{
+                //     println!("Selected positive {}",sel);
+                //     self.positive_intervals.container[sel]
+                // }
+                // else{
+                //     println!("Selected negative {}",sel);
+                //     self.negative_intervals.container[sel]
+                // };
+                // self.selected_interval = Some(interval);
+                self.selected_event = self.events.tags.get(sel).map(|x| x.clone());
+                if let Some(event) = &self.selected_event{
+                    if event.duration>trigger_form.safeguard{
+                        return;
+                    }
+                    if self.loader.is_some(){
+                        return;
+                    }
+                    let spatial = signal.0.clone();
+                    let temporal = signal.1.clone();
+                    self.loader = Some(spawn_loader(spatial, temporal, event.position, event.position+event.duration));
                 }
-                else{
-                    println!("Selected negative {}",sel);
-                    self.negative_intervals.container[sel]
-                };
-                self.selected_interval = Some(interval);
-                if interval.length()>trigger_form.safeguard{
-                    return;
-                }
-                if self.loader.is_some(){
-                    return;
-                }
-                let spatial = signal.0.clone();
-                let temporal = signal.1.clone();
-                self.loader = Some(spawn_loader(spatial, temporal, interval.start, interval.end));
+
             }
         }
     }
@@ -203,19 +206,19 @@ impl PadamoTool for PadamoTrigger{
 
     fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage> {
         let action:Option<fn(Vec<usize>)->TriggerMessage> = None;
-        let positive_select = if self.selection_positive{
-            self.selection
-        }
-        else{
-            None
-        };
-
-        let negative_select = if !self.selection_positive{
-            self.selection
-        }
-        else{
-            None
-        };
+        // let positive_select = if self.selection_positive{
+        //     self.selection
+        // }
+        // else{
+        //     None
+        // };
+        //
+        // let negative_select = if !self.selection_positive{
+        //     self.selection
+        // }
+        // else{
+        //     None
+        // };
 
         let view_content = if let Some(v) = &self.data{
             Some((&v.1,v.0.time[0]))
@@ -228,23 +231,34 @@ impl PadamoTool for PadamoTrigger{
         let underlay:iced::Element<'_, TriggerMessage> = widget::row![
             widget::column![
                 widget::container(selection_list::SelectionList::new_with(
-                    &self.positive_strings,
-                    TriggerMessage::SelectPositive,
+                    &self.event_strings,
+                    TriggerMessage::SelectEvent,
                     12.0,
                     5.0,
                     iced_aw::style::selection_list::primary,
-                    positive_select,
+                    self.selection,
                     Font::default(),
-                )).height(iced::Length::FillPortion(2)).width(iced::Length::Fill),
-                widget::container(selection_list::SelectionList::new_with(
-                    &self.negative_strings,
-                    TriggerMessage::SelectNegative,
-                    12.0,
-                    5.0,
-                    iced_aw::style::selection_list::primary,
-                    negative_select,
-                    Font::default(),
-                )).height(iced::Length::FillPortion(2)).width(iced::Length::Fill)
+                )).height(iced::Length::Fill).width(iced::Length::Fill)
+
+
+                // widget::container(selection_list::SelectionList::new_with(
+                //     &self.positive_strings,
+                //     TriggerMessage::SelectPositive,
+                //     12.0,
+                //     5.0,
+                //     iced_aw::style::selection_list::primary,
+                //     positive_select,
+                //     Font::default(),
+                // )).height(iced::Length::FillPortion(2)).width(iced::Length::Fill),
+                // widget::container(selection_list::SelectionList::new_with(
+                //     &self.negative_strings,
+                //     TriggerMessage::SelectNegative,
+                //     12.0,
+                //     5.0,
+                //     iced_aw::style::selection_list::primary,
+                //     negative_select,
+                //     Font::default(),
+                // )).height(iced::Length::FillPortion(2)).width(iced::Length::Fill)
             ].width(250),
 
             //widget::container(
@@ -329,16 +343,20 @@ impl PadamoTool for PadamoTrigger{
                             sel.update(smsg.clone());
                         }
                     }
-                    TriggerMessage::SelectPositive(i, _)=>{
+                    TriggerMessage::SelectEvent(i, _)=>{
                         self.selection = Some(*i);
-                        self.selection_positive = true;
                         self.select_event();
                     }
-                    TriggerMessage::SelectNegative(i, _)=>{
-                        self.selection = Some(*i);
-                        self.selection_positive = false;
-                        self.select_event();
-                    }
+                    // TriggerMessage::SelectPositive(i, _)=>{
+                    //     self.selection = Some(*i);
+                    //     self.selection_positive = true;
+                    //     self.select_event();
+                    // }
+                    // TriggerMessage::SelectNegative(i, _)=>{
+                    //     self.selection = Some(*i);
+                    //     self.selection_positive = false;
+                    //     self.select_event();
+                    // }
                     TriggerMessage::PlotZoomMessage(msg)=>{
                         self.view_transform.update(msg.to_owned());
                     }
@@ -373,23 +391,27 @@ impl PadamoTool for PadamoTrigger{
                                                 }
                                             }
                                             let step = max_step.min(interval.end-start);
-                                            let data = trigger_source.request_range(start,start+step);
+                                            let mut data = trigger_source.request_range(start,start+step);
                                             println!("Triggering {}-{}",start,start+step);
-                                            let mut res:Vec<bool> = Vec::with_capacity(data.shape[0]);
-                                            res.resize(data.shape[0], false);
-                                            for i in data.enumerate(){
-                                                res[i[0]] |= data[&i];
+                                            for x in data.tags.drain(..){
+                                                tx_status.send(TriggerProcessMessage::MarkEvent(x)).unwrap();
                                             }
-                                            let (positives, negatives) = split_intervals(&res);
-
-                                            for pos in positives.iter(){
-                                                tx_status.send(TriggerProcessMessage::MarkPositive(pos.offset(start))).unwrap();
-                                            }
-
-
-                                            for neg in negatives.iter(){
-                                                tx_status.send(TriggerProcessMessage::MarkNegative(neg.offset(start))).unwrap();
-                                            }
+                                            tx_status.send(TriggerProcessMessage::IntervalDone(Interval { start, end: start+step })).unwrap();
+                                            // let mut res:Vec<bool> = Vec::with_capacity(data.shape[0]);
+                                            // res.resize(data.shape[0], false);
+                                            // for i in data.enumerate(){
+                                            //     res[i[0]] |= data[&i];
+                                            // }
+                                            // let (positives, negatives) = split_intervals(&res);
+                                            //
+                                            // for pos in positives.iter(){
+                                            //     tx_status.send(TriggerProcessMessage::MarkPositive(pos.offset(start))).unwrap();
+                                            // }
+                                            //
+                                            //
+                                            // for neg in negatives.iter(){
+                                            //     tx_status.send(TriggerProcessMessage::MarkNegative(neg.offset(start))).unwrap();
+                                            // }
 
                                             start += step;
                                             tx_status.send(TriggerProcessMessage::Status(format!("{}/{}",start,length))).unwrap();
@@ -434,11 +456,11 @@ impl PadamoTool for PadamoTrigger{
                                 self.stop_export();
 
                                 let (tx_status,rx_status) = mpsc::channel::<ExportProcessMessage>();
-                                let intervals = self.positive_intervals.clone();
+                                let intervals = self.events.clone();
 
                                 let handle = thread::spawn(move || {
-                                    let total_len = intervals.container.len();
-                                    for (i,interval) in intervals.container.iter().enumerate(){
+                                    let total_len = intervals.tags.len();
+                                    for (i,interval) in intervals.tags.iter().enumerate(){
                                         if let Ok(v) = rx.try_recv(){
                                             if v{
                                                 println!("Interrupt requested");
@@ -446,20 +468,23 @@ impl PadamoTool for PadamoTrigger{
                                             }
                                         }
 
-                                        let frame = spatial.request_range(interval.start,interval.end).to_ndarray();
-                                        let tim:Vec<f64> = temporal.request_range(interval.start,interval.end).into();
-                                        let time_of_event = tim[0];
-                                        let time_of_event_secs:i64 = time_of_event as i64;
-                                        let time_of_event_nsecs = ((time_of_event-time_of_event_secs as f64)*1e9) as u32;
-                                        let tim1 = if let Some(v) = chrono::DateTime::from_timestamp(time_of_event_secs, time_of_event_nsecs){
-                                            format!("T{:04}{:02}{:02}-{:02}{:02}{:02}.{:09}",v.year(),v.month(),v.day(),v.hour(), v.minute(), v.second(),v.nanosecond())
-                                        }
-                                        else{
-                                            format!("I{}", interval.start)
-                                        };
+                                        let start = interval.position;
+                                        let end = interval.position+interval.duration;
+
+                                        let frame = spatial.request_range(start,end).to_ndarray();
+                                        let tim:Vec<f64> = temporal.request_range(start,end).into();
+                                        // let time_of_event = tim[0];
+                                        // let time_of_event_secs:i64 = time_of_event as i64;
+                                        // let time_of_event_nsecs = ((time_of_event-time_of_event_secs as f64)*1e9) as u32;
+                                        // let tim1 = if let Some(v) = chrono::DateTime::from_timestamp(time_of_event_secs, time_of_event_nsecs){
+                                        //     format!("T{:04}{:02}{:02}-{:02}{:02}{:02}.{:09}",v.year(),v.month(),v.day(),v.hour(), v.minute(), v.second(),v.nanosecond())
+                                        // }
+                                        // else{
+                                        //     format!("I{}", start)
+                                        // };
 
                                         let tgt_path = std::path::Path::new(&path);
-                                        let file_path = tgt_path.join(format!("event_{}.h5",tim1));
+                                        let file_path = tgt_path.join(format!("event_{}.h5",interval.tag));
                                         if let Ok(file) = hdf5::File::create(file_path){
                                             let space_ds = file.new_dataset::<f64>()
                                                 .deflate(3)
@@ -518,12 +543,18 @@ impl PadamoTool for PadamoTrigger{
                         need_update = true;
                         match v{
                             TriggerProcessMessage::Status(status) => {self.trigger_status = status;},
-                            TriggerProcessMessage::MarkPositive(pos) => {
-                                self.mark_positive(pos);
-                            },
-                            TriggerProcessMessage::MarkNegative(neg) => {
-                                self.mark_negative(neg);
-                            },
+                            // TriggerProcessMessage::MarkPositive(pos) => {
+                            //     self.mark_positive(pos);
+                            // },
+                            // TriggerProcessMessage::MarkNegative(neg) => {
+                            //     self.mark_negative(neg);
+                            // },
+                            TriggerProcessMessage::MarkEvent(event)=>{
+                                self.events.push_tag(event);
+                            }
+                            TriggerProcessMessage::IntervalDone(i)=>{
+                                self.unmarked_intervals.take_interval(i);
+                            }
                         }
                         recv_res = anim.feedback.try_recv();
                     }
@@ -578,8 +609,8 @@ impl PadamoTool for PadamoTrigger{
             }
             PadamoAppMessage::TriggerMessage(msg)=>{
                 if let TriggerMessage::ExamineEvent = msg{
-                    if let Some(interval) = &self.selected_interval{
-                        Some(PadamoAppMessage::ViewerMessage(super::viewer::ViewerMessage::FocusOn(interval.start, interval.end)))
+                    if let Some(interval) = &self.selected_event{
+                        Some(PadamoAppMessage::ViewerMessage(super::viewer::ViewerMessage::FocusOn(interval.position, interval.position+interval.duration)))
                     }
                     else{
                         padamo.show_info("Select event to examine");
@@ -600,22 +631,41 @@ impl PadamoTool for PadamoTrigger{
                 if let Some(path) = padamo.workspace.workspace("marked_up_events_rs").save_dialog(vec![("Marked up tracks",vec!["json"])]){
                     //if let nfd::Response::Okay(path) = v{
                     if let Some(data) = &self.signal{
-                        let positives = self.positive_intervals.to_unixtime_storage(&data.1);
-                        let negatives = self.negative_intervals.to_unixtime_storage(&data.1);
+                        let events:Vec<(f64, f64, String)> = self.events.tags.iter().map(|x|{
+                            let start: f64 = data.1.request_range(x.position, x.position+1)[0];
+                            let end: f64 = data.1.request_range(x.position+x.duration-1, x.position+x.duration)[0];
+                            (start, end, x.tag.clone().into())
+                        }).collect();
+                        let unmarked = self.unmarked_intervals.to_unixtime_storage(&data.1);
+                        let res = SavedData{events, unmarked};
 
-                        let total = BinaryUnixIntervalStorage{positives,negatives};
-
-                        match serde_json::to_string(&total) {
-                            Ok(s) => {
-                                match fs::write(path, s){
-                                    Ok(_)=>(),
-                                    Err(e)=>{
-                                        padamo.show_error(format!("{}", e))
+                        match serde_json::to_string(&res){
+                                Ok(s) => {
+                                    match fs::write(path, s){
+                                        Ok(_)=>(),
+                                        Err(e)=>{
+                                            padamo.show_error(format!("{}", e))
+                                        }
                                     }
-                                }
-                            }
-                            Err(e) => padamo.show_error(format!("{}", e)),
+                                },
+                                Err(e) => padamo.show_error(format!("{}", e)),
                         }
+                        // let positives = self.positive_intervals.to_unixtime_storage(&data.1);
+                        // let negatives = self.negative_intervals.to_unixtime_storage(&data.1);
+                        //
+                        // let total = BinaryUnixIntervalStorage{positives,negatives};
+                        //
+                        // match serde_json::to_string(&total) {
+                        //     Ok(s) => {
+                        //         match fs::write(path, s){
+                        //             Ok(_)=>(),
+                        //             Err(e)=>{
+                        //                 padamo.show_error(format!("{}", e))
+                        //             }
+                        //         }
+                        //     }
+                        //     Err(e) => padamo.show_error(format!("{}", e)),
+                        // }
                     }
                     //}
                 }
@@ -625,19 +675,33 @@ impl PadamoTool for PadamoTrigger{
                     if let Some(path) = padamo.workspace.workspace("marked_up_events_rs").open_dialog(vec![("Marked up tracks",vec!["json"])]){
                         match fs::read_to_string(path){
                             Ok(s)=>{
-                                let deserialized: Result<BinaryUnixIntervalStorage,serde_json::Error> = serde_json::from_str(&s);
+                                let deserialized: Result<SavedData,serde_json::Error> = serde_json::from_str(&s);
                                 match deserialized {
                                     Ok(obj)=>{
+                                        for (start,end, tag) in obj.events{
+                                            let start_index = crate::time_search::find_unixtime(&signal.1, start);
+                                            let end_index = crate::time_search::find_unixtime(&signal.1, end)+1;
+                                            if end_index<=start_index{
+                                                continue;
+                                            }
+                                            let event = SparseTag::new(tag.into(),start_index, end_index-start_index);
+                                            self.events.push_tag(event);
+                                        }
+                                        let intervals = IntervalStorage::from_unixtime_storage(&obj.unmarked,&signal.1);
                                         self.reset_intervals(signal.1.length());
-                                        let positives = IntervalStorage::from_unixtime_storage(&obj.positives,&signal.1);
-                                        let negatives = IntervalStorage::from_unixtime_storage(&obj.negatives,&signal.1);
-                                        //println!("{:?}",positives);
-                                        for i in positives.container.iter(){
-                                            self.mark_positive(*i);
+                                        for interval in intervals.container.iter(){
+                                            self.unmarked_intervals.take_interval(*interval);
                                         }
-                                        for i in negatives.container.iter(){
-                                            self.mark_negative(*i);
-                                        }
+                                        // self.reset_intervals(signal.1.length());
+                                        // let positives = IntervalStorage::from_unixtime_storage(&obj.positives,&signal.1);
+                                        // let negatives = IntervalStorage::from_unixtime_storage(&obj.negatives,&signal.1);
+                                        // //println!("{:?}",positives);
+                                        // for i in positives.container.iter(){
+                                        //     self.mark_positive(*i);
+                                        // }
+                                        // for i in negatives.container.iter(){
+                                        //     self.mark_negative(*i);
+                                        // }
                                         self.update_interval_strings();
                                     }
                                     Err(e) => padamo.show_error(format!("{}", e))

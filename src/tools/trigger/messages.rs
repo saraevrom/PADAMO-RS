@@ -9,10 +9,12 @@ pub enum TriggerMessage{
     ConfirmTrigger,
     SelectionMessage(SelectionMessage),
     SettingsMessage(ActionOrUpdate<TriggerSettingsFormMessage>),
+    // #[allow(dead_code)] // (usize, String for iced_aw compat)
+    // SelectPositive(usize, String),
+    // #[allow(dead_code)] // (usize, String for iced_aw compat)
+    // SelectNegative(usize, String),
     #[allow(dead_code)] // (usize, String for iced_aw compat)
-    SelectPositive(usize, String),
-    #[allow(dead_code)] // (usize, String for iced_aw compat)
-    SelectNegative(usize, String),
+    SelectEvent(usize, String),
     ExamineEvent,
     Stop,
     PlotZoomMessage(crate::transform_widget::TransformMessage),

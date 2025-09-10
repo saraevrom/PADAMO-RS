@@ -275,6 +275,10 @@ impl IntervalStorage{
         }
     }
 
+    pub fn take_point(&mut self, point:usize)->bool{
+        self.take_interval(Interval { start: point, end: point+1 })
+    }
+
     pub fn take_interval(&mut self,interval:Interval)->bool{
         if let Some((closest,i)) = self.interval_in_point(interval.start){
             if closest.contains(&interval){

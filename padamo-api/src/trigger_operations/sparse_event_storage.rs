@@ -10,15 +10,16 @@ pub struct SparseTag{
 }
 
 impl SparseTag {
-    fn new(tag: RString, position: usize, duration:usize) -> Self {
+    pub fn new(tag: RString, position: usize, duration:usize) -> Self {
         Self { tag, position, duration }
     }
+
 }
 
 #[repr(C)]
 #[derive(StableAbi,Clone)]
 pub struct SparseTagArray{
-    tags:RVec<SparseTag>
+    pub tags:RVec<SparseTag>
 }
 
 fn check_first(arr:&[SparseTag], lower:usize)->bool{
@@ -52,8 +53,13 @@ impl SparseTagArray{
         self.tags.len()
     }
 
+
     pub fn push<T:Into<RString>>(&mut self, tag:T, position:usize, duration:usize){
         let new_item = SparseTag::new(tag.into(), position, duration);
+        self.push_tag(new_item);
+    }
+
+    pub fn push_tag(&mut self, new_item:SparseTag){
         self.tags.push(new_item);
         for i in (1..self.tags.len()).rev(){
             if self.tags[i-1].position>self.tags[i].position{
@@ -80,6 +86,12 @@ impl SparseTagArray{
 
     pub fn view_tags<'a>(&'a self) -> Vec<&'a str>{
         self.tags.iter().map(|x| x.tag.as_str()).collect()
+    }
+
+    pub fn format_tags(&self) -> Vec<String>{
+        self.tags.iter().map(|x| {
+            format!(" E{} L{}: {}", x.position, x.duration, x.tag)
+        }).collect()
     }
 }
 
