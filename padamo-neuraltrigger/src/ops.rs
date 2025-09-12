@@ -230,9 +230,9 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
                 println!("ANN threshold OK {:?}",triggered);
 
 
-                triggered.iter().enumerate().for_each(|(i,v)|{
+                triggered.iter().enumerate().for_each(|(i1,v)|{
                     if *v>0{
-                        let position = i*self.stride+cut_start;
+                        let position = i1*self.stride+cut_start;
                         let tag = format!("{}(Block {} {}): {}",self.tag_prefix, i,j,v);
                         println!("{}",tag);
                         res.push(tag, position, self.size_hint.0);

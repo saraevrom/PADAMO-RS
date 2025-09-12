@@ -35,6 +35,11 @@ pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
                 Ok(v)=>res.push(make_node_box(v)),
                 Err(e)=>println!("{}",e),
             }
+            match nodes::ANN3DNode::new("ANN trigger Model TE1", &format!("{}/model_te1.onnx",library_dir), (256,8,8), "Identity:0".into(),
+                                        "model_te1","ANN trigger Model TE1"){
+                Ok(v)=>res.push(make_node_box(v)),
+                Err(e)=>println!("{}",e),
+            }
         }
         Err(e)=>println!("{}",e),
     }
