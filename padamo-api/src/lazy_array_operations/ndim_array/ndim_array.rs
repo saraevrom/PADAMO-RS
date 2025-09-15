@@ -22,6 +22,7 @@ where
 {
     pub flat_data:RVec<T>,
     pub shape:RVec<usize>,
+    // f_size:usize,
 }
 
 
@@ -33,11 +34,22 @@ where
         let capacity:usize = shape.iter().fold(1, |a,b| a*b);
         let mut flat_data:RVec<T> = RVec::with_capacity(capacity);
         flat_data.resize(capacity, fill_value);
+
         // for _ in 0..capacity{
         //     flat_data.push(fill_value.clone());
         // }
         //flat_data.fill(fill_value);
         Self { flat_data, shape:shape.into() }
+    }
+
+    pub fn frame_size(&self)->usize{
+        if self.shape.len()>0{
+            let new_shape:Vec<usize> = self.shape.as_slice().iter().skip(1).copied().collect();
+            new_shape.iter().product()
+        }
+        else{
+            0
+        }
     }
 
     pub fn try_get<'a>(&self, index:&[usize])->Option<&T>{

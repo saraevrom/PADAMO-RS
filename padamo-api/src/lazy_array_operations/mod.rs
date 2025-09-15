@@ -143,3 +143,14 @@ impl LazyTimeSignal{
     }
 
 }
+
+
+impl<T:Clone+Debug+Sync+Send> LazyArrayOperation<RVec<T>> for RVec<T>{
+    fn length(&self)->usize{
+        self.len()
+    }
+
+    fn request_range(&self,start:usize, end:usize)->RVec<T>{
+        self[start..end].to_owned().into()
+    }
+}
