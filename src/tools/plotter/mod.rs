@@ -388,7 +388,7 @@ impl PadamoTool for Plotter{
         let chart_view:iced::Element<'a, PlotterMessage> = if self.is_selecting_pixels{
             let action:Option<fn(Vec<usize>)->PlotterMessage> = None;
             let body = self.detector.view_map(&self.pixels, &self.pixels_show, Some(PlotterMessage::TogglePixelByName), action);
-            let body:iced::Element<'_,PlotterMessage> = iced::widget::container(body).width(Length::Fixed(500.0)).height(Length::Fixed(500.0)).into();
+            let body:iced::Element<'_,PlotterMessage> = iced::widget::container(body).width(Length::Fill).height(Length::Fill).into();
             iced::widget::column![
                 widget::container(
                     body,
