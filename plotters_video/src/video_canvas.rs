@@ -60,7 +60,7 @@ impl VideoBackend{
         // buffer.fill(255);
         // let current_position = Time::zero();
         // Ok(Self{encoder,width,height,buffer,current_position,duration:delay.to_delay(), canvas_edited:false})
-        let config = EncoderConfig::new().max_frame_rate(delay.to_fps() as f32);
+        let config = EncoderConfig::new();
         let encoder = Encoder::with_api_config(openh264::OpenH264API::from_source(), config)?;
         let image_buffer = RgbImage::new(width, height);
         let target = destination.as_ref().to_owned();
