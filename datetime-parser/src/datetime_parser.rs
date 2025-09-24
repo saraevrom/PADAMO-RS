@@ -15,7 +15,7 @@ static DATETIME_REGEXES:Lazy<Vec<Regex>> = Lazy::new(||{
     regexes.push(Regex::new(r"^h\s*=\s*(?<H>\d+)").unwrap());
     regexes.push(Regex::new(r"^m\s*=\s*(?<M>\d+)").unwrap());
     regexes.push(Regex::new(r"^s\s*=\s*(?<S>\d+)").unwrap());
-    regexes.push(Regex::new(r"^ms\s*=\s*(?<d>\d+)").unwrap());
+    regexes.push(Regex::new(r"^ms\s*=\s*(?<ms>\d+)").unwrap());
     regexes.push(Regex::new(r"^Y\s*=\s*(?<Y>\d+)").unwrap());
     regexes.push(Regex::new(r"^M\s*=\s*(?<m>\d+)").unwrap());
     regexes.push(Regex::new(r"^D\s*=\s*(?<d>\d+)").unwrap());
@@ -36,7 +36,7 @@ pub fn parse_datetimes(input:&str,init_datetime:chrono::DateTime<chrono::Utc>)->
 
                 found = true;
                 i = end;
-                for part in "Y m d H M S ms".split_whitespace(){
+                for part in "Y m d H M S ms dd dH dM dS".split_whitespace(){
                     if let Some(grp) = cap.name(part){
                         res.insert(part.to_string(),grp.as_str().into());
                     }
