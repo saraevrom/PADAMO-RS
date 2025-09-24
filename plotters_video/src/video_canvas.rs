@@ -10,7 +10,7 @@ use image::{EncodableLayout, RgbImage};
 // use imageproc::drawing::draw_filled_circle_mut;
 use minimp4::Mp4Muxer;
 
-use openh264::encoder::{Encoder, EncoderConfig};
+use openh264::encoder::{Encoder, EncoderConfig, QpRange};
 
 
 //Firstly I tried using video_rs. But building FFMPEG in github is nontrivial.
@@ -60,7 +60,7 @@ impl VideoBackend{
         // buffer.fill(255);
         // let current_position = Time::zero();
         // Ok(Self{encoder,width,height,buffer,current_position,duration:delay.to_delay(), canvas_edited:false})
-        let config = EncoderConfig::new();
+        let config = EncoderConfig::new().qp(QpRange::new(0, 15));
         let encoder = Encoder::with_api_config(openh264::OpenH264API::from_source(), config)?;
         let image_buffer = RgbImage::new(width, height);
         let target = destination.as_ref().to_owned();
