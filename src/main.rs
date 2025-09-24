@@ -11,6 +11,7 @@ mod time_search;
 mod popup_message;
 mod assets;
 mod transform_widget;
+mod loaded_detectors_storage;
 
 fn main() -> iced::Result{
     // application::Padamo::run(Settings {
