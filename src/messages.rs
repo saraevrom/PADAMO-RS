@@ -18,6 +18,7 @@ pub enum PadamoAppMessage{
     DetectorManagerMessage(DetectorManagerMessage),
     ChooseDetector,
     SetDetector(padamo_detectors::polygon::DetectorContent),
+    DetectorUpdate,
     LoadedDetectorsMessage(LoadedDetectorsMessage),
     SetEditLoadedDetectors(bool),
     PopupMessageClick,

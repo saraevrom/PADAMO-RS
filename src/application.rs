@@ -164,7 +164,11 @@ impl Padamo{
         }
         if let Some(s) = self.state.persistent_state.read("detectors"){
             match serde_json::from_str::<LoadedDetectors>(&s){
-                 Ok(v)=>self.state.detectors = v,
+                 Ok(v)=>{
+                     self.state.detectors = v;
+                     let msg = PadamoAppMessage::DetectorUpdate;
+                     self.update_tools_sequence(Rc::new(msg));
+                 },
                  Err(e)=>self.state.show_error(format!("{}",e)),
             }
             // if let Some(detectors) = self.set_detector(s, false){
