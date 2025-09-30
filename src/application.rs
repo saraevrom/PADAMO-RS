@@ -2,12 +2,15 @@ use std::collections::VecDeque;
 use std::fs;
 use std::rc::Rc;
 
-use iced::widget::button;
+use iced::alignment::Horizontal;
+use iced::widget::{button, container};
+use iced::Length;
 use padamo_detectors::polygon::DetectorContent;
+use crate::loaded_detectors_storage::LoadedDetectors;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
 use crate::tools::{self as ctools};
-use crate::builtin_nodes;
+use crate::{builtin_nodes, loaded_detectors_storage};
 
 use iced_aw::Tabs;
 use iced_aw::menu::{primary, Item, Menu, MenuBar};
@@ -44,6 +47,8 @@ pub struct PadamoState{
     pub current_seed:EntryState<u64>,
     pub persistent_state:padamo_state_persistence::PersistentState,
     popup_messages:MessageList,
+    pub detectors:crate::loaded_detectors_storage::LoadedDetectors,
+    pub is_editing_detectors: bool,
 }
 
 pub type PadamoStateRef<'a> = &'a mut PadamoState;
@@ -156,6 +161,16 @@ impl Padamo{
                 let msg = PadamoAppMessage::SetDetector(detector);
                 self.update_tools_sequence(Rc::new(msg));
             }
+        }
+        if let Some(s) = self.state.persistent_state.read("detectors"){
+            match serde_json::from_str::<LoadedDetectors>(&s){
+                 Ok(v)=>self.state.detectors = v,
+                 Err(e)=>self.state.show_error(format!("{}",e)),
+            }
+            // if let Some(detectors) = self.set_detector(s, false){
+            //     //let msg = PadamoAppMessage::SetDetector(detector);
+            //     //self.update_tools_sequence(Rc::new(msg));
+            // }
         }
     }
 }
@@ -271,7 +286,9 @@ impl Padamo{
             current_page: 0,
             current_seed: EntryState::new(0),
             popup_messages:MessageList::new(),
-            persistent_state: Default::default()
+            persistent_state: Default::default(),
+            detectors: loaded_detectors_storage::LoadedDetectors::new(),
+            is_editing_detectors: false,
         };
 
 
@@ -309,6 +326,15 @@ impl Padamo{
             PadamoAppMessage::SetSeed(seed)=>{
                 self.state.current_seed.set_string(seed);
             },
+            PadamoAppMessage::LoadedDetectorsMessage(msg)=>{
+                if let Err(e) = self.state.detectors.process_message(&self.state.workspace, msg){
+                    self.state.show_error(format!("{}",e));
+                }
+                else{
+                    self.state.persistent_state.write("detectors", &serde_json::to_string(&self.state.detectors).unwrap());
+                }
+            },
+            PadamoAppMessage::SetEditLoadedDetectors(v)=>self.state.is_editing_detectors = v,
             PadamoAppMessage::ChooseDetector=>{
                 if let Some(path) = self.state.workspace.workspace("detectors").open_dialog(vec![("Detector",vec!["json"])]){
                     let s = match std::fs::read_to_string(path) {
@@ -348,6 +374,33 @@ impl Padamo{
     // }
 
     pub fn view(&self) -> iced::Element<'_, Message> {
+        if let Some(msg) = self.state.popup_messages.oldest_message(){
+            msg.view()
+        }
+        else{
+            if self.state.is_editing_detectors{
+                self.view_loaded_detectors()
+            }
+            else{
+                self.view_normal()
+            }
+        }
+
+    }
+
+    fn view_loaded_detectors(&self) -> iced::Element<'_, Message> {
+        // let res = iced::widget::column![
+        //     self.state.detectors.view().map(PadamoAppMessage::LoadedDetectorsMessage),
+        //     iced::widget::button("Close").on_press(PadamoAppMessage::SetEditLoadedDetectors(false))
+        // ];
+        let res = iced_aw::card(iced::widget::text("Loaded detectors"), self.state.detectors.view().map(PadamoAppMessage::LoadedDetectorsMessage))
+            .on_close(PadamoAppMessage::SetEditLoadedDetectors(false))
+            .max_width(500.0);
+        let cont = container(res).center_x(Length::Fill).center_y(Length::Fill);
+        cont.into()
+    }
+
+    fn view_normal(&self) -> iced::Element<'_, Message> {
         let mut vlist = iced::widget::Column::new();
         vlist = vlist.spacing(10);
 
@@ -355,7 +408,11 @@ impl Padamo{
         file_menu.push(Item::new(menu_button("Open", PadamoAppMessage::Open)));
         file_menu.push(Item::new(menu_button("Save", PadamoAppMessage::Save)));
         #[cfg(feature = "button_choose_detector")]
-        file_menu.push(Item::new(menu_button("Choose detector", PadamoAppMessage::ChooseDetector)));
+        {
+            file_menu.push(Item::new(menu_button("Choose detector (legacy)", PadamoAppMessage::ChooseDetector)));
+            file_menu.push(Item::new(menu_button("Loaded detectors", PadamoAppMessage::SetEditLoadedDetectors(true))));
+        }
+
         #[cfg(feature = "button_clear")]
         file_menu.push(Item::new(menu_button("Clean up", PadamoAppMessage::ClearState)));
 
@@ -422,15 +479,10 @@ impl Padamo{
 
         vlist = vlist.push(tabs);
 
-        //vlist.into()
-        let underlay:iced::Element<'_,Message> = vlist.into();
+        vlist.into()
+        //let underlay:iced::Element<'_,Message> = vlist.into();
         //let overlay:Option<iced::Element<'_,Self::Message>> = None;
-        if let Some(msg) = self.state.popup_messages.oldest_message(){
-            msg.view()
-        }
-        else{
-            underlay
-        }
+
         //let popup_window = modal(underlay,overlay).align_x(iced::alignment::Horizontal::Center);
         //popup_window.into()
 

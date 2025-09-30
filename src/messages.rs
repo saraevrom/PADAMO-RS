@@ -4,6 +4,7 @@ use crate::tools::viewer::ViewerMessage;
 use crate::tools::plotter::messages::PlotterMessage;
 use crate::tools::trigger::messages::TriggerMessage;
 use crate::tools::detectors::messages::DetectorManagerMessage;
+use crate::loaded_detectors_storage::LoadedDetectorsMessage;
 
 #[derive(Clone,Debug)]
 pub enum PadamoAppMessage{
@@ -17,6 +18,8 @@ pub enum PadamoAppMessage{
     DetectorManagerMessage(DetectorManagerMessage),
     ChooseDetector,
     SetDetector(padamo_detectors::polygon::DetectorContent),
+    LoadedDetectorsMessage(LoadedDetectorsMessage),
+    SetEditLoadedDetectors(bool),
     PopupMessageClick,
     Run,
     RerollRun,
