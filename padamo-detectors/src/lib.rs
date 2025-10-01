@@ -1,5 +1,6 @@
 use std::{marker::PhantomData, cell::RefCell};
 
+use iced::Length;
 use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate}, element::BackendCoordOnly, prelude::*};
 use plotters_iced::{Chart, ChartWidget};
 use plotters_layout::{centering_ranges, ChartLayout};
@@ -275,16 +276,31 @@ impl<Message> DetectorPlotter<Message>{
 
     }
 
-    pub fn view<'a,F1,F2>(&'a self, detector: &'a DetectorAndMask, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>
+    pub fn view<'a,F1,F2>(&'a self, detector: Option<&'a DetectorAndMask>, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>
     where
         F1:'static+Fn(Vec<usize>)->Message,
         F2:'static+Fn(Vec<usize>)->Message
     {
-        ChartWidget::new(DetectorChart::new(self, detector,source, transform, scale, lclick_event, rclick_event)).into()
+        if let Some(dm) = detector{
+            ChartWidget::new(DetectorChart::new(self, dm, source, transform, scale, lclick_event, rclick_event)).into()
+        }
+        else{
+            let warning = iced::widget::text("No detector");
+            let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+            container.into()
+        }
+
     }
 
-    pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, detector: &'a DetectorAndMask, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
-        ChartWidget::new(DetectorChartMap::new(self,detector,pixels,pixels_show,lclick_event,rclick_event)).into()
+    pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, detector: Option<&'a DetectorAndMask>, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
+        if let Some(dm) = detector{
+            ChartWidget::new(DetectorChartMap::new(self,dm,pixels,pixels_show,lclick_event,rclick_event)).into()
+        }
+        else{
+            let warning = iced::widget::text("No detector");
+            let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+            container.into()
+        }
     }
 }
 
