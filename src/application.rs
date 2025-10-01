@@ -413,7 +413,7 @@ impl Padamo{
         file_menu.push(Item::new(menu_button("Save", PadamoAppMessage::Save)));
         #[cfg(feature = "button_choose_detector")]
         {
-            file_menu.push(Item::new(menu_button("Choose detector (legacy)", PadamoAppMessage::ChooseDetector)));
+            //file_menu.push(Item::new(menu_button("Choose detector (legacy)", PadamoAppMessage::ChooseDetector)));
             file_menu.push(Item::new(menu_button("Loaded detectors", PadamoAppMessage::SetEditLoadedDetectors(true))));
         }
 
