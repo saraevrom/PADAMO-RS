@@ -1,6 +1,6 @@
 [package]
 name = "padamo-detectors"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,7 +12,7 @@ plotters = "0.3.5"
 plotters-iced = "0.11"
 plotters-layout = "0.1.0"
 serde = { version = "1.0.196", features = ["derive"] }
-padamo-api = { path = "../padamo-api", features = [] }
+padamo-api = { path = "../padamo-api", features = ["serde"] }
 nom = { version = "7.1.3", features = ["alloc"] }
 abi_stable = "0.11.3"
 dyn-clone = "1.0.17"

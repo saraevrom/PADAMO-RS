@@ -33,19 +33,20 @@ pub struct Margins{
     pub right:u32
 }
 
-#[derive(Clone)]
-pub struct Detector<Message>{
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct DetectorAndMask{
     pub cells:polygon::DetectorContent,
     pub alive_pixels:ArrayND<bool>,
-    spec:RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
-    _marker: PhantomData<Message>,
 }
 
-impl<Message> Detector<Message>{
-    pub fn new(compat_shape:Vec<usize>,name:String)->Self{
-        //let capacity = compat_shape.iter().fold(1, |a,b| a*b);
-        let cells = polygon::DetectorContent::new(compat_shape, name);
-        Self::from_cells(cells)
+impl DetectorAndMask {
+    pub fn new(cells: polygon::DetectorContent, alive_pixels: ArrayND<bool>) -> Self {
+        Self { cells, alive_pixels }
+    }
+
+    pub fn from_cells(cells:polygon::DetectorContent)->Self{
+        let alive_pixels = ArrayND::new(cells.compat_shape.clone(), true) ;
+        DetectorAndMask::new(cells, alive_pixels)
     }
 
     pub fn alive_pixels_mask(&self)->ArrayND<f64>{
@@ -60,12 +61,6 @@ impl<Message> Detector<Message>{
         }
     }
 
-    pub fn from_cells(cells:polygon::DetectorContent)->Self{
-        let alive_pixels = ArrayND::new(cells.compat_shape.clone(), true) ;
-        Self { cells, _marker:PhantomData, spec: RefCell::new(None),alive_pixels}
-    }
-
-
     pub fn shape(&self)->&Vec<usize>{
         &self.cells.compat_shape
     }
@@ -73,6 +68,48 @@ impl<Message> Detector<Message>{
     pub fn default_vtl()->Self{
         Self::from_cells(polygon::DetectorContent::default_vtl())
     }
+}
+
+#[derive(Clone)]
+pub struct DetectorPlotter<Message>{
+    // pub cells:polygon::DetectorContent,
+    // pub alive_pixels:ArrayND<bool>,
+    //pub state:DetectorAndMask,
+    spec:RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
+    _marker: PhantomData<Message>,
+}
+
+impl<Message> DetectorPlotter<Message>{
+    pub fn new()->Self{
+        //let capacity = compat_shape.iter().fold(1, |a,b| a*b);
+        Self { _marker:PhantomData, spec: RefCell::new(None)}
+    }
+
+    // pub fn alive_pixels_mask(&self)->ArrayND<f64>{
+    //     let shape = self.state.alive_pixels.shape.clone();
+    //     let flat_data = self.state.alive_pixels.flat_data.iter().map(|x| if *x {1.0} else {0.0}).collect::<Vec<f64>>().into();
+    //     ArrayND { flat_data, shape }
+    // }
+    //
+    // pub fn toggle_pixel(&mut self, index:&Vec<usize>){
+    //     if let Some(v) = self.state.alive_pixels.try_get(index){
+    //         self.state.alive_pixels[index] = !v;
+    //     }
+    // }
+
+    // pub fn from_cells(cells:polygon::DetectorContent)->Self{
+    //     let state = DetectorAndMask::from_cells(cells);
+    //     Self { state, _marker:PhantomData, spec: RefCell::new(None)}
+    // }
+
+
+    // pub fn shape(&self)->&Vec<usize>{
+    //     &self.state.cells.compat_shape
+    // }
+    //
+    // pub fn default_vtl()->Self{
+    //     Self::from_cells(polygon::DetectorContent::default_vtl())
+    // }
 
 
 //     pub fn plot_chart_aux<DB: DrawingBackend>(&self,root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&[Vec<usize>], vis:&[bool]) {
@@ -80,8 +117,8 @@ impl<Message> Detector<Message>{
 //     }
 
 
-    pub fn build_chart_aux<DB: DrawingBackend>(&self,root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&[Vec<usize>], vis:&[bool], margins:Margins) {
-        let ((min_x, min_y), (max_x, max_y)) = self.cells.size();
+    pub fn build_chart_aux<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&[Vec<usize>], vis:&[bool], margins:Margins) {
+        let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
 
         let main_part = root;
@@ -112,7 +149,7 @@ impl<Message> Detector<Message>{
 
         let mut infills:Vec<Polygon<(f64,f64)>> = Vec::new();
         let mut outlines:Vec<PathElement<(f64,f64)>> = Vec::new();
-        for (infill,outline) in self.cells.pixels_colors(pixels, vis){
+        for (infill,outline) in detector.cells.pixels_colors(pixels, vis){
             infills.push(infill);
             outlines.push(outline);
         }
@@ -129,13 +166,13 @@ impl<Message> Detector<Message>{
 
     }
 
-    pub fn build_chart_generic<DB: DrawingBackend>(&self,root: &DrawingArea<DB, plotters::coord::Shift>,
+    pub fn build_chart_generic<DB: DrawingBackend>(&self, detector:&DetectorAndMask,root: &DrawingArea<DB, plotters::coord::Shift>,
                                                    pixels:&Option<(& ArrayND<f64>,f64)>,
                                                    scale:Scaling,
                                                    transform: crate::transformer::Transform,
                                                    state:&Option<((f64,f64),(i32,i32))>) {
         root.fill(&plotters::prelude::WHITE).unwrap();
-        let ((min_x, min_y), (max_x, max_y)) = self.cells.size();
+        let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
 
         let title:String = if let Some((_,ut)) = pixels{
@@ -180,7 +217,7 @@ impl<Message> Detector<Message>{
             .disable_mesh()
             .draw()
             .unwrap();
-        let rects = self.cells.pixels_values(&self.alive_pixels,pixels,scale);
+        let rects = detector.cells.pixels_values(&detector.alive_pixels,pixels,scale);
         chart.draw_series(
             rects
         ).unwrap();
@@ -190,14 +227,14 @@ impl<Message> Detector<Message>{
         Some(chart.as_coord_spec().clone());
 
         let (min,max) =  if let Some(pix) = pixels{
-            scale.get_bounds(pix.0,&self.alive_pixels)
+            scale.get_bounds(pix.0,&detector.alive_pixels)
         }
         else{
             (0.0,1.0)
         };
 
         if let Some((pos,unmapped)) = state{
-            if let Some(index) = self.cells.position_index(*pos){
+            if let Some(index) = detector.cells.position_index(*pos){
                 //println!("{:?}",index);
 
                 let mut unmapped_pos = *unmapped;
@@ -238,16 +275,16 @@ impl<Message> Detector<Message>{
 
     }
 
-    pub fn view<'a,F1,F2>(&'a self, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>
+    pub fn view<'a,F1,F2>(&'a self, detector: &'a DetectorAndMask, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>
     where
         F1:'static+Fn(Vec<usize>)->Message,
         F2:'static+Fn(Vec<usize>)->Message
     {
-        ChartWidget::new(DetectorChart::new(self,source, transform, scale, lclick_event, rclick_event)).into()
+        ChartWidget::new(DetectorChart::new(self, detector,source, transform, scale, lclick_event, rclick_event)).into()
     }
 
-    pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
-        ChartWidget::new(DetectorChartMap::new(self,pixels,pixels_show,lclick_event,rclick_event)).into()
+    pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, detector: &'a DetectorAndMask, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
+        ChartWidget::new(DetectorChartMap::new(self,detector,pixels,pixels_show,lclick_event,rclick_event)).into()
     }
 }
 
@@ -257,7 +294,8 @@ where
     F1:'static + Fn(Vec<usize>)->Msg,
     F2:'static + Fn(Vec<usize>)->Msg,
 {
-    detector:&'a Detector<Msg>,
+    detector_plotter:&'a DetectorPlotter<Msg>,
+    detector:&'a DetectorAndMask,
     source:Option<(&'a ArrayND<f64>,f64)>,
     scale:Scaling,
     transform: Transform,
@@ -270,8 +308,8 @@ where
     F1:'static + Fn(Vec<usize>)->Msg,
     F2:'static + Fn(Vec<usize>)->Msg,
 {
-    pub fn new(detector:&'a Detector<Msg>, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->Self{
-        Self { detector ,source, scale, lclick_event, rclick_event, transform}
+    pub fn new(detector_plotter:&'a DetectorPlotter<Msg>, detector:&'a DetectorAndMask, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->Self{
+        Self { detector_plotter, detector ,source, scale, lclick_event, rclick_event, transform}
     }
 }
 
@@ -287,7 +325,7 @@ where
     fn build_chart<DB: DrawingBackend>(&self, _state: &Self::State, _builder: ChartBuilder<DB>) {}
 
     fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
-        self.detector.build_chart_generic(&root, &self.source,self.scale,self.transform,state);
+        self.detector_plotter.build_chart_generic(&self.detector, &root, &self.source,self.scale,self.transform,state);
     }
 
     fn update(
@@ -302,7 +340,7 @@ where
                 iced::widget::canvas::Event::Mouse(evt) if bounds.contains(point) => {
                     let p_origin = bounds.position();
                     let p = point - p_origin;
-                    if let Some(spec) = self.detector.spec.borrow().as_ref(){
+                    if let Some(spec) = self.detector_plotter.spec.borrow().as_ref(){
                         if let Some(inpoint) = spec.reverse_translate((p.x as i32,p.y as i32)){
                             //println!("{:?}",inpoint);
                             *state = Some((inpoint,(p.x as i32,p.y as i32)));
