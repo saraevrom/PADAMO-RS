@@ -1,10 +1,11 @@
 use std::fs;
 
 use super::PadamoTool;
+use crate::application::PadamoState;
 use crate::messages::PadamoAppMessage;
 use iced::widget;
 pub mod messages;
-use padamo_detectors::Detector;
+use padamo_detectors::{DetectorPlotter, DetectorAndMask};
 use padamo_detectors::polygon::DetectorContent;
 use iced::widget::pane_grid;
 
@@ -17,7 +18,8 @@ pub enum Pane{
 }
 
 pub struct PadamoDetectorManager{
-    chart:Detector<DetectorManagerMessage>,
+    chart:DetectorPlotter<DetectorManagerMessage>,
+    detector:DetectorAndMask,
     source:widget::text_editor::Content,
     is_dirty:bool,
     //split_pos:Option<u16>,
@@ -33,7 +35,8 @@ impl PadamoDetectorManager {
         panes.split(pane_grid::Axis::Vertical, start, Pane::SourceCode);
         Self {
             source,
-            chart:Detector::default_vtl(),
+            chart:DetectorPlotter::new(),
+            detector:DetectorAndMask::default_vtl(),
             is_dirty:false,
             //split_pos:None,
             panes,
@@ -47,7 +50,7 @@ impl PadamoTool for PadamoDetectorManager{
         "Detector manager".into()
     }
 
-    fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage> {
+    fn view<'a>(&'a self, padamo:&PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
         let action:Option<fn(Vec<usize>)->DetectorManagerMessage> = None;
         // let frame:iced::Element<DetectorManagerMessage> = widget::row![
         //         Split::new(
@@ -69,7 +72,7 @@ impl PadamoTool for PadamoDetectorManager{
                 Pane::DetectorView=>{
                     let controls:iced::Element<'_,_> = self.viewer_transform.view().into();
                     widget::container(iced::widget::column![
-                        self.chart.view(None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+                        self.chart.view(Some(&self.detector),None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
                         controls.map(DetectorManagerMessage::PlotZoomMessage),
                     ]).width(iced::Length::Fill).into()
                 }
@@ -114,7 +117,7 @@ impl PadamoTool for PadamoDetectorManager{
                     DetectorManagerMessage::RebuildMarkup=>{
                         match DetectorContent::from_specs(&self.source.text()) {
                             Ok(detector)=>{
-                                self.chart = Detector::from_cells(detector);
+                                self.detector= DetectorAndMask::from_cells(detector);
                             }
                             Err(e)=>{
                                 padamo.show_error(e.to_string());
@@ -124,7 +127,7 @@ impl PadamoTool for PadamoDetectorManager{
                     DetectorManagerMessage::RebuildScript=>{
                         match DetectorContent::from_script(&self.source.text()) {
                             Ok(detector)=>{
-                                self.chart = Detector::from_cells(detector);
+                                self.detector = DetectorAndMask::from_cells(detector);
                             }
                             Err(e)=>{
                                 padamo.show_error(e.to_string());
@@ -134,7 +137,7 @@ impl PadamoTool for PadamoDetectorManager{
                     DetectorManagerMessage::Export=>{
                         if let Some(path) = padamo.workspace.workspace("detectors").save_dialog(vec![("Detector",vec!["json"])]){
                             //if let nfd::Response::Okay(path) = v{
-                            let s = serde_json::to_string_pretty(&self.chart.cells) ;
+                            let s = serde_json::to_string_pretty(&self.detector.cells) ;
                             let s = match s {
                                 Ok(v)=>v,
                                 Err(e)=>{

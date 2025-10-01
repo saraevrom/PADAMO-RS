@@ -13,7 +13,7 @@ pub trait PadamoTool{
     }
 
     fn tab_name(&self)->String;
-    fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage>;
+    fn view<'a>(&'a self, padamo:&'a PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage>;
 
     fn initialize(&mut self, padamo:crate::application::PadamoStateRef){
 
@@ -36,3 +36,5 @@ pub use editor::PadamoEditor;
 pub use plotter::Plotter;
 pub use trigger::PadamoTrigger;
 pub use detectors::PadamoDetectorManager;
+
+use crate::application::PadamoState;

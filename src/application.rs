@@ -477,7 +477,7 @@ impl Padamo{
 
         //let tools = self.tools;
         for (i, tab_obj) in self.tools.iter().enumerate(){
-            tabs = tabs.push(i,tab_obj.tab_label(),tab_obj.view());
+            tabs = tabs.push(i,tab_obj.tab_label(),tab_obj.view(&self.state));
         }
         tabs = tabs.set_active_tab(&self.state.current_page);
 

@@ -105,7 +105,7 @@ impl PadamoEditor{
 }
 
 impl PadamoTool for PadamoEditor{
-    fn view<'a>(&'a self)->iced::Element<'a, PadamoAppMessage> {
+    fn view<'a>(&'a self, _: &PadamoState)->iced::Element<'a, PadamoAppMessage> {
         // let first:iced::Element<'_,EditorMessage> = scrollable::Scrollable::new(
         //         iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x)))),
         //     ).id(SCROLLABLE_ID.clone())

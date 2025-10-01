@@ -1,6 +1,6 @@
 use super::{messages::PlotterMessage, TimeAxisFormat};
 //use super::colors::get_color;
-use padamo_detectors::Margins;
+use padamo_detectors::{DetectorAndMask, Margins};
 use iced::{
     widget::canvas::{Frame, Geometry},
     Size,
@@ -18,13 +18,14 @@ use plotters::prelude::*;
 
 pub struct PlotterChart<'a>{
     plotter_data: &'a super::Plotter,
+    detector: &'a DetectorAndMask,
     //cache:Cache,
 }
 
 impl<'a> PlotterChart<'a>{
-    pub fn new(plotter:&'a super::Plotter)->Self{
+    pub fn new(plotter:&'a super::Plotter, detector: &'a DetectorAndMask)->Self{
         //println!("New DEBUG");
-        Self{plotter_data: plotter}
+        Self{plotter_data: plotter, detector}
     }
 
     pub fn view(self)->iced::Element<'a,PlotterMessage> {
@@ -84,7 +85,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
         self.build_chart(state, builder);
         if self.plotter_data.form_instance.display_settings.display_channel_map{
             let fullsize = root.dim_in_pixel();
-            let (low,high) = self.plotter_data.detector.cells.size();
+            let (low,high) = self.detector.cells.size();
             let w = (high.0-low.0) as f32;
             let h = (high.1-low.1) as f32;
 
@@ -92,7 +93,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
             let height:u32 =((width as f32) *(h/w)) as u32;
 
             let margins = Margins{left:120, bottom:fullsize.1-20-height, right:fullsize.0-120-width, top:20};
-            self.plotter_data.detector.build_chart_aux(&root, &self.plotter_data.pixels, &self.plotter_data.pixels_show, margins);
+            self.plotter_data.detector_plotter.build_chart_aux(self.detector,&root, &self.plotter_data.pixels, &self.plotter_data.pixels_show, margins);
 
         }
     }
@@ -142,7 +143,7 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
                 }
 
                 // let color:(f32,f32,f32) = get_color_indexed(&index);
-                let color = self.plotter_data.detector.cells.find_color(&index).unwrap_or((0.0,0.0,0.0));
+                let color = self.detector.cells.find_color(&index).unwrap_or((0.0,0.0,0.0));
                 let r = (color.0*256.0) as u8;
                 let g = (color.1*256.0) as u8;
                 let b = (color.2*256.0) as u8;

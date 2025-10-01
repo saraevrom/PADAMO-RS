@@ -1,6 +1,6 @@
 use std::{thread, sync::mpsc};
 
-use crate::messages::PadamoAppMessage;
+use crate::{application::PadamoState, messages::PadamoAppMessage};
 
 use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorage};
 
@@ -8,7 +8,7 @@ use super::PadamoTool;
 use chrono::{Datelike, Timelike};
 use iced::{widget, Font};
 use padamo_api::{lazy_array_operations::ArrayND, trigger_operations::{sparse_event_storage::SparseTag, SparseTagArray}};
-use padamo_detectors::Detector;
+use padamo_detectors::{DetectorAndMask, DetectorPlotter};
 pub mod messages;
 use messages::TriggerMessage;
 //use padamo_iced_forms::IcedForm;
@@ -46,7 +46,7 @@ struct SavedData{
 }
 
 pub struct PadamoTrigger{
-    chart:Detector<TriggerMessage>,
+    chart:DetectorPlotter<TriggerMessage>,
     signal:Option<padamo_api::lazy_array_operations::LazyTriSignal>,
     //buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
     unmarked_intervals:sparse_intervals::IntervalStorage,
@@ -99,7 +99,7 @@ impl PadamoTrigger{
     pub fn new()->Self{
         // let trigger_form = TriggerSettingsForm::new();
         Self {
-            chart:Detector::default_vtl(),
+            chart:DetectorPlotter::new(),
             signal:None,
             view_transform:Default::default(),
             //buffer:None,
@@ -166,6 +166,10 @@ impl PadamoTrigger{
         // self.negative_strings = self.negative_intervals.container.iter().map(|x| format!("{}",x)).collect();
     }
 
+    fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
+        padamo.detectors.get_primary()
+    }
+
     fn select_event(&mut self){
         let trigger_form = &self.trigger_form_instance;
         if let Some(signal) = &self.signal{
@@ -204,7 +208,7 @@ impl PadamoTool for PadamoTrigger{
         "Trigger".into()
     }
 
-    fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage> {
+    fn view<'a>(&'a self, padamo:&'a PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
         let action:Option<fn(Vec<usize>)->TriggerMessage> = None;
         // let positive_select = if self.selection_positive{
         //     self.selection
@@ -228,6 +232,8 @@ impl PadamoTool for PadamoTrigger{
         };
 
         let view_transform:iced::Element<'_,_> = self.view_transform.view().width(iced::Length::Fill).into();
+
+        let detector = self.get_detector(padamo);
         let underlay:iced::Element<'_, TriggerMessage> = widget::row![
             widget::column![
                 widget::container(selection_list::SelectionList::new_with(
@@ -263,7 +269,7 @@ impl PadamoTool for PadamoTrigger{
 
             //widget::container(
             widget::column![
-                self.chart.view(view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+                self.chart.view(detector, view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
                 view_transform.map(TriggerMessage::PlotZoomMessage)
             ].width(iced::Length::Fill),
 
@@ -317,7 +323,7 @@ impl PadamoTool for PadamoTrigger{
     fn update(&mut self, msg: std::rc::Rc<PadamoAppMessage>, padamo:crate::application::PadamoStateRef){
         match msg.as_ref() {
             PadamoAppMessage::SetDetector(v) => {
-                self.chart = Detector::from_cells(v.clone());
+                //self.chart = Detector::from_cells(v.clone());
             }
             PadamoAppMessage::TriggerMessage(msg) => {
                 match msg {

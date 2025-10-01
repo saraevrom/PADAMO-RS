@@ -6,7 +6,7 @@ use form::PlotterActions;
 //use iced::advanced::Widget;
 //use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use iced::{widget::{self}, Length};
-use padamo_detectors::Detector;
+use padamo_detectors::{DetectorAndMask, DetectorPlotter};
 use plotters::coord::{cartesian::Cartesian2d, types::RangedCoordf64};
 use plotters_iced::Chart;
 use crate::{application::PadamoState, messages::PadamoAppMessage};
@@ -78,7 +78,7 @@ impl TimeAxisFormat{
 
 
 pub struct Plotter{
-    detector:padamo_detectors::Detector<PlotterMessage>,
+    detector_plotter:padamo_detectors::DetectorPlotter<PlotterMessage>,
 
     plot_spec:RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
 
@@ -184,7 +184,7 @@ impl Plotter{
     pub fn new()->Self{
         let mut res = Self {  data:DataState::NoData,
                 plot_spec: RefCell::new(None),
-                detector:Detector::default_vtl(),
+                detector_plotter:DetectorPlotter::new(),
                 pixels:Vec::new(),
                 //safeguard_str:"30000".into(),
                 //last_indices:None,
@@ -358,13 +358,20 @@ impl Plotter{
         }
     }
 
-    fn save_chart<T:plotters::backend::DrawingBackend>(&self, plotter:T){
+    fn save_chart<T:plotters::backend::DrawingBackend>(&self, plotter:T, padamo:&PadamoState){
         use plotters::prelude::*;
         let root_area = plotter.into_drawing_area();
         root_area.fill(&WHITE).unwrap();
         //let cc = ChartBuilder::on(&root_area);
-        let charter = diagram::PlotterChart::new(&self);
-        charter.draw_chart(&(), root_area);
+        if let Some(detector) = self.get_detector(padamo){
+            let charter = diagram::PlotterChart::new(&self, detector);
+            charter.draw_chart(&(), root_area);
+        }
+
+    }
+
+    fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
+        padamo.detectors.get_primary()
     }
 
 }
@@ -374,87 +381,92 @@ impl PadamoTool for Plotter{
         "Signal plotter".into()
     }
 
-    fn view<'a>(&'a self)->iced::Element<'a, PadamoAppMessage> {
-        let mut pixlist = widget::Column::new();
-        for i in 0..self.pixels.len(){
-            let check = widget::checkbox(format!("{:?}",self.pixels[i]),self.pixels_show[i]).on_toggle(PlotterMessage::toggle_pixel(i));
-            pixlist = pixlist.push(check);
-        }
-        let pixlist_element:iced::Element<'a, PlotterMessage> = pixlist.into();
-
-        //let diag = chart.view();
-
-
-        let chart_view:iced::Element<'a, PlotterMessage> = if self.is_selecting_pixels{
-            let action:Option<fn(Vec<usize>)->PlotterMessage> = None;
-            let body = self.detector.view_map(&self.pixels, &self.pixels_show, Some(PlotterMessage::TogglePixelByName), action);
-            let body:iced::Element<'_,PlotterMessage> = iced::widget::container(body).width(Length::Fill).height(Length::Fill).into();
-            iced::widget::column![
-                widget::container(
-                    body,
-                ).width(iced::Length::Fill).align_x(iced::alignment::Horizontal::Center),
-                widget::container(
-                    widget::button("Done").on_press(PlotterMessage::HidePixelSelector).width(100)
-                ).width(iced::Length::Fill).align_x(iced::alignment::Horizontal::Center)
-
-            ].width(iced::Length::Fill).height(iced::Length::Fill).into()
-        }
-        else{
-            match self.data{
-                DataState::NoData => widget::text("No data").into(),
-                DataState::PendingLoad(_, _) => widget::text("Pending load").into(),
-                DataState::Loading(_) => widget::text("Loading...").into(),
-                DataState::Loaded(_) => diagram::PlotterChart::new(&self).view().into(),
+    fn view<'a>(&'a self, padamo: &'a PadamoState)->iced::Element<'a, PadamoAppMessage> {
+        if let Some(detector) = self.get_detector(padamo){
+            let mut pixlist = widget::Column::new();
+            for i in 0..self.pixels.len(){
+                let check = widget::checkbox(format!("{:?}",self.pixels[i]),self.pixels_show[i]).on_toggle(PlotterMessage::toggle_pixel(i));
+                pixlist = pixlist.push(check);
             }
-        };
+            let pixlist_element:iced::Element<'a, PlotterMessage> = pixlist.into();
 
-        let main_row:iced::Element<'a, PlotterMessage> = iced::widget::container(widget::row![
-            widget::column![
-                widget::container(chart_view).width(iced::Length::Fill).height(iced::Length::Fill),
-                widget::row![
-                    widget::text("X"),
-                    iced::widget::TextInput::new("x min",&self.min_x_string)
-                            .on_input(PlotterMessage::SetXMin)
-                            .on_submit(PlotterMessage::SubmitLimits)
-                            .width(100),
-                    widget::text("-"),
-                    iced::widget::TextInput::new("x max",&self.max_x_string)
-                            .on_input(PlotterMessage::SetXMax)
-                            .on_submit(PlotterMessage::SubmitLimits)
-                            .width(100),
-                    //widget::rule::Rule::vertical(10),
-                    widget::text(";     Y"),
-                    iced::widget::TextInput::new("y min",&self.min_y_string)
-                            .on_input(PlotterMessage::SetYMin)
-                            .on_submit(PlotterMessage::SubmitLimits)
-                            .width(100),
-                    widget::text("-"),
-                    iced::widget::TextInput::new("y max",&self.max_y_string)
-                            .on_input(PlotterMessage::SetYMax)
-                            .on_submit(PlotterMessage::SubmitLimits)
-                            .width(100),
-                ].width(iced::Length::Fill).height(iced::Length::Shrink),
-            ].width(iced::Length::Fill).height(iced::Length::Fill),
+            //let diag = chart.view();
 
-            widget::rule::Rule::vertical(10),
-            widget::scrollable(widget::column![
-                self.form_buffer.view(None).map(PlotterMessage::FormMessage),
-                pixlist_element
-            ]).width(300).height(iced::Length::Fill)
-        ]).width(iced::Length::Shrink).height(iced::Length::Fill)
+
+            let chart_view:iced::Element<'a, PlotterMessage> = if self.is_selecting_pixels{
+                let action:Option<fn(Vec<usize>)->PlotterMessage> = None;
+                let body = self.detector_plotter.view_map(Some(detector),&self.pixels, &self.pixels_show, Some(PlotterMessage::TogglePixelByName), action);
+                let body:iced::Element<'_,PlotterMessage> = iced::widget::container(body).width(Length::Fill).height(Length::Fill).into();
+                iced::widget::column![
+                    widget::container(
+                        body,
+                    ).width(iced::Length::Fill).align_x(iced::alignment::Horizontal::Center),
+                    widget::container(
+                        widget::button("Done").on_press(PlotterMessage::HidePixelSelector).width(100)
+                    ).width(iced::Length::Fill).align_x(iced::alignment::Horizontal::Center)
+
+                ].width(iced::Length::Fill).height(iced::Length::Fill).into()
+            }
+            else{
+                match self.data{
+                    DataState::NoData => widget::text("No data").into(),
+                    DataState::PendingLoad(_, _) => widget::text("Pending load").into(),
+                    DataState::Loading(_) => widget::text("Loading...").into(),
+                    DataState::Loaded(_) => diagram::PlotterChart::new(&self,detector).view().into(),
+                }
+            };
+
+            let main_row:iced::Element<'a, PlotterMessage> = iced::widget::container(widget::row![
+                widget::column![
+                    widget::container(chart_view).width(iced::Length::Fill).height(iced::Length::Fill),
+                                                                                     widget::row![
+                                                                                         widget::text("X"),
+                                                                                     iced::widget::TextInput::new("x min",&self.min_x_string)
+                                                                                     .on_input(PlotterMessage::SetXMin)
+                                                                                     .on_submit(PlotterMessage::SubmitLimits)
+                                                                                     .width(100),
+                                                                                     widget::text("-"),
+                                                                                     iced::widget::TextInput::new("x max",&self.max_x_string)
+                                                                                     .on_input(PlotterMessage::SetXMax)
+                                                                                     .on_submit(PlotterMessage::SubmitLimits)
+                                                                                     .width(100),
+                                                                                     //widget::rule::Rule::vertical(10),
+                                                                                     widget::text(";     Y"),
+                                                                                     iced::widget::TextInput::new("y min",&self.min_y_string)
+                                                                                     .on_input(PlotterMessage::SetYMin)
+                                                                                     .on_submit(PlotterMessage::SubmitLimits)
+                                                                                     .width(100),
+                                                                                     widget::text("-"),
+                                                                                     iced::widget::TextInput::new("y max",&self.max_y_string)
+                                                                                     .on_input(PlotterMessage::SetYMax)
+                                                                                     .on_submit(PlotterMessage::SubmitLimits)
+                                                                                     .width(100),
+                                                                                     ].width(iced::Length::Fill).height(iced::Length::Shrink),
+                ].width(iced::Length::Fill).height(iced::Length::Fill),
+
+                                                                                     widget::rule::Rule::vertical(10),
+                                                                                     widget::scrollable(widget::column![
+                                                                                         self.form_buffer.view(None).map(PlotterMessage::FormMessage),
+                                                                                                        pixlist_element
+                                                                                     ]).width(300).height(iced::Length::Fill)
+            ]).width(iced::Length::Shrink).height(iced::Length::Fill)
             .into();
 
 
-        let main_row = main_row.map(PadamoAppMessage::PlotterMessage);
-        let pad:iced::Element<'a, ViewerMessage> = make_player_pad().height(40).into();
+            let main_row = main_row.map(PadamoAppMessage::PlotterMessage);
+            let pad:iced::Element<'a, ViewerMessage> = make_player_pad().height(40).into();
 
-        let underlay:iced::Element<'a, PadamoAppMessage> = widget::column![
-            main_row,
-            pad.map(PadamoAppMessage::ViewerMessage)
-        ].into();
+            let underlay:iced::Element<'a, PadamoAppMessage> = widget::column![
+                main_row,
+                pad.map(PadamoAppMessage::ViewerMessage)
+            ].into();
 
 
-        underlay
+            underlay
+        }
+        else{
+            iced::widget::text("No detector").into()
+        }
     }
 
     fn update(&mut self, msg: std::rc::Rc<PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
@@ -483,7 +495,7 @@ impl PadamoTool for Plotter{
                 }
             }
             PadamoAppMessage::SetDetector(v)=>{
-                self.detector = Detector::from_cells(v.clone())
+                //self.detector = DetectorAndMask::from_cells(v.clone())
             }
             PadamoAppMessage::PlotterMessage(plot_msg) => {
                 let mut will_replot = true;
@@ -526,9 +538,9 @@ impl PadamoTool for Plotter{
                                                 };
 
                                                 match ext{
-                                                    Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape))},
-                                                    Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape))},
-                                                    Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape))},
+                                                    Some("svg")=>{self.save_chart(SVGBackend::new(&v, out_shape),padamo)},
+                                                    Some("png")=>{self.save_chart(BitMapBackend::new(&v, out_shape),padamo)},
+                                                    Some("jpg")=>{self.save_chart(BitMapBackend::new(&v, out_shape),padamo)},
                                                     _=>{
                                                         println!("Cannot determine backend for {}", v);
                                                     }

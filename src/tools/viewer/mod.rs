@@ -8,7 +8,7 @@ use iced::widget::text::Catalog;
 use iced_font_awesome::FaIcon;
 use padamo_api::calculation_nodes::content::Content;
 use padamo_api::lazy_array_operations::make_lao_box;
-use padamo_detectors::Detector;
+use padamo_detectors::{DetectorAndMask, DetectorPlotter};
 use plotters_video::VideoBackend;
 use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
@@ -109,7 +109,7 @@ impl<T> Worker<T>{
 }
 
 pub struct PadamoViewer{
-    chart:Detector<PadamoAppMessage>,
+    chart:DetectorPlotter<PadamoAppMessage>,
     length:usize,
     pointer:usize,
     start:usize,
@@ -290,6 +290,18 @@ impl PadamoViewer{
         }
     }
 
+    fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
+        let res = padamo.detectors.get_primary();
+        res
+    }
+
+    // fn get_detector_mut<'a>(&'a self, padamo:&'a mut PadamoState, explicit:bool)->Option<&'a DetectorAndMask>{
+    //     let res = padamo.detectors.get_primary();
+    //     if res.is_none() && explicit{
+    //         padamo.show_warning("No detector is loaded");
+    //     }
+    //     res
+    // }
 
     fn run_animation(&mut self, padamo:crate::application::PadamoStateRef){
         if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![
@@ -306,6 +318,10 @@ impl PadamoViewer{
             println!("Animation parameters: {:?}",animation_parameters);
             let plot_scale = self.plot_scale.clone();
             let chart = self.chart.clone();
+
+            //TODO: Make proper multidetector
+            let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+
             if let Some(signal_ref) = &self.signal{
                 //let signal = signal_ref.clone();
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
@@ -320,7 +336,7 @@ impl PadamoViewer{
                             "gif"=>{
                                 let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -332,7 +348,7 @@ impl PadamoViewer{
                                 let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
                                                                 plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -392,6 +408,10 @@ impl PadamoViewer{
 
     fn save_chart(&self, path:&std::path::Path, padamo:crate::application::PadamoStateRef){
         use plotters::prelude::*;
+
+        //TODO: Make proper multidetector
+        let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+
         if let Some(signal_ref) = &self.signal{
                 //let signal = signal_ref.clone();
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
@@ -405,12 +425,12 @@ impl PadamoViewer{
                             "png" | "jpg" => {
                                 let backend = BitMapBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, self.pointer, &self.chart, self.plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, self.pointer, &self.chart, detector, self.plot_scale);
                             },
                             "svg" => {
                                 let backend = SVGBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, self.pointer, &self.chart, self.plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, self.pointer, &self.chart, detector, self.plot_scale);
                             },
                             ue=>{
                                 padamo.show_error(format!("Unsupported extension {}",ue));
@@ -443,7 +463,7 @@ impl PadamoViewer{
         // let animation_params = Default::default();
         // let export_params = Default::default();
         let mut res = Self{
-            chart:Detector::default_vtl(),
+            chart:DetectorPlotter::new(),
             view_transform:Default::default(),
             length:100,
             pointer:0,
@@ -477,7 +497,7 @@ impl PadamoViewer{
 
             // stop_on_trigger:false,
         };
-        res.fill_strings();
+        // res.fill_strings();
         res
     }
 
@@ -493,7 +513,7 @@ impl PadamoViewer{
             }
             self.clamp();
             self.update_buffer(Some(padamo));
-            self.fill_strings();
+            self.fill_strings(padamo);
 
             return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
                 start: self.start,
@@ -552,12 +572,15 @@ impl PadamoViewer{
         }
     }
 
-    fn fill_strings(&mut self){
+    fn fill_strings(&mut self, padamo:crate::application::PadamoStateRef){
         self.pointer_str = self.pointer.to_string();
         self.start_str = self.start.to_string();
         self.end_str = self.end.to_string();
+        //TODO: Make proper multidetector
+        let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+
         if let Some(frame) = &self.buffer{
-            let (min,max) = self.plot_scale.get_bounds(&frame.0,&self.chart.alive_pixels);
+            let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
             self.min_signal_entry = min.to_string();
             self.max_signal_entry = max.to_string();
         }
@@ -589,30 +612,36 @@ impl PadamoViewer{
     }
 
     fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
-        padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(self.chart.alive_pixels_mask())));
-        //let arr = self.chart.alive_pixels.clone().to_ndarray();
+        let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        let mask = detector.alive_pixels_mask();
         if save{
-            padamo.persistent_state.serialize("viewer_pixels",&self.chart.alive_pixels);
+            padamo.persistent_state.serialize("viewer_pixels",&mask);
         }
+        padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(mask)));
+        //let arr = self.chart.alive_pixels.clone().to_ndarray();
+
     }
 }
 
 
 
 impl PadamoTool for PadamoViewer{
-    fn view<'a>(&'a self)->iced::Element<'a, crate::messages::PadamoAppMessage> {
+    fn view<'a>(&'a self, padamo:&'a PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
         let frame_num = &self.pointer_str;
         let start_frame = &self.start_str;
         let end_frame = &self.end_str;
         let mut frame = None;
-        let detector_shape = self.chart.shape();
+        let detector = self.get_detector(padamo);
         if let Some(buffer) = &self.buffer{
-            if buffer.0.form_compatible(&detector_shape){
-                frame = Some((&buffer.0,buffer.1));
-                //println!("OK {:?} and {:?}", detector_shape, buffer.shape);
-            }
-            else{
-                println!("Incompatible shapes {:?} and {:?}", buffer.0.shape, detector_shape);
+            if let Some(det) = detector{
+                let detector_shape = det.shape();
+                if buffer.0.form_compatible(&detector_shape){
+                    frame = Some((&buffer.0,buffer.1));
+                    //println!("OK {:?} and {:?}", detector_shape, buffer.shape);
+                }
+                else{
+                    println!("Incompatible shapes {:?} and {:?}", buffer.0.shape, detector_shape);
+                }
             }
         }
 
@@ -710,8 +739,9 @@ impl PadamoTool for PadamoViewer{
         ].width(200).into();
 
         //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
+
         let top_row = row![
-            self.chart.view(frame,self.view_transform.transform(),self.plot_scale,
+            self.chart.view(detector,frame,self.view_transform.transform(),self.plot_scale,
                             Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x))),
                             Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
                             ),
@@ -907,8 +937,11 @@ impl PadamoTool for PadamoViewer{
                 //     self.stop_on_trigger = *v;
                 // }
                 ViewerMessage::TogglePixel(pix)=>{
-                    self.chart.toggle_pixel(pix);
-                    self.update_pixels(padamo,true);
+                    if let Some(det) = padamo.detectors.get_primary_mut(){
+                        det.toggle_pixel(pix);
+                        self.update_pixels(padamo,true);
+                    }
+
                 }
 
 
@@ -919,15 +952,15 @@ impl PadamoTool for PadamoViewer{
 
             self.update_buffer(Some(padamo));
             if request_buffer_fill{
-                self.fill_strings();
+                self.fill_strings(padamo);
             }
         }
         else if let crate::messages::PadamoAppMessage::ClearState = msg.as_ref(){
             self.initialize(padamo);
         }
         else if let crate::messages::PadamoAppMessage::SetDetector(v) = msg.as_ref(){
-            self.chart = Detector::from_cells(v.clone());
-            println!("Viewer has new detector loaded");
+            // self.chart = Detector::from_cells(v.clone());
+            // println!("Viewer has new detector loaded");
         }
         else if let crate::messages::PadamoAppMessage::Tick = msg.as_ref(){
             match self.playstate {
@@ -936,7 +969,7 @@ impl PadamoTool for PadamoViewer{
                     if self.pointer<self.end{
                         self.pointer += 1;
                         self.update_buffer(Some(padamo));
-                        self.fill_strings();
+                        self.fill_strings(padamo);
                     }
                     else{
                         self.playstate = PlayState::Stop;
@@ -946,7 +979,7 @@ impl PadamoTool for PadamoViewer{
                     if self.pointer>self.start{
                         self.pointer-=1;
                         self.update_buffer(Some(padamo));
-                        self.fill_strings();
+                        self.fill_strings(padamo);
                     }
                     else{
                         self.playstate = PlayState::Stop;
@@ -1042,17 +1075,17 @@ impl PadamoTool for PadamoViewer{
         }
     }
 
-    fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
-        let mask_loaded: Option<padamo_api::lazy_array_operations::ArrayND<bool>> = padamo.persistent_state.deserialize("viewer_pixels");
-        if let Some(mask) = mask_loaded{
-            if mask.form_compatible(self.chart.shape()){
-                self.chart.alive_pixels = mask;
-                self.update_pixels(padamo,false);
-                return;
-            }
-        }
-        self.chart = Detector::default_vtl();
-        //self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
-    }
+    // fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
+    //     let mask_loaded: Option<padamo_api::lazy_array_operations::ArrayND<bool>> = padamo.persistent_state.deserialize("viewer_pixels");
+    //     if let Some(mask) = mask_loaded{
+    //         if mask.form_compatible(self.chart.shape()){
+    //             self.chart.state.alive_pixels = mask;
+    //             self.update_pixels(padamo,false);
+    //             return;
+    //         }
+    //     }
+    //     self.chart = Detector::default_vtl();
+    //     //self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
+    // }
 }
 
