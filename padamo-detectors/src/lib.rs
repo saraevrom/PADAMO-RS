@@ -282,6 +282,13 @@ impl<Message> DetectorPlotter<Message>{
         F2:'static+Fn(Vec<usize>)->Message
     {
         if let Some(dm) = detector{
+            if let Some(src) = source{
+                if !src.0.form_compatible(dm.shape()){
+                    let warning = iced::widget::text(format!("Incompatible shapes:\nSignal: {:?}\nDetector: {:?}",src.0.shape, dm.shape()));
+                    let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+                    return container.into();
+                }
+            }
             ChartWidget::new(DetectorChart::new(self, dm, source, transform, scale, lclick_event, rclick_event)).into()
         }
         else{

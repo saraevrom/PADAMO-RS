@@ -28,12 +28,14 @@ pub enum ViewerMessage{
 
     // Export,
     // StopExport,
-    SetAutoscale(bool),
+    // SetAutoscale(bool),
     // SetAutostop(bool),
-    SetMinSignal(String),
-    SetMaxSignal(String),
+    // SetMinSignal(String),
+    // SetMaxSignal(String),
     TogglePixel(Vec<usize>),
     PlotZoomMessage(crate::transform_widget::TransformMessage),
+    WindowView(super::detector_display::SingleDetectorDisplayMessage),
+
     //PopupPlot(usize,usize,Vec<usize>)
 }
 

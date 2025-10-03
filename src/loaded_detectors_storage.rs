@@ -28,6 +28,14 @@ impl LoadedDetectors{
         self.detectors.get_mut(0)
     }
 
+    pub fn get(&self, id:usize)->Option<&DetectorAndMask>{
+        self.detectors.get(id)
+    }
+
+    pub fn get_mut(&mut self, id:usize)->Option<&mut DetectorAndMask>{
+        self.detectors.get_mut(id)
+    }
+
     pub fn set_primary_detector_by_index(&mut self, index:usize){
         if index<self.detectors.len() && index>0{
             self.detectors[..=index].rotate_right(index);

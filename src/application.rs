@@ -217,6 +217,9 @@ impl Padamo{
 
         nodes.register_node(builtin_nodes::viewer::LoadedFileNode).unwrap();
         nodes.register_node(builtin_nodes::viewer::ViewerNode).unwrap();
+        nodes.register_node(builtin_nodes::viewer::AuxViewerNode).unwrap();
+        nodes.register_node(builtin_nodes::viewer::AuxViewerMaskNode).unwrap();
+
         nodes.register_node(builtin_nodes::viewer::ViewerMaskNode).unwrap();
         nodes.register_node(padamo_api::calculation_nodes::full_reader::FullReaderNode).unwrap();
 

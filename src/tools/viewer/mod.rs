@@ -1,9 +1,9 @@
 mod messages;
 mod animator;
 mod form;
+mod detector_display;
 
 use super::PadamoTool;
-use abi_stable::std_types::ROption;
 use iced::widget::text::Catalog;
 use iced_font_awesome::FaIcon;
 use padamo_api::calculation_nodes::content::Content;
@@ -119,13 +119,13 @@ pub struct PadamoViewer{
     pointer_str:String,
     datetime_entry:String,
 
-    min_signal_entry:String,
-    max_signal_entry:String,
-    is_autoscale:bool,
+    // min_signal_entry:String,
+    // max_signal_entry:String,
+    // is_autoscale:bool,
 
-    signal:Option<padamo_api::lazy_array_operations::LazyTriSignal>,
+    // signal:Option<padamo_api::lazy_array_operations::LazyTriSignal>,
     //signal:Option<(padamo_api::lazy_array_operations::LazyDetectorSignal,padamo_api::lazy_array_operations::LazyTimeSignal,Option<padamo_api::lazy_array_operations::LazyTrigger>)>,
-    buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
+    // buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
     playstate:PlayState,
     plot_scale:padamo_detectors::Scaling,
 
@@ -141,6 +141,8 @@ pub struct PadamoViewer{
     file_changed:bool,
     view_transform: crate::transform_widget::TransformState,
 
+    window_view:detector_display::SingleDetectorDisplay<PadamoAppMessage>
+
 }
 
 impl PadamoViewer{
@@ -148,7 +150,9 @@ impl PadamoViewer{
         if let Some(filename) = padamo.workspace.workspace("viewed_hdf5_data").save_dialog(vec![("HDF5 data", vec!["h5"])]){
             //if let nfd::Response::Okay(filename) = res{
             self.stop_exporter();
-            if let Some(signal_ref) = &self.signal{
+            // let detector = padamo.detectors.get_primary();
+
+            if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
                 let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
                 let start = self.start;
@@ -322,7 +326,7 @@ impl PadamoViewer{
             //TODO: Make proper multidetector
             let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
 
-            if let Some(signal_ref) = &self.signal{
+            if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
                 //let signal = signal_ref.clone();
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
                 let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
@@ -412,7 +416,7 @@ impl PadamoViewer{
         //TODO: Make proper multidetector
         let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
 
-        if let Some(signal_ref) = &self.signal{
+        if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
                 //let signal = signal_ref.clone();
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
                 let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
@@ -469,16 +473,16 @@ impl PadamoViewer{
             pointer:0,
             start:0,
             end:100,
-            signal:None,
-            buffer:None,
+            // signal:None,
+            // buffer:None,
             playstate: PlayState::Stop,
             start_str:"".into(),
             end_str:"".into(),
             pointer_str:"".into(),
             datetime_entry:"".into(),
-            min_signal_entry:"".into(),
-            max_signal_entry:"".into(),
-            is_autoscale:true,
+            // min_signal_entry:"".into(),
+            // max_signal_entry:"".into(),
+            // is_autoscale:true,
             plot_scale:padamo_detectors::Scaling::Autoscale,
             //plotter_needs_reset:false,
             file_changed:true,
@@ -494,6 +498,7 @@ impl PadamoViewer{
             exporter:None,
             export_status:"IDLE".into(),
             animation_status:"IDLE".into(),
+            window_view: detector_display::SingleDetectorDisplay::new(0),
 
             // stop_on_trigger:false,
         };
@@ -504,7 +509,7 @@ impl PadamoViewer{
     fn rerun(&mut self, padamo:crate::application::PadamoStateRef)->Option<PadamoAppMessage>{
         if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
             //let signal_w = signal.clone();
-            self.signal = Some(signal.clone());
+            // self.signal = Some(signal.clone());
             //self.signal = Some((signal_w.0,signal_w.1,signal_w.2.into()));
             self.length = signal.0.length()-1;
             if self.file_changed{
@@ -529,17 +534,21 @@ impl PadamoViewer{
 
     fn update_buffer(&mut self, padamo:Option<crate::application::PadamoStateRef>){
         self.clamp();
-        if let Some(signal) = &self.signal{
-            let time_start = Instant::now();
-            let mut frame = signal.0.request_range(self.pointer,self.pointer+1);
-            frame.shape.drain(0..1);
-            let tim = signal.1.request_range(self.pointer,self.pointer+1)[0];
-            self.buffer = Some((frame,tim));
-            let time_stop = time_start.elapsed();
-            if let Some(p) = padamo{
-                let t = time_stop.as_millis() as u64;
-                p.add_delay_ms = t*3;
-            }
+        // if let Some(signal) = &self.signal{
+        let time_start = Instant::now();
+            // let mut frame = signal.0.request_range(self.pointer,self.pointer+1);
+            // frame.shape.drain(0..1);
+            // let tim = signal.1.request_range(self.pointer,self.pointer+1)[0];
+            // self.buffer = Some((frame,tim));
+        if let Some(p) = &padamo{
+            self.window_view.set_frame(self.pointer, p);
+        }
+        let time_stop = time_start.elapsed();
+        if let Some(p) = padamo{
+            let t = time_stop.as_millis() as u64;
+            p.add_delay_ms = t*3;
+        }
+        // }
             // if self.form_instance.stop_on_trigger{
             //     if let ROption::RSome(v) = &signal.2{
             //         let trig = v.request_range(self.pointer,self.pointer+1);
@@ -550,7 +559,6 @@ impl PadamoViewer{
             //         }
             //     }
             // }
-        }
     }
 
     fn clamp(&mut self){
@@ -577,25 +585,26 @@ impl PadamoViewer{
         self.start_str = self.start.to_string();
         self.end_str = self.end.to_string();
         //TODO: Make proper multidetector
-        let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
 
-        if let Some(frame) = &self.buffer{
-            let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
-            self.min_signal_entry = min.to_string();
-            self.max_signal_entry = max.to_string();
-        }
+        // if let Some(frame) = &self.buffer{
+        //     let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
+        //     self.min_signal_entry = min.to_string();
+        //     self.max_signal_entry = max.to_string();
+        // }
+        self.window_view.fill_strings(&padamo);
     }
 
-    fn update_scale(&mut self){
-        if self.is_autoscale{
-            self.plot_scale = padamo_detectors::Scaling::Autoscale;
-        }
-        else{
-            let min = if let Ok(v) = self.min_signal_entry.parse::<f64>() {v} else {return;};
-            let max = if let Ok(v) = self.max_signal_entry.parse::<f64>() {v} else {return;};
-            self.plot_scale = padamo_detectors::Scaling::Fixed(min, max);
-        }
-    }
+    // fn update_scale(&mut self){
+    //     if self.is_autoscale{
+    //         self.plot_scale = padamo_detectors::Scaling::Autoscale;
+    //     }
+    //     else{
+    //         let min = if let Ok(v) = self.min_signal_entry.parse::<f64>() {v} else {return;};
+    //         let max = if let Ok(v) = self.max_signal_entry.parse::<f64>() {v} else {return;};
+    //         self.plot_scale = padamo_detectors::Scaling::Fixed(min, max);
+    //     }
+    // }
 
     fn stop_animator(&mut self){
         if let Some(mut a) = self.animator.take(){
@@ -630,40 +639,41 @@ impl PadamoTool for PadamoViewer{
         let frame_num = &self.pointer_str;
         let start_frame = &self.start_str;
         let end_frame = &self.end_str;
-        let mut frame = None;
-        let detector = self.get_detector(padamo);
-        if let Some(buffer) = &self.buffer{
-            if let Some(det) = detector{
-                let detector_shape = det.shape();
-                if buffer.0.form_compatible(&detector_shape){
-                    frame = Some((&buffer.0,buffer.1));
-                    //println!("OK {:?} and {:?}", detector_shape, buffer.shape);
-                }
-                else{
-                    println!("Incompatible shapes {:?} and {:?}", buffer.0.shape, detector_shape);
-                }
-            }
-        }
+        // let mut frame = None;
+        // let detector = self.get_detector(padamo);
+        // if let Some(buffer) = &self.buffer{
+        //     if let Some(det) = detector{
+        //         let detector_shape = det.shape();
+        //         if buffer.0.form_compatible(&detector_shape){
+        //             frame = Some((&buffer.0,buffer.1));
+        //             //println!("OK {:?} and {:?}", detector_shape, buffer.shape);
+        //         }
+        //         else{
+        //             println!("Incompatible shapes {:?} and {:?}", buffer.0.shape, detector_shape);
+        //         }
+        //     }
+        // }
 
-        let view_transform: iced::Element<'_,_> = self.view_transform.view().width(300).into();
+        // let view_transform: iced::Element<'_,_> = self.view_transform.view().width(300).into();
         let lower_col:iced::Element<'a, ViewerMessage> = column![
             //self.chart.view(frame,self.plot_scale, Some(ViewerMessage::plot_pixel(self.start, self.end))),
 
             row![
-                column![
-                    row![
-                        iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(ViewerMessage::SetAutoscale),
-                        iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
-                        iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
-                        iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
-                        iced::widget::Space::new(10,10).width(iced::Length::Fill),
-                        view_transform.map(ViewerMessage::PlotZoomMessage),
-                        // iced::widget::Space::new(10,10).width(iced::Length::Fill),
-                    ],
-                    iced::widget::Container::new(
-                        iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
-                    ).center_x(iced::Length::Fill).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(iced::Length::Fill),
-                ],
+                // column![
+                    // row![
+                    //     iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(ViewerMessage::SetAutoscale),
+                    //     iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
+                    //     iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
+                    //     iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
+                    //     iced::widget::Space::new(10,10).width(iced::Length::Fill),
+                    //     view_transform.map(ViewerMessage::PlotZoomMessage),
+                    //     // iced::widget::Space::new(10,10).width(iced::Length::Fill),
+                    // ],
+
+                // ],
+                iced::widget::Container::new(
+                    iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
+                ).center_x(iced::Length::Fill).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(iced::Length::Fill),
 
                 iced::widget::container(column![
                     row![
@@ -741,10 +751,16 @@ impl PadamoTool for PadamoViewer{
         //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
 
         let top_row = row![
-            self.chart.view(detector,frame,self.view_transform.transform(),self.plot_scale,
-                            Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x))),
-                            Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
-                            ),
+            // Here will be the viewer
+            // self.chart.view(detector,frame,self.view_transform.transform(),self.plot_scale,
+            //                 Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x))),
+            //                 Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
+            //                 ),
+            self.window_view.view(padamo, |x| PadamoAppMessage::ViewerMessage(ViewerMessage::WindowView(x)),
+                                Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x))),
+                                Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
+                                ),
+
             iced::widget::rule::Rule::vertical(10),
             iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(200),
         ];
@@ -777,7 +793,7 @@ impl PadamoTool for PadamoViewer{
                     }
                 },
                 ViewerMessage::SetViewPositionUnixTime(f)=>{
-                    if let Some(signal) = &self.signal{
+                    if let Some(signal) = self.window_view.try_get_signal(&padamo){
                         let pos = crate::time_search::find_unixtime(&signal.1, *f);
 
                         self.pointer = pos;
@@ -894,7 +910,7 @@ impl PadamoTool for PadamoViewer{
 
                 ViewerMessage::SubmitDatetime=>{
                     println!("Submitted DT {}",self.datetime_entry);
-                    if let Some(signal) = &self.signal{
+                    if let Some(signal) = &self.window_view.try_get_signal(&padamo){
 
                         let ut:f64 = signal.1.request_range(self.pointer,self.pointer+1)[0];
                         let ut_s = ut as i64;
@@ -918,21 +934,21 @@ impl PadamoTool for PadamoViewer{
 
                     self.datetime_entry.clear();
                 }
-                ViewerMessage::SetAutoscale(v)=>{
-                    self.is_autoscale = *v;
-                    self.update_scale();
-                    //request_buffer_fill = false;
-                }
-                ViewerMessage::SetMinSignal(s)=>{
-                    self.min_signal_entry = s.clone();
-                    self.update_scale();
-                    request_buffer_fill = false;
-                }
-                ViewerMessage::SetMaxSignal(s)=>{
-                    self.max_signal_entry = s.clone();
-                    self.update_scale();
-                    request_buffer_fill = false;
-                }
+                // ViewerMessage::SetAutoscale(v)=>{
+                //     self.is_autoscale = *v;
+                //     self.update_scale();
+                //     //request_buffer_fill = false;
+                // }
+                // ViewerMessage::SetMinSignal(s)=>{
+                //     self.min_signal_entry = s.clone();
+                //     self.update_scale();
+                //     request_buffer_fill = false;
+                // }
+                // ViewerMessage::SetMaxSignal(s)=>{
+                //     self.max_signal_entry = s.clone();
+                //     self.update_scale();
+                //     request_buffer_fill = false;
+                // }
                 // ViewerMessage::SetAutostop(v)=>{
                 //     self.stop_on_trigger = *v;
                 // }
@@ -948,6 +964,10 @@ impl PadamoTool for PadamoViewer{
                 ViewerMessage::PlotZoomMessage(msg)=>{
                     self.view_transform.update(msg.to_owned());
                 }
+                ViewerMessage::WindowView(msg)=>{
+                    self.window_view.update(msg.to_owned(), padamo);
+                }
+
             }
 
             self.update_buffer(Some(padamo));
