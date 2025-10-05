@@ -616,7 +616,9 @@ impl PadamoTool for PadamoTrigger{
             PadamoAppMessage::TriggerMessage(msg)=>{
                 if let TriggerMessage::ExamineEvent = msg{
                     if let Some(interval) = &self.selected_event{
-                        Some(PadamoAppMessage::ViewerMessage(super::viewer::ViewerMessage::FocusOn(interval.position, interval.position+interval.duration)))
+                        // Some(PadamoAppMessage::ViewerMessage(super::viewer::ViewerMessage::FocusOn(interval.position, interval.position+interval.duration)))
+                        let focus = super::viewer::cross_progress::CrossProgressMessage::FocusOn(interval.position, interval.position+interval.duration);
+                        Some(PadamoAppMessage::ViewerMessage(super::viewer::ViewerMessage::TimeLine(focus)))
                     }
                     else{
                         padamo.show_info("Select event to examine");

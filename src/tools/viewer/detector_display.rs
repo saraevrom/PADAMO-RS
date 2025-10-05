@@ -148,4 +148,23 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             self.max_signal_entry = max.to_string();
         }
     }
+
+    pub fn is_primary(&self)->bool{
+        self.detector_id==0
+    }
+
+    pub fn pump_frame(&mut self, padamo: &PadamoState, timeline:&super::cross_progress::CrossProgress){
+        if let Some(frame) = timeline.get_frame(padamo, self.detector_id){
+            self.set_frame(frame, padamo);
+        }
+        // self.set_frame(, );
+    }
+
+    pub fn get_id(&self)->usize{
+        self.detector_id
+    }
+
+    pub fn get_scale(&self)->padamo_detectors::Scaling{
+        self.plot_scale
+    }
 }

@@ -17,7 +17,8 @@ pub mod diagram;
 use padamo_api::lazy_array_operations::ndim_array::ArrayND;
 use iced::widget::canvas::Cache;
 use super::viewer::ViewerMessage;
-use super::viewer::make_player_pad;
+// use super::viewer::make_player_pad;
+use super::viewer::cross_progress::{CrossProgressMessage, make_player_pad};
 // use padamo_workspace::PadamoWorkspace;
 use padamo_api::lazy_array_operations::{LazyDetectorSignal,LazyTimeSignal};
 
@@ -454,7 +455,8 @@ impl PadamoTool for Plotter{
 
 
             let main_row = main_row.map(PadamoAppMessage::PlotterMessage);
-            let pad:iced::Element<'a, ViewerMessage> = make_player_pad().height(40).into();
+            let pad:iced::Element<'a, CrossProgressMessage> = make_player_pad().height(40).into();
+            let pad:iced::Element<'a, ViewerMessage> = pad.map(ViewerMessage::TimeLine);
 
             let underlay:iced::Element<'a, PadamoAppMessage> = widget::column![
                 main_row,
@@ -670,10 +672,10 @@ impl PadamoTool for Plotter{
         if let PadamoAppMessage::PlotterMessage(PlotterMessage::PlotXClicked(f)) = msg.as_ref(){
             if let TimeAxisFormat::GTU = self.form_instance.display_settings.time_format{
                 let i = *f as usize;
-                return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPosition(i)));
+                return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::TimeLine(CrossProgressMessage::SetViewPosition(i))));
             }
             else{
-                return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::SetViewPositionUnixTime(*f)));
+                return Some(PadamoAppMessage::ViewerMessage(ViewerMessage::TimeLine(CrossProgressMessage::SetViewPositionUnixTime(*f))));
             }
         }
         None
