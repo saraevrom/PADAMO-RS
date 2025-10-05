@@ -55,7 +55,7 @@ pub enum CrossProgressMessage{
     FocusOn(usize,usize),
 }
 
-fn get_icon<Theme:Catalog>(icon:&'static str)->FaIcon<'static,Theme>{
+pub fn get_icon<Theme:Catalog>(icon:&'static str)->FaIcon<'static,Theme>{
     fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])
 }
 

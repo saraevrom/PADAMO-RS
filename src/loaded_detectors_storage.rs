@@ -58,6 +58,10 @@ impl LoadedDetectors{
         self.detectors.iter().skip(1)
     }
 
+    pub fn len(&self)->usize{
+        self.detectors.len()
+    }
+
     pub fn process_message(&mut self, workspace:&padamo_workspace::PadamoWorkspace, msg:LoadedDetectorsMessage)->anyhow::Result<()>{
         match msg{
             LoadedDetectorsMessage::Clear => self.clear(),

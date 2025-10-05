@@ -30,11 +30,11 @@ use form::AnimationParameters;
 
 use form::ViewerForm;
 
-use iced_font_awesome::fa_icon_solid;
+// use iced_font_awesome::fa_icon_solid;
 
-fn get_icon<Theme:Catalog>(icon:&'static str)->FaIcon<'static,Theme>{
-    fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])
-}
+// fn get_icon<Theme:Catalog>(icon:&'static str)->FaIcon<'static,Theme>{
+//     fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])
+// }
 
 #[derive(Clone,Copy,Debug)]
 pub enum PlayState{

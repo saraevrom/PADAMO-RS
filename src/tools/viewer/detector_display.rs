@@ -3,6 +3,7 @@ use padamo_api::lazy_array_operations::LazyTriSignal;
 use padamo_detectors::DetectorPlotter;
 
 use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
+use super::cross_progress::get_icon;
 
 #[derive(Clone, Debug)]
 pub enum SingleDetectorDisplayMessage{
@@ -71,11 +72,12 @@ impl<T:Clone> SingleDetectorDisplay<T>{
     }
 
 
-    pub fn update(&mut self, msg:SingleDetectorDisplayMessage, padamo: &mut PadamoState){
+    pub fn update(&mut self, msg:SingleDetectorDisplayMessage, padamo: &mut PadamoState)->bool{
         match msg{
             SingleDetectorDisplayMessage::SetDetectorID(id)=> {
                 self.detector_id = id;
                 self.buffer = None;
+                return true;
             },
             SingleDetectorDisplayMessage::SetAutoscale(v)=>{
                 self.is_autoscale = v;
@@ -96,11 +98,12 @@ impl<T:Clone> SingleDetectorDisplay<T>{
                 self.view_transform.update(msg.clone());
             }
         }
+        false
     }
 
     pub fn view<'a, F,F1,F2>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>, a2:Option<F2>)->iced::Element<'a, T>
     where
-        F: 'static+Fn(SingleDetectorDisplayMessage)->T,
+        F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
         F1:'static+Fn(Vec<usize>)->T,
         F2:'static+Fn(Vec<usize>)->T
     {
@@ -129,7 +132,39 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             // iced::widget::Space::new(10,10).width(iced::Length::Fill),
         ].into();
 
+        let detector_view = if let Some(det) = padamo.detectors.get(self.detector_id){
+            if self.detector_id==0{
+                iced::widget::text(format!("Primary detector: {}", det.cells.name))
+            }
+            else{
+                iced::widget::text(format!("Aux detector {}: {}", self.detector_id, det.cells.name))
+            }
+        }
+        else{
+            iced::widget::text("No detector")
+        };
+
+        let mut left_btn = iced::widget::button("Prev");
+        let mut right_btn = iced::widget::button("Next");
+
+        if self.detector_id>0{
+            left_btn = left_btn.on_press(SingleDetectorDisplayMessage::SetDetectorID(self.detector_id-1));
+        };
+
+        if self.detector_id+1 < padamo.detectors.len(){
+            right_btn = right_btn.on_press(SingleDetectorDisplayMessage::SetDetectorID(self.detector_id+1))
+        };
+
+        let top = row![
+            detector_view,
+            iced::widget::Space::new(10,10).width(iced::Length::Fill),
+            left_btn,
+            right_btn,
+        ];
+        let top:iced::Element<'_, SingleDetectorDisplayMessage> = top.into();
+
         let view = column![
+            top.map(wrapper),
             detector_frame,
             footer.map(wrapper)
         ];
