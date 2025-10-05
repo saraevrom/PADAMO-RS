@@ -36,26 +36,6 @@ fn get_icon<Theme:Catalog>(icon:&'static str)->FaIcon<'static,Theme>{
     fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])
 }
 
-// pub fn make_player_pad<'a>()->iced::widget::Container<'a, ViewerMessage>{
-//     iced::widget::container(
-//         row![
-//             //iced::widget::button("<<").width(40),
-//             iced::widget::button(get_icon("backward-fast")).on_press(ViewerMessage::JumpToStart).width(40),
-//             iced::widget::button(get_icon("backward")).on_press(ViewerMessage::Backward).width(40),
-//             iced::widget::button(get_icon("backward-step")).on_press(ViewerMessage::StepBack).width(40),
-//             iced::widget::button(get_icon("pause").size(20.0)).on_press(ViewerMessage::Stop).width(40),
-//             iced::widget::button(get_icon("forward-step")).on_press(ViewerMessage::StepFwd).width(40),
-//             iced::widget::button(get_icon("play")).on_press(ViewerMessage::Forward).width(40),
-//
-//                             // iced::widget::button("Reset").on_press(ViewerMessage::Reset).width(225),
-//             iced::widget::button(get_icon("forward-fast")).on_press(ViewerMessage::JumpToEnd).width(40),
-//             //iced::widget::button(">>").width(40),
-//         ],
-//
-//
-//     ).center_x(iced::Length::Shrink).center_y(iced::Length::Shrink).width(iced::Length::Fill)
-// }
-
 #[derive(Clone,Copy,Debug)]
 pub enum PlayState{
     Stop,
@@ -110,25 +90,6 @@ impl<T> Worker<T>{
 }
 
 pub struct PadamoViewer{
-    // chart:DetectorPlotter<PadamoAppMessage>,
-    // length:usize,
-    // pointer:usize,
-    // start:usize,
-    // end:usize,
-    // start_str:String,
-    // end_str:String,
-    // pointer_str:String,
-    // datetime_entry:String,
-
-    // min_signal_entry:String,
-    // max_signal_entry:String,
-    // is_autoscale:bool,
-
-    // signal:Option<padamo_api::lazy_array_operations::LazyTriSignal>,
-    //signal:Option<(padamo_api::lazy_array_operations::LazyDetectorSignal,padamo_api::lazy_array_operations::LazyTimeSignal,Option<padamo_api::lazy_array_operations::LazyTrigger>)>,
-    // buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
-    // playstate:PlayState,
-    // plot_scale:padamo_detectors::Scaling,
 
     form:form::ViewerFormBuffer,
     form_instance:ViewerForm,
@@ -291,7 +252,6 @@ impl PadamoViewer{
 
                 });
                 self.exporter = Some(Worker::new(handle, tx, rx_status));
-                //self.exporter = Some((handle,tx,rx_status));
             }
             //}
         }
@@ -301,14 +261,6 @@ impl PadamoViewer{
         let res = padamo.detectors.get_primary();
         res
     }
-
-    // fn get_detector_mut<'a>(&'a self, padamo:&'a mut PadamoState, explicit:bool)->Option<&'a DetectorAndMask>{
-    //     let res = padamo.detectors.get_primary();
-    //     if res.is_none() && explicit{
-    //         padamo.show_warning("No detector is loaded");
-    //     }
-    //     res
-    // }
 
     fn run_animation(&mut self, padamo:crate::application::PadamoStateRef){
         let (start, end) = if let Some(v) = self.playbar_state.get_interval(padamo, self.window_view.get_id()) {v} else {return;};
@@ -320,19 +272,15 @@ impl PadamoViewer{
             self.stop_animator();
             use plotters::prelude::*;
 
-            // let form_data = if let Some(f) = self.form.get() {f} else {return;};
             let animation_parameters = self.form_instance.animation.clone();
 
             println!("Animation parameters: {:?}",animation_parameters);
-            // let plot_scale = self.plot_scale.clone();
-            // let chart = padamo.detectors.get_primary().clone();
             let chart = DetectorPlotter::new();
 
             //TODO: Make proper multidetector
             let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
 
             if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
-                //let signal = signal_ref.clone();
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
                 let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
                 let start = start;
@@ -452,18 +400,6 @@ impl PadamoViewer{
                     }
                 }
 
-                // let backend = BitMapBackend::new(, )
-
-                // let mut frame = spatial.request_range(i,i+1);
-                // frame.shape.drain(0..1);
-                // let tim = temporal.request_range(i,i+1)[0];
-                //
-                // root.fill(&WHITE).unwrap();
-                // let root_area = plotter.into_drawing_area();
-                // root_area.fill(&WHITE).unwrap();
-                //let cc = ChartBuilder::on(&root_area);
-                // let charter = self.chart.build_chart_generic(root_area, , , , );
-                // charter.draw_chart(&(), root_area);
         }
 
 
@@ -472,33 +408,11 @@ impl PadamoViewer{
 
 impl PadamoViewer{
     pub fn new()->Self{
-        // let animation_params = Default::default();
-        // let export_params = Default::default();
-        let res = Self{
-            // chart:DetectorPlotter::new(),
-            // view_transform:Default::default(),
-            // length:100,
-            // pointer:0,
-            // start:0,
-            // end:100,
-            // signal:None,
-            // buffer:None,
-            // playstate: PlayState::Stop,
-            // start_str:"".into(),
-            // end_str:"".into(),
-            // pointer_str:"".into(),
-            // datetime_entry:"".into(),
-            // min_signal_entry:"".into(),
-            // max_signal_entry:"".into(),
-            // is_autoscale:true,
-            // plot_scale:padamo_detectors::Scaling::Autoscale,
-            //plotter_needs_reset:false,
-            file_changed:true,
-            // animation_fields:Default::default(),
-            // animation_parameters: animation_params,
 
-            // export_fields:Default::default(),
-            // export_parameters:export_params,
+        let res = Self{
+
+            file_changed:true,
+
             form:Default::default(),
             form_instance:Default::default(),
 
@@ -528,42 +442,12 @@ impl PadamoViewer{
         else{
             None
         }
-
-//         if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
-//             //let signal_w = signal.clone();
-//             // self.signal = Some(signal.clone());
-//             //self.signal = Some((signal_w.0,signal_w.1,signal_w.2.into()));
-//             // self.length = signal.0.length()-1;
-//             // if self.file_changed{
-//             //     self.end = self.length;
-//             //     self.file_changed = false;
-//             // }
-//             // self.clamp();
-//             self.update_buffer(Some(padamo));
-//             self.fill_strings(padamo);
-//
-//             self.e
-//
-//             return Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
-//                 start: self.start,
-//                 end: self.end+1,
-//                 pointer: self.pointer,
-//                 force_clear:true,
-//             }));
-//         }
-//         else {
-//             None
-//         }
     }
 
     fn update_buffer(&mut self, padamo:Option<crate::application::PadamoStateRef>){
-        // self.clamp();
-        // if let Some(signal) = &self.signal{
+
         let time_start = Instant::now();
-            // let mut frame = signal.0.request_range(self.pointer,self.pointer+1);
-            // frame.shape.drain(0..1);
-            // let tim = signal.1.request_range(self.pointer,self.pointer+1)[0];
-            // self.buffer = Some((frame,tim));
+
         if let Some(p) = &padamo{
             self.window_view.pump_frame(p, &self.playbar_state);
             // self.window_view.set_frame(self.pointer, p);
@@ -573,64 +457,15 @@ impl PadamoViewer{
             let t = time_stop.as_millis() as u64;
             p.add_delay_ms = t*3;
         }
-        // }
-            // if self.form_instance.stop_on_trigger{
-            //     if let ROption::RSome(v) = &signal.2{
-            //         let trig = v.request_range(self.pointer,self.pointer+1);
-            //         let muststop:bool = trig.flat_data.iter().fold(false, |a,b| a||*b);
-            //         if muststop{
-            //             println!("Triggered!");
-            //             self.playstate = PlayState::Stop;
-            //         }
-            //     }
-            // }
+
     }
 
-    // fn clamp(&mut self){
-    //     if self.pointer>self.length{
-    //         self.pointer = self.length;
-    //     }
-    //     if self.end>self.length{
-    //         self.end = self.length;
-    //     }
-    //     if self.start>self.end {
-    //         self.start = self.end;
-    //     }
-    //
-    //     if self.start>self.pointer{
-    //         self.start = self.pointer;
-    //     }
-    //     if self.end<self.pointer{
-    //         self.end = self.pointer;
-    //     }
-    // }
 
     fn fill_strings(&mut self, padamo:crate::application::PadamoStateRef){
-        // self.pointer_str = self.pointer.to_string();
-        // self.start_str = self.start.to_string();
-        // self.end_str = self.end.to_string();
-        //TODO: Make proper multidetector
-        // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
-
-        // if let Some(frame) = &self.buffer{
-        //     let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
-        //     self.min_signal_entry = min.to_string();
-        //     self.max_signal_entry = max.to_string();
-        // }
         self.playbar_state.fill_strings();
         self.window_view.fill_strings(&padamo);
     }
 
-    // fn update_scale(&mut self){
-    //     if self.is_autoscale{
-    //         self.plot_scale = padamo_detectors::Scaling::Autoscale;
-    //     }
-    //     else{
-    //         let min = if let Ok(v) = self.min_signal_entry.parse::<f64>() {v} else {return;};
-    //         let max = if let Ok(v) = self.max_signal_entry.parse::<f64>() {v} else {return;};
-    //         self.plot_scale = padamo_detectors::Scaling::Fixed(min, max);
-    //     }
-    // }
 
     fn stop_animator(&mut self){
         if let Some(mut a) = self.animator.take(){
@@ -662,120 +497,25 @@ impl PadamoViewer{
 
 impl PadamoTool for PadamoViewer{
     fn view<'a>(&'a self, padamo:&'a PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
-        // let frame_num = &self.pointer_str;
-        // let start_frame = &self.start_str;
-        // let end_frame = &self.end_str;
-        // let mut frame = None;
-        // let detector = self.get_detector(padamo);
-        // if let Some(buffer) = &self.buffer{
-        //     if let Some(det) = detector{
-        //         let detector_shape = det.shape();
-        //         if buffer.0.form_compatible(&detector_shape){
-        //             frame = Some((&buffer.0,buffer.1));
-        //             //println!("OK {:?} and {:?}", detector_shape, buffer.shape);
-        //         }
-        //         else{
-        //             println!("Incompatible shapes {:?} and {:?}", buffer.0.shape, detector_shape);
-        //         }
-        //     }
-        // }
 
-        // let view_transform: iced::Element<'_,_> = self.view_transform.view().width(300).into();
         let lower_col:iced::Element<'a, ViewerMessage> = self.playbar_state.view(padamo).map(ViewerMessage::TimeLine);
-        //column![
-            //self.chart.view(frame,self.plot_scale, Some(ViewerMessage::plot_pixel(self.start, self.end))),
 
-            // row![
-                // column![
-                    // row![
-                    //     iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(ViewerMessage::SetAutoscale),
-                    //     iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(ViewerMessage::SetMinSignal),
-                    //     iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
-                    //     iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(ViewerMessage::SetMaxSignal),
-                    //     iced::widget::Space::new(10,10).width(iced::Length::Fill),
-                    //     view_transform.map(ViewerMessage::PlotZoomMessage),
-                    //     // iced::widget::Space::new(10,10).width(iced::Length::Fill),
-                    // ],
-
-                // ],
-            //     iced::widget::Container::new(
-            //         iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(ViewerMessage::SetViewPosition))),
-            //     ).center_x(iced::Length::Fill).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(iced::Length::Fill),
-            //
-            //     iced::widget::container(column![
-            //         row![
-            //             iced::widget::TextInput::new("",start_frame.as_str())
-            //                 .on_input(ViewerMessage::SetViewStartText)
-            //                 .on_submit(ViewerMessage::SubmitTimeline)
-            //                 .width(100),
-            //             iced::widget::TextInput::new("",frame_num.as_str())
-            //                 .on_input(ViewerMessage::SetViewPositionText)
-            //                 .on_submit(ViewerMessage::SubmitTimeline)
-            //                 .width(100),
-            //             iced::widget::TextInput::new("",end_frame.as_str())
-            //                 .on_input(ViewerMessage::SetViewEndText)
-            //                 .on_submit(ViewerMessage::SubmitTimeline)
-            //                 .width(100),
-            //         ],
-            //         row![
-            //             //iced::widget::button("To start").on_press(ViewerMessage::JumpToStart).width(100),
-            //             iced::widget::button("Set start").on_press(ViewerMessage::SetStart).width(100),
-            //             iced::widget::button("Reset").on_press(ViewerMessage::Reset).width(100),
-            //             iced::widget::button("Set end").on_press(ViewerMessage::SetEnd).width(100),
-            //             //iced::widget::button("To end").on_press(ViewerMessage::JumpToEnd).width(100),
-            //         ],
-            //         // row![
-            //             iced::widget::TextInput::new("Enter datetime",self.datetime_entry.as_str())
-            //                 .on_input(ViewerMessage::EditDatetime)
-            //                 .on_submit(ViewerMessage::SubmitDatetime)
-            //                 .width(300),
-            //             make_player_pad().center_x(iced::Length::Shrink)
-            //         // ],
-            //     ]).style(iced::widget::container::bordered_box),
-            //
-            // ].height(iced::Length::Shrink),
-        // ].into();
         let lower_col = lower_col.map(crate::messages::PadamoAppMessage::ViewerMessage);
 
-        // let start = self.start;
-        // let end = self.end;
 
-        // if let Some(anim) = &self.animator{
-        //     let pip = &anim.2;
-        //     if let Ok(v) = pip.try_recv(){
-        //         *animation_status = v;
-        //     }
-        // }
-        // else{
-        //     *animation_status = "IDLE".into();
-        // };
 
 
         let settings_column:iced::Element<'_,ViewerMessage> = column![
-            // row![
-            //     iced::widget::button("Create animation").on_press( ViewerMessage::CreateAnimation),
-            //     iced::widget::button("Stop").on_press( ViewerMessage::StopAnimation),
-            // ],
+
             row![iced::widget::text("Animation status:"),iced::widget::text(&self.animation_status)],
             iced::widget::rule::Rule::horizontal(10),
-            // row![
-            //     iced::widget::button("Export").on_press( ViewerMessage::Export),
-            //     iced::widget::button("Stop").on_press(ViewerMessage::StopExport),
-            // ],
+
             row![iced::widget::text("Export status:"),iced::widget::text(&self.export_status)],
             iced::widget::rule::Rule::horizontal(10),
-            // iced::widget::checkbox("Stop on trigger", self.stop_on_trigger).on_toggle(ViewerMessage::SetAutostop),
-            // iced::widget::rule::Rule::horizontal(10),
-            //iced::widget::text("Export settings"),
-            //self.export_fields.view().map(ViewerMessage::EditExportSettings),
 
-            //iced::widget::rule::Rule::horizontal(10),
-            //iced::widget::text("Animation settings"),
             self.form.view(None).map(ViewerMessage::EditForm),
-            //self.animation_fields.view().map(ViewerMessage::EditAnimationSettings),
         ].width(200).into();
 
-        //let action:Option<fn(Vec<usize>)->PadamoAppMessage> = None;
         let a1 = if self.window_view.is_primary(){
             if let Some((a,b)) = self.playbar_state.get_interval(padamo, self.window_view.get_id()){
                 Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(a, b, x)))
@@ -795,11 +535,7 @@ impl PadamoTool for PadamoViewer{
         };
 
         let top_row = row![
-            // Here will be the viewer
-            // self.chart.view(detector,frame,self.view_transform.transform(),self.plot_scale,
-            //                 Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(start, end, x))),
-            //                 Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x))),
-            //                 ),
+
 
 
             self.window_view.view(padamo, |x| PadamoAppMessage::ViewerMessage(ViewerMessage::WindowView(x)),
@@ -813,7 +549,6 @@ impl PadamoTool for PadamoViewer{
 
         column!(
             top_row,
-            //self.chart.view(frame,self.plot_scale, Some(ViewerMessage::plot_pixel(self.start, self.end))),
             lower_col,
         ).into()
     }
@@ -829,105 +564,6 @@ impl PadamoTool for PadamoViewer{
         else if let crate::messages::PadamoAppMessage::ViewerMessage(view) = msg.as_ref(){
             let mut request_buffer_fill = true;
             match view {
-                // ViewerMessage::SetViewPosition(pos)=>{
-                //     self.pointer = *pos;
-                //     if self.pointer<self.start{
-                //         self.start = self.pointer;
-                //     }
-                //     if self.pointer>self.end{
-                //         self.end = self.pointer;
-                //     }
-                // },
-                // ViewerMessage::SetViewPositionUnixTime(f)=>{
-                //     if let Some(signal) = self.window_view.try_get_signal(&padamo){
-                //         let pos = crate::time_search::find_unixtime(&signal.1, *f);
-                //
-                //         self.pointer = pos;
-                //         if self.pointer<self.start{
-                //             self.start = self.pointer;
-                //         }
-                //         if self.pointer>self.end{
-                //             self.end = self.pointer;
-                //         }
-                //     }
-                // }
-                //
-                // ViewerMessage::SetStart=>{
-                //     self.start= self.pointer;
-                // }
-                // ViewerMessage::JumpToStart=>{
-                //     self.pointer = self.start;
-                // }
-                // ViewerMessage::FocusOn(start, end)=>{
-                //     self.pointer = *start;
-                //     self.start = *start;
-                //     padamo.current_page = 0;
-                //     self.end = *end;
-                // }
-                // ViewerMessage::JumpToEnd=>{
-                //     self.pointer = self.end;
-                // }
-                // ViewerMessage::SetEnd=>{
-                //     self.end= self.pointer;
-                // }
-                // ViewerMessage::Reset=>{
-                //     self.start = 0;
-                //     self.end = self.length;
-                // }
-                // ViewerMessage::Stop=>{
-                //     self.playstate = PlayState::Stop;
-                // }
-                // ViewerMessage::Forward=>{
-                //     self.playstate = PlayState::Forward;
-                // }
-                // ViewerMessage::Backward=>{
-                //     self.playstate = PlayState::Backward;
-                // }
-                // ViewerMessage::StepBack=>{
-                //     self.playstate = PlayState::Stop;
-                //     if self.pointer>0{
-                //         self.pointer-=1;
-                //     }
-                // }
-                // ViewerMessage::StepFwd=>{
-                //     self.playstate = PlayState::Stop;
-                //     if self.pointer<self.length{
-                //         self.pointer+= 1;
-                //     }
-                // }
-                // ViewerMessage::SetViewPositionText(txt)=>{
-                //     self.pointer_str = txt.clone();
-                //     request_buffer_fill = false;
-                // }
-                // ViewerMessage::SetViewStartText(txt)=>{
-                //     self.start_str = txt.clone();
-                //     request_buffer_fill = false;
-                // }
-                // ViewerMessage::SetViewEndText(txt)=>{
-                //     self.end_str = txt.clone();
-                //     request_buffer_fill = false;
-                // }
-                // ViewerMessage::SubmitTimeline=>{
-                //     if let Ok(newpos) = self.pointer_str.parse(){
-                //         self.pointer = newpos;
-                //     }
-                //     if let Ok(newstart) = self.start_str.parse(){
-                //         self.start = newstart;
-                //     }
-                //     if let Ok(newend) = self.end_str.parse(){
-                //         self.end = newend;
-                //     }
-                //     self.clamp();
-                // }
-                // ViewerMessage::EditDatetime(s)=>{
-                //     self.datetime_entry = s.clone();
-                // }
-                // ViewerMessage::EditAnimationSettings(v)=>{
-                //     self.animation_fields.update(v.clone(),&mut self.animation_parameters);
-                // }
-                // ViewerMessage::EditExportSettings(v)=>{
-                //     self.export_fields.update(v.clone(), &mut self.export_parameters);
-                // }
                 ViewerMessage::EditForm(v)=>{
                     match v{
                         ActionOrUpdate::Action(a)=>{
@@ -953,51 +589,6 @@ impl PadamoTool for PadamoViewer{
                         }
                     }
                 }
-
-                // ViewerMessage::SubmitDatetime=>{
-                //     println!("Submitted DT {}",self.datetime_entry);
-                //     if let Some(signal) = &self.window_view.try_get_signal(&padamo){
-                //
-                //         let ut:f64 = signal.1.request_range(self.pointer,self.pointer+1)[0];
-                //         let ut_s = ut as i64;
-                //         //let ut_ns = ((ut-ut_s as f64)*1e9) as u32;
-                //         let ut_ns = ((ut-(ut_s as f64))*1e9) as u32;
-                //
-                //
-                //         //println!("Datetime from {}=>{}; {}",ut,ut_s,ut_ns);
-                //         // let naive = NaiveDateTime::from_timestamp_opt(ut_s,ut_ns).unwrap();
-                //         //
-                //         // // Create a normal DateTime from the NaiveDateTime
-                //         // let start_dt:DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
-                //         let start_dt:DateTime<Utc> = DateTime::from_timestamp(ut_s, ut_ns).unwrap();
-                //
-                //         if let Some(end_dt) = datetime_parser::parse_datetimes(&self.datetime_entry, start_dt){
-                //             let index = crate::time_search::find_time(&signal.1, end_dt);
-                //             self.pointer = index;
-                //             self.clamp();
-                //         }
-                //     }
-                //
-                //     self.datetime_entry.clear();
-                // }
-                // ViewerMessage::SetAutoscale(v)=>{
-                //     self.is_autoscale = *v;
-                //     self.update_scale();
-                //     //request_buffer_fill = false;
-                // }
-                // ViewerMessage::SetMinSignal(s)=>{
-                //     self.min_signal_entry = s.clone();
-                //     self.update_scale();
-                //     request_buffer_fill = false;
-                // }
-                // ViewerMessage::SetMaxSignal(s)=>{
-                //     self.max_signal_entry = s.clone();
-                //     self.update_scale();
-                //     request_buffer_fill = false;
-                // }
-                // ViewerMessage::SetAutostop(v)=>{
-                //     self.stop_on_trigger = *v;
-                // }
                 ViewerMessage::TogglePixel(pix)=>{
                     if let Some(det) = padamo.detectors.get_primary_mut(){
                         det.toggle_pixel(pix);
@@ -1005,11 +596,6 @@ impl PadamoTool for PadamoViewer{
                     }
 
                 }
-
-
-                // ViewerMessage::PlotZoomMessage(msg)=>{
-                //     self.view_transform.update(msg.to_owned());
-                // }
                 ViewerMessage::WindowView(msg)=>{
                     self.window_view.update(msg.to_owned(), padamo);
                 },
@@ -1027,34 +613,7 @@ impl PadamoTool for PadamoViewer{
         else if let crate::messages::PadamoAppMessage::ClearState = msg.as_ref(){
             self.initialize(padamo);
         }
-        // else if let crate::messages::PadamoAppMessage::SetDetector(v) = msg.as_ref(){
-        //     // self.chart = Detector::from_cells(v.clone());
-        //     // println!("Viewer has new detector loaded");
-        // }
         else if let crate::messages::PadamoAppMessage::Tick = msg.as_ref(){
-            // match self.playstate {
-            //     PlayState::Stop=>(),
-            //     PlayState::Forward=>{
-            //         if self.pointer<self.end{
-            //             self.pointer += 1;
-            //             self.update_buffer(Some(padamo));
-            //             self.fill_strings(padamo);
-            //         }
-            //         else{
-            //             self.playstate = PlayState::Stop;
-            //         }
-            //     }
-            //     PlayState::Backward=>{
-            //         if self.pointer>self.start{
-            //             self.pointer-=1;
-            //             self.update_buffer(Some(padamo));
-            //             self.fill_strings(padamo);
-            //         }
-            //         else{
-            //             self.playstate = PlayState::Stop;
-            //         }
-            //     }
-            // }
             if self.playbar_state.run_tick(){
                 self.update_buffer(Some(padamo));
             }
@@ -1104,25 +663,11 @@ impl PadamoTool for PadamoViewer{
                 self.stop_exporter();
             }
 
-            // if let PlayState::Stop = self.playstate{
-            //     None
-            // }
-            // else{
-            //     Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer, force_clear:false }))
-            //     //Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
-            // }
             self.playbar_state.get_sync_message(true)
         }
 
         else if let PadamoAppMessage::ViewerMessage(_) = msg.as_ref(){
-            // if self.plotter_needs_reset{
-            //     self.plotter_needs_reset = false;
-            //     Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::LazySelectData(self.start, self.end+1)))
-            // }
-            // else{
-                //Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncPointer(self.pointer)))
-            //}
-            // Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer, force_clear:false }))
+
             self.playbar_state.get_sync_message(false)
         }
         else {
@@ -1148,18 +693,5 @@ impl PadamoTool for PadamoViewer{
             _=>()
         }
     }
-
-    // fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
-    //     let mask_loaded: Option<padamo_api::lazy_array_operations::ArrayND<bool>> = padamo.persistent_state.deserialize("viewer_pixels");
-    //     if let Some(mask) = mask_loaded{
-    //         if mask.form_compatible(self.chart.shape()){
-    //             self.chart.state.alive_pixels = mask;
-    //             self.update_pixels(padamo,false);
-    //             return;
-    //         }
-    //     }
-    //     self.chart = Detector::default_vtl();
-    //     //self.chart.alive_pixels = ArrayND::new(self.chart.shape().clone(), true);
-    // }
 }
 
