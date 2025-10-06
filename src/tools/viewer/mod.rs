@@ -257,10 +257,10 @@ impl PadamoViewer{
         }
     }
 
-    fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
-        let res = padamo.detectors.get_primary();
-        res
-    }
+    // fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
+    //     let res = padamo.detectors.get_primary();
+    //     res
+    // }
 
     fn run_animation(&mut self, padamo:crate::application::PadamoStateRef){
         let (start, end) = if let Some(v) = self.playbar_state.get_interval(padamo, self.window_view.get_id()) {v} else {return;};
@@ -278,7 +278,9 @@ impl PadamoViewer{
             let chart = DetectorPlotter::new();
 
             //TODO: Make proper multidetector
-            let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+            //let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+            let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
+
 
             if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
@@ -368,7 +370,8 @@ impl PadamoViewer{
         use plotters::prelude::*;
 
         //TODO: Make proper multidetector
-        let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()) {det} else {return;};
         let pointer = if let Some(v) = self.playbar_state.get_frame(&padamo, self.window_view.get_id()) {v} else {return;};
         let plot_scale = self.window_view.get_scale();
 
@@ -482,7 +485,8 @@ impl PadamoViewer{
     }
 
     fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
-        let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
         let mask = detector.alive_pixels_mask();
         if save{
             padamo.persistent_state.serialize("viewer_pixels",&mask);
