@@ -16,6 +16,7 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     nodes_vec!(
         node_reg::TimeResolutionReduceNode,
         node_reg::CutterNode,
+        node_reg::TimeOffsetNode,
         nodes_stretch::StretchSignal,
         signal_length::SignalLength,
         signal_length::SignalArrayLength,

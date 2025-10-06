@@ -1,7 +1,7 @@
 use abi_stable::{rvec, std_types::ROption::{self, RSome}};
 use padamo_api::{prelude::*, ports, constants};
 use abi_stable::std_types::{RResult,RVec,RString};
-use super::ops::{LazySpaceConverter,LazyTimeConverter};
+use super::ops::{LazySpaceConverter,LazyTimeConverter, TimeShift};
 use super::tempreduce_performance::LazySpaceConverterPerformant;
 use padamo_api::lazy_array_operations::LazyArrayOperationBox;
 use abi_stable::sabi_trait::prelude::TD_Opaque;
@@ -141,6 +141,54 @@ impl CalculationNode for CutterNode{
     }
 
     fn calculate(&self, args:CalculationNodeArguments) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct TimeOffsetNode;
+
+impl TimeOffsetNode{
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
+        let off = args.constants.request_float("offset")?;
+        signal.1 = make_lao_box(TimeShift::new(signal.1, off));
+        args.outputs.set_value("Signal", signal.into())
+    }
+}
+
+impl CalculationNode for TimeOffsetNode{
+    fn name(&self,) -> RString where {
+        "Time offset".into()
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = " Input definitions of node"]
+    fn inputs(&self,) -> RVec<CalculationIO> {
+        ports!(
+            ("Signal", ContentType::DetectorFullData)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = " Output definition of node"]
+    fn outputs(&self,) -> RVec<CalculationIO> {
+        ports!(
+            ("Signal", ContentType::DetectorFullData)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = " Constants definition of node with default values."]
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!(
+            ("Offset [s]", "offset", 0.0)
+        )
+    }
+
+    #[allow(clippy::let_and_return)]
+    #[doc = " Main calculation"]
+    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
         self.calculate(args).into()
     }
 }

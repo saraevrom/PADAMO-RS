@@ -202,3 +202,33 @@ impl<T:Clone+Debug> LazyArrayOperation<T> for CutterOperator<T>{
         self.source.request_range(start+self.start,end+self.start)
     }
 }
+
+
+#[derive(Clone,Debug)]
+pub struct TimeShift{
+    source: LazyTimeSignal,
+    offset: f64
+}
+
+impl TimeShift {
+    pub fn new(source: LazyTimeSignal, offset: f64) -> Self {
+        Self { source, offset }
+    }
+}
+
+impl LazyArrayOperation<RVec<f64>> for TimeShift{
+    #[allow(clippy::let_and_return)]
+    fn length(&self,) -> usize {
+        self.source.length()
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn request_range(&self,start:usize,end:usize,) -> RVec<f64> {
+        self.source.request_range(start,end).iter().map(|x| x+self.offset).collect()
+    }
+
+    #[allow(clippy::let_and_return)]
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize {
+        self.source.calculate_overhead(start,end)
+    }
+}
