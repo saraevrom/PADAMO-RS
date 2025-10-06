@@ -101,8 +101,9 @@ impl<'a> Chart<PlotterMessage> for PlotterChart<'a> {
     fn build_chart<DB:DrawingBackend>(&self, _state: &Self::State,  mut builder:ChartBuilder<DB>) {
         //build your chart here, please refer to plotters for more details
         if let super::DataState::Loaded(data) = &self.plotter_data.data{
-            let tim = &data.time;
-            let signal = &data.signal;
+            // let tim = &data.time;
+            // let signal = &data.signal;
+            let (signal, tim) = &data.primary;
             let lc_total = &data.lc;
             let total_pix_count = &data.pixel_count;
             let (ymin,ymax) = self.plotter_data.last_y_limits_live;

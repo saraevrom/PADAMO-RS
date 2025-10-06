@@ -152,9 +152,10 @@ pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal
         }
 
         data_state::DataCache {
-            time:temporal,
+            primary:(spatial_out, temporal),
+            // time:temporal,
             time_step,
-            signal:spatial_out,
+            // signal:spatial_out,
             lc,
             pixel_count:pixel_count_u64,
             start,
@@ -348,7 +349,8 @@ impl Plotter{
                 (v.start as f64, v.end as f64)
             }
             else{
-                (v.time[0],v.time[v.time.len()-1])
+                let time = &v.primary.1;
+                (time[0],time[time.len()-1])
             };
             self.last_x_limits_live = self.last_x_limits;
 
@@ -555,7 +557,7 @@ impl PadamoTool for Plotter{
                                         },
                                         PlotterActions::ThresholdSelect=>{
                                             if let DataState::Loaded(data) = &self.data{
-                                                let pix_data = data.signal.clone();
+                                                let pix_data = data.primary.0.clone();
                                                 let maxes = get_maxes(&pix_data);
                                                 for i in maxes.enumerate(){
                                                     if maxes[&i]>self.form_instance.selector.threshold{

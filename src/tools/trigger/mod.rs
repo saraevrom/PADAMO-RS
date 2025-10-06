@@ -225,7 +225,7 @@ impl PadamoTool for PadamoTrigger{
         // };
 
         let view_content = if let Some(v) = &self.data{
-            Some((&v.1,v.0.time[0]))
+            Some((&v.1,v.0.primary.1[0]))
         }
         else{
             None
@@ -599,7 +599,7 @@ impl PadamoTool for PadamoTrigger{
                     if worker.is_finished(){
                         match worker.join() {
                             Ok(v)=>{
-                                let maxes = get_maxes(&v.signal);
+                                let maxes = get_maxes(&v.primary.0);
                                 self.data = Some((v,maxes));
                             }
                             Err(_)=>{

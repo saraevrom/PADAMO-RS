@@ -21,10 +21,11 @@ use once_cell::sync::Lazy;
 use iced::widget::pane_grid;
 use padamo_workspace::PadamoWorkspace;
 pub mod messages;
+use crate::detector_muxer::{get_signal_var};
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
-fn make_workspace(workspace:&PadamoWorkspace)->padamo_workspace::PadamoSubWorkspace{
+fn make_workspace(workspace:&PadamoWorkspace)->padamo_workspace::PadamoSubWorkspace<'_>{
     workspace
     .workspace("graphs-rs")
     .with_action(crate::assets::copy_asset_action("default.json"))
@@ -59,6 +60,9 @@ impl PadamoEditor{
     fn run(&self,padamo:&mut PadamoState){
         let mut x_mut = &mut padamo.compute_graph;
         padamo.nodes.make_compute_graph(&mut x_mut, &self.state.nodes);
+        for i in 0..padamo.detectors.len(){
+            x_mut.environment.0.remove(get_signal_var(i).as_str());
+        }
         if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value){
             padamo.show_error(format!("Execution error: {}",err));
             //println!("Execution error: {}",err);

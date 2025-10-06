@@ -111,10 +111,23 @@ make_action!(PlotterActionThresholdSelect,PlotterActions,ThresholdSelect);
 make_action!(PlotterActionManualSelect,PlotterActions,ManualSelect);
 
 
+#[derive(Clone,Debug,IcedForm)]
+pub struct DualPlotForm{
+    #[field_name("Detector ID")] pub detector_id:usize
+}
+
+impl Default for DualPlotForm{
+    fn default() -> Self {
+        DualPlotForm { detector_id: 1 }
+    }
+}
+
+
 #[derive(Clone,Debug,Default,IcedForm)]
 pub struct PlotterForm{
     #[field_name("Save")] _save: Action <PlotterActions,PlotterActionSave>,
     #[field_name("Image export settings")] pub output_shape: OutShape,
     #[field_name("Display settings")] pub display_settings: DisplaySettings,
     #[field_name("Selection")] pub selector: SelectorForm,
+    #[field_name("Dual plot")] pub dual_plot_settings: Option<DualPlotForm>
 }

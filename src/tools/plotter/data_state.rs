@@ -11,9 +11,11 @@ pub enum DataState{
 
 #[derive(Clone,Debug)]
 pub struct DataCache{
-    pub time:Vec<f64>,
+    // pub signal:ArrayND<f64>,
+    // pub time:Vec<f64>,
+    pub primary:(ArrayND<f64>, Vec<f64>),
+
     pub time_step: f64,
-    pub signal:ArrayND<f64>,
     pub lc: Vec<f64>,
     pub pixel_count:usize,
     pub start:usize,
