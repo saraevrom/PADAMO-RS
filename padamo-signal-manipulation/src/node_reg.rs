@@ -182,7 +182,7 @@ impl CalculationNode for TimeOffsetNode{
     #[doc = " Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants!(
-            ("Offset [s]", "offset", 0.0)
+            ("offset", "Offset [s]", 0.0)
         )
     }
 
