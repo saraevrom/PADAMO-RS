@@ -13,6 +13,7 @@ use padamo_detectors::{DetectorAndMask, DetectorPlotter};
 use plotters_video::VideoBackend;
 use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
+use crate::detector_muxer::get_signal_var;
 use chrono::{DateTime, Utc};
 use iced::widget::{column,row};
 use crate::messages::PadamoAppMessage;
@@ -263,7 +264,7 @@ impl PadamoViewer{
     // }
 
     fn run_animation(&mut self, padamo:crate::application::PadamoStateRef){
-        let (start, end) = if let Some(v) = self.playbar_state.get_interval(padamo, self.window_view.get_id()) {v} else {return;};
+        let (start, end) = if let Some(v) = self.playbar_state.get_interval(padamo, 0) {v} else {return;};
         if let Some(filename) = padamo.workspace.workspace("animations").save_dialog(vec![
             ("MP4 animation", vec!["mp4"]),
             ("GIF animation", vec!["gif"]),
@@ -281,6 +282,14 @@ impl PadamoViewer{
             //let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
             let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
 
+            let primary = padamo.compute_graph.environment.0.get(get_signal_var(0).as_str());
+            let time_primary = if let Some(padamo_api::prelude::Content::DetectorFullData(signal_p)) = primary{
+                signal_p.1.clone()
+            }
+            else{
+                return;
+            };
+
 
             if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
                 let spatial:padamo_api::lazy_array_operations::LazyDetectorSignal = signal_ref.0.clone();
@@ -296,7 +305,7 @@ impl PadamoViewer{
                             "gif"=>{
                                 let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -308,7 +317,7 @@ impl PadamoViewer{
                                 let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
                                                                 plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -372,7 +381,16 @@ impl PadamoViewer{
         //TODO: Make proper multidetector
         // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
         let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()) {det} else {return;};
-        let pointer = if let Some(v) = self.playbar_state.get_frame(&padamo, self.window_view.get_id()) {v} else {return;};
+        let pointer = if let Some(v) = self.playbar_state.get_frame(&padamo, 0) {v} else {return;};
+
+        let primary = padamo.compute_graph.environment.0.get(get_signal_var(0).as_str());
+        let time_primary = if let Some(padamo_api::prelude::Content::DetectorFullData(signal_p)) = primary{
+            signal_p.1.clone()
+        }
+        else{
+            return;
+        };
+
         let plot_scale = self.window_view.get_scale();
 
         if let Some(signal_ref) = self.window_view.try_get_signal(padamo){
@@ -388,12 +406,12 @@ impl PadamoViewer{
                             "png" | "jpg" => {
                                 let backend = BitMapBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, pointer, &chart, detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, detector, plot_scale);
                             },
                             "svg" => {
                                 let backend = SVGBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, pointer, &chart, detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, detector, plot_scale);
                             },
                             ue=>{
                                 padamo.show_error(format!("Unsupported extension {}",ue));
@@ -566,7 +584,7 @@ impl PadamoTool for PadamoViewer{
             self.update_pixels(padamo,true);
         }
         else if let crate::messages::PadamoAppMessage::ViewerMessage(view) = msg.as_ref(){
-            let mut request_buffer_fill = true;
+            // let mut request_buffer_fill = true;
             match view {
                 ViewerMessage::EditForm(v)=>{
                     match v{
@@ -610,9 +628,9 @@ impl PadamoTool for PadamoViewer{
             }
 
             self.update_buffer(Some(padamo));
-            if request_buffer_fill{
-                self.fill_strings(padamo);
-            }
+            // if request_buffer_fill{
+            //     self.fill_strings(padamo);
+            // }
         }
         else if let crate::messages::PadamoAppMessage::ClearState = msg.as_ref(){
             self.initialize(padamo);

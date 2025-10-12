@@ -8,17 +8,22 @@ use plotters::prelude::*;
 
 
 pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a DrawingArea<T,Shift>,spatial:&'a padamo_api::lazy_array_operations::LazyDetectorSignal,
-               temporal:&'a padamo_api::lazy_array_operations::LazyTimeSignal, current_frame:usize, chart:&DetectorPlotter<PadamoAppMessage>, detector:&DetectorAndMask,plot_scale:Scaling){
+               temporal:&'a padamo_api::lazy_array_operations::LazyTimeSignal,
+               temporal_primary:&'a padamo_api::lazy_array_operations::LazyTimeSignal, current_frame:usize, chart:&DetectorPlotter<PadamoAppMessage>, detector:&DetectorAndMask,plot_scale:Scaling){
 
-    let mut frame = spatial.request_range(current_frame,current_frame+1);
+    let unixtime = temporal_primary.request_range(current_frame,current_frame+1)[0];
+    let remapped_frame = temporal.find_unixtime(unixtime);
+
+    let mut frame = spatial.request_range(remapped_frame,remapped_frame+1);
     frame.shape.drain(0..1);
-    let tim = temporal.request_range(current_frame,current_frame+1)[0];
+    let tim = temporal.request_range(remapped_frame,remapped_frame+1)[0];
     root.fill(&WHITE).unwrap();
     chart.build_chart_generic(detector,root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
 }
 
 pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spatial:padamo_api::lazy_array_operations::LazyDetectorSignal,
                temporal:padamo_api::lazy_array_operations::LazyTimeSignal,
+               temporal_main:padamo_api::lazy_array_operations::LazyTimeSignal,
                start:usize,
                end:usize,
                animation_parameters:AnimationParameters,
@@ -85,7 +90,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
                 let (a,b) = root.split_vertically(animation_parameters.height);
                 //a.fill(&WHITE).unwrap();
                 // chart.build_chart_generic(&a,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                make_frame(&a, &spatial, &temporal, i, &chart, &detector, plot_scale);
+                make_frame(&a, &spatial, &temporal, &temporal_main, i, &chart, &detector, plot_scale);
 
                 //b.fill(&WHITE).unwrap();
                 let mut chart = ChartBuilder::on(&b)
@@ -102,7 +107,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
             }
             else{
                 //chart.build_chart_generic(&root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                make_frame(&root, &spatial, &temporal, i, &chart, &detector, plot_scale);
+                make_frame(&root, &spatial, &temporal, &temporal_main, i, &chart, &detector, plot_scale);
             }
 
 

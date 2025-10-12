@@ -109,14 +109,16 @@ impl CrossProgress{
                     .on_input(CrossProgressMessage::SetViewStartText)
                     .on_submit(CrossProgressMessage::SubmitTimeline)
                     .width(100),
-                                    iced::widget::TextInput::new("",frame_num.as_str())
-                                    .on_input(CrossProgressMessage::SetViewPositionText)
-                                    .on_submit(CrossProgressMessage::SubmitTimeline)
-                                    .width(100),
-                                    iced::widget::TextInput::new("",end_frame.as_str())
-                                    .on_input(CrossProgressMessage::SetViewEndText)
-                                    .on_submit(CrossProgressMessage::SubmitTimeline)
-                                    .width(100),
+
+                    iced::widget::TextInput::new("",frame_num.as_str())
+                    .on_input(CrossProgressMessage::SetViewPositionText)
+                    .on_submit(CrossProgressMessage::SubmitTimeline)
+                    .width(100),
+
+                    iced::widget::TextInput::new("",end_frame.as_str())
+                    .on_input(CrossProgressMessage::SetViewEndText)
+                    .on_submit(CrossProgressMessage::SubmitTimeline)
+                    .width(100),
                 ],
                 row![
                     //iced::widget::button("To start").on_press(ViewerMessage::JumpToStart).width(100),
@@ -231,6 +233,7 @@ impl CrossProgress{
     }
 
     pub fn update(&mut self, message:CrossProgressMessage, padamo:&mut PadamoState){
+        let mut request_buffer_fill = true;
         match message {
             CrossProgressMessage::SetStart => {
                 self.start= self.pointer;
@@ -271,17 +274,18 @@ impl CrossProgress{
             },
             CrossProgressMessage::SetViewPositionText(txt) => {
                 self.pointer_str = txt;
-                self.fill_strings();
-                // request_buffer_fill = false;
+                // self.fill_strings();
+                request_buffer_fill = false;
             },
             CrossProgressMessage::SetViewStartText(txt) => {
                 self.start_str = txt;
-                self.fill_strings();
-                // request_buffer_fill = false;
+                // self.fill_strings();
+                request_buffer_fill = false;
             },
             CrossProgressMessage::SetViewEndText(txt) => {
                 self.end_str = txt;
-                self.fill_strings();
+                request_buffer_fill = false;
+                // self.fill_strings();
             },
             CrossProgressMessage::EditDatetime(txt) => {
                 self.datetime_entry = txt;
@@ -300,6 +304,9 @@ impl CrossProgress{
             },
             CrossProgressMessage::SubmitDatetime => {
                 println!("Submitted DT {}",self.datetime_entry);
+
+
+
                 if let Some(signal) = &self.try_get_signal(&padamo){
 
                     let ut:f64 = signal.1.request_range(self.pointer,self.pointer+1)[0];
@@ -355,6 +362,9 @@ impl CrossProgress{
                 }
 
             }
+        }
+        if request_buffer_fill{
+            self.fill_strings();
         }
     }
 
