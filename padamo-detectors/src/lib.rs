@@ -13,6 +13,7 @@ pub mod parser;
 pub mod scripted;
 pub mod colors;
 pub mod selector_chart;
+pub mod selector_chart_simple;
 pub mod transformer;
 // pub mod transform_widget;
 
@@ -117,53 +118,119 @@ impl<Message> DetectorPlotter<Message>{
 //
 //     }
 
-
-    pub fn build_chart_aux<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&[Vec<usize>], vis:&[bool], margins:Margins) {
+    pub fn build_chart_aux_simple<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&ArrayND<bool>, margins:Margins, transform:Option<transformer::Transform>) {
         let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
 
         let main_part = root;
 
         let main_builder = ChartLayout::new()
-            //.caption("", ("sans-serif", 20))
-            //.unwrap()
-            .margin(2)
-            //.margin_top(10)
-            .margin_top(margins.top)
-            .margin_bottom(margins.bottom)
-            .margin_left(margins.left)
-            .margin_right(margins.right)
-            .x_label_area_size(0)
-            .y_label_area_size(0)
-            .bind(&main_part)
-            .unwrap();
+        //.caption("", ("sans-serif", 20))
+        //.unwrap()
+        .margin(2)
+        //.margin_top(10)
+        .margin_top(margins.top)
+        .margin_bottom(margins.bottom)
+        .margin_left(margins.left)
+        .margin_right(margins.right)
+        .x_label_area_size(0)
+        .y_label_area_size(0)
+        .bind(&main_part)
+        .unwrap();
 
 
         let (width, height) = main_builder.estimate_plot_area_size();
-        let (x_range, y_range) = centering_ranges(&min_range, &(width as f64, height as f64));
+        let (mut x_range, mut y_range) = centering_ranges(&min_range, &(width as f64, height as f64));
+        if let Some(t) = transform{
+            x_range = t.transform_x_range(x_range);
+            y_range = t.transform_y_range(y_range);
+        }
 
         let mut chart = main_builder.build_cartesian_2d(x_range, y_range).unwrap();
         chart.configure_mesh()
-            .disable_mesh()
-            .draw()
-            .unwrap();
+        .disable_mesh()
+        .draw()
+        .unwrap();
 
         let mut infills:Vec<Polygon<(f64,f64)>> = Vec::new();
         let mut outlines:Vec<PathElement<(f64,f64)>> = Vec::new();
-        for (infill,outline) in detector.cells.pixels_colors(pixels, vis){
+        for (infill, outline) in detector.cells.pixels_colors(pixels){
             infills.push(infill);
             outlines.push(outline);
         }
+        // for pixels.enumerate().map(|x| x)
+        // for (infill,outline) in detector.cells.pixels_colors(pixels, vis){
+        //     infills.push(infill);
+        //     outlines.push(outline);
+        // }
 
 
         chart.draw_series::<BackendCoordOnly,Polygon<(f64,f64)>,_,_>(
-              infills.iter()
+            infills.iter()
         ).unwrap();
 
         chart.draw_series::<BackendCoordOnly,PathElement<(f64,f64)>,_,_>(
-              outlines.iter()
+            outlines.iter()
         ).unwrap();
         *self.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
+
+    }
+
+
+    pub fn build_chart_aux<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&[Vec<usize>], vis:&[bool], margins:Margins) {
+        let mut map = ArrayND::new(detector.cells.compat_shape.clone(), false);
+        for (pixel, v) in pixels.iter().zip(vis.iter()){
+            if *v{
+                map.set(&pixel, true);
+            }
+        }
+        self.build_chart_aux_simple(detector, root, &map, margins, None);
+
+        // let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
+        // let min_range = (min_x..max_x, min_y..max_y);
+        //
+        // let main_part = root;
+        //
+        // let main_builder = ChartLayout::new()
+        //     //.caption("", ("sans-serif", 20))
+        //     //.unwrap()
+        //     .margin(2)
+        //     //.margin_top(10)
+        //     .margin_top(margins.top)
+        //     .margin_bottom(margins.bottom)
+        //     .margin_left(margins.left)
+        //     .margin_right(margins.right)
+        //     .x_label_area_size(0)
+        //     .y_label_area_size(0)
+        //     .bind(&main_part)
+        //     .unwrap();
+        //
+        //
+        // let (width, height) = main_builder.estimate_plot_area_size();
+        // let (x_range, y_range) = centering_ranges(&min_range, &(width as f64, height as f64));
+        //
+        // let mut chart = main_builder.build_cartesian_2d(x_range, y_range).unwrap();
+        // chart.configure_mesh()
+        //     .disable_mesh()
+        //     .draw()
+        //     .unwrap();
+        //
+        // let mut infills:Vec<Polygon<(f64,f64)>> = Vec::new();
+        // let mut outlines:Vec<PathElement<(f64,f64)>> = Vec::new();
+        // for (infill,outline) in detector.cells.pixels_colors(pixels, vis){
+        //     infills.push(infill);
+        //     outlines.push(outline);
+        // }
+        //
+        //
+        // chart.draw_series::<BackendCoordOnly,Polygon<(f64,f64)>,_,_>(
+        //       infills.iter()
+        // ).unwrap();
+        //
+        // chart.draw_series::<BackendCoordOnly,PathElement<(f64,f64)>,_,_>(
+        //       outlines.iter()
+        // ).unwrap();
+        // *self.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
 
     }
 
@@ -302,6 +369,24 @@ impl<Message> DetectorPlotter<Message>{
     pub fn view_map<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, detector: Option<&'a DetectorAndMask>, pixels:&'a Vec<Vec<usize>>, pixels_show:&'a Vec<bool>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
         if let Some(dm) = detector{
             ChartWidget::new(DetectorChartMap::new(self,dm,pixels,pixels_show,lclick_event,rclick_event)).into()
+        }
+        else{
+            let warning = iced::widget::text("No detector");
+            let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+            container.into()
+        }
+    }
+
+    pub fn view_map_simple<'a,F1:'static+Fn(Vec<usize>)->Message,F2:'static+Fn(Vec<usize>)->Message>(&'a self, detector: Option<&'a DetectorAndMask>, map: &'a ArrayND<bool>, transform:Option<transformer::Transform>, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>{
+        if let Some(dm) = detector{
+            if map.form_compatible(dm.shape()){
+                ChartWidget::new(selector_chart_simple::DetectorChartMap::new(self,dm,map, transform,lclick_event,rclick_event)).into()
+            }
+            else{
+                let warning = iced::widget::text("Shapes mismatch");
+                let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+                container.into()
+            }
         }
         else{
             let warning = iced::widget::text("No detector");

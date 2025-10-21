@@ -330,8 +330,8 @@ impl DetectorContent{
         RectIterator::new(self, alive_pixels, pixels, scale)
     }
 
-    pub fn pixels_colors<'a>(&'a self, pixels:&'a [Vec<usize>], vis:&'a [bool])->ColorIterator<'a>{
-        ColorIterator::new(self, pixels, vis)
+    pub fn pixels_colors<'a>(&'a self, alive_pixels:&'a ArrayND<bool>)->ColorIterator<'a>{
+        ColorIterator::new(self, alive_pixels)
     }
 
     pub fn from_specs<'a>(i:&'a str)->Result<Self, nom::Err<nom::error::Error<&'a str>>>{
@@ -440,8 +440,7 @@ impl<'a> Iterator for RectIterator<'a>{
 pub struct ColorIterator<'a>{
     pub detector:&'a DetectorContent,
     current_index:usize,
-    source:&'a [Vec<usize>],
-    vis:&'a [bool],
+    pixel_map:&'a ArrayND<bool>,
 }
 
 fn search_vec(haystack:&[Vec<usize>], needle:&Vec<usize>)->Option<usize>{
@@ -454,33 +453,27 @@ fn search_vec(haystack:&[Vec<usize>], needle:&Vec<usize>)->Option<usize>{
 }
 
 impl<'a> ColorIterator<'a>{
-    pub fn new(detector:&'a DetectorContent,source:&'a [Vec<usize>], vis:&'a [bool])->Self{
-        Self{detector, current_index:0, source, vis}
+    pub fn new(detector:&'a DetectorContent, pixel_map:&'a ArrayND<bool>)->Self{
+        Self{detector, current_index:0, pixel_map}
     }
 
 
     fn get_current_result(&self)->(Polygon<(f64,f64)>,PathElement<(f64,f64)>){
         // let coords = self.detector.remap_coords((self.i,self.j));
         // let coords = (coords.0-self.size.0/2.0,coords.1-self.size.1/2.0);
-        let poly = &self.detector.content[self.current_index];
+        let pixel = &self.detector.content[self.current_index];
 
-        let color = if let Some(i) = search_vec(self.source, &poly.index) {
-            if self.vis[i]{
-                let rgb = poly.get_color();
-                let r = (rgb.0*256.0) as u8;
-                let g = (rgb.1*256.0) as u8;
-                let b = (rgb.2*256.0) as u8;
-                RGBColor(r,g,b).filled()
-            }
-            else{
-                plotters::style::colors::WHITE.filled()
-            }
+        let color = if self.pixel_map.try_get(&pixel.index).map(|x| *x).unwrap_or(false){
+            let rgb = pixel.get_color();
+            let r = (rgb.0*256.0) as u8;
+            let g = (rgb.1*256.0) as u8;
+            let b = (rgb.2*256.0) as u8;
+            RGBColor(r,g,b).filled()
         }
         else{
             plotters::style::colors::WHITE.filled()
         };
-
-        (poly.make_polygon(color),poly.make_outline())
+        (pixel.make_polygon(color),pixel.make_outline())
     }
 }
 
