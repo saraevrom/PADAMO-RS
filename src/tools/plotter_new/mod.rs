@@ -80,7 +80,7 @@ impl PlotterNew{
 
 impl PadamoTool for PlotterNew{
     fn tab_name(&self)->String {
-        "Signal plotter (new)".into()
+        "Signal plotter".into()
     }
 
     fn view<'a>(&'a self, padamo:&'a crate::application::PadamoState)->iced::Element<'a, PadamoAppMessage> {

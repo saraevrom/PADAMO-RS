@@ -269,7 +269,7 @@ impl Padamo{
 
         #[cfg(feature = "plotter")]
         {
-            tools.push(Box::new(ctools::Plotter::new()));
+            //tools.push(Box::new(ctools::Plotter::new()));
             tools.push(Box::new(ctools::PlotterNew::new()));
             println!("Plotter present");
         }
