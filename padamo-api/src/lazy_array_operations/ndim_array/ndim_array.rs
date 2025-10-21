@@ -11,6 +11,19 @@ use crate::lazy_array_operations::merge::Merge;
 use crate::lazy_array_operations::cache::Cache;
 use super::indexing::ShapeIterator;
 
+fn calculate_offset(shape: &[usize], indices: &[usize]) -> usize {
+    if indices.len()!=shape.len(){
+        panic!("Incompatible shapes")
+    }
+    let mut multiplier:usize = 1;
+    let mut res:usize = 0;
+    for (i,index) in indices.iter().enumerate().rev(){
+        res += index*multiplier;
+        multiplier*=shape[i];
+    }
+    //println!("IN indices {:?} ,out index: {:?}",indices, res);
+    res
+}
 
 /// FFI safe ndarray-like structure
 #[repr(C)]
@@ -81,18 +94,10 @@ where
     }
 
     fn remap_indices(&self,indices:&[usize])->usize{
-        if indices.len()!=self.shape.len(){
-            panic!("Incompatible shapes")
-        }
-        let mut multiplier:usize = 1;
-        let mut res:usize = 0;
-        for (i,index) in indices.iter().enumerate().rev(){
-            res += index*multiplier;
-            multiplier*=self.shape[i];
-        }
-        //println!("IN indices {:?} ,out index: {:?}",indices, res);
-        res
+        calculate_offset(&self.shape, indices)
     }
+
+
 
     pub fn index_compatible(&self, index:&[usize])->bool{
         if index.len()==self.shape.len(){
@@ -230,6 +235,29 @@ where
         else{
             None
         }
+    }
+
+    pub fn make_pixel_iterators<'a>(&'a self)->ArrayND<ArrayStrideIterator<'a, T>>{
+        if self.shape.len()<=1{
+            panic!("This is a time-like array (1 or less dimensions)");
+        }
+        let new_shape:Vec<usize> = self.shape.iter().skip(1).map(|x|*x).collect();
+
+        let stride = new_shape.iter().fold(1, |a,b| a*b);
+        let mut res = ArrayND::new(new_shape.clone(), ArrayStrideIterator::new(self, 0, 0));
+        for pixel_id in res.enumerate(){
+            let offset = calculate_offset(&new_shape, &pixel_id);
+            res[&pixel_id] = ArrayStrideIterator::new(self, stride, offset);
+        }
+
+        // let mut flat_data:Vec<ArrayStrideIterator<'a, T>> = Vec::with_capacity(stride);
+        // for pixel_id in super::indexing::ShapeIterator::new(new_shape.clone()){
+        //     let offset = calculate_offset(&new_shape, &pixel_id);
+        //     flat_data.push(ArrayStrideIterator::new(self, stride, offset));
+        // }
+
+        //ArrayND{flat_data:flat_data.into(), shape: new_shape.into() }
+        res
     }
 
 
@@ -393,3 +421,26 @@ where
 
 }
 
+#[repr(C)]
+#[derive(Clone, StableAbi)]
+pub struct ArrayStrideIterator<'a, T:Clone+StableAbi>{
+    array: &'a ArrayND<T>,
+    stride:usize,
+    offset:usize,
+}
+
+impl<'a, T: Clone + StableAbi> ArrayStrideIterator<'a, T> {
+    pub fn new(array: &'a ArrayND<T>, stride: usize, offset:usize) -> Self {
+        Self { array, stride, offset }
+    }
+}
+
+
+impl<'a, T: Clone + StableAbi> Iterator for ArrayStrideIterator<'a, T>{
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        let v = self.array.flat_data.get(self.offset);
+        self.offset += self.stride;
+        v.map(std::clone::Clone::clone)
+    }
+}
