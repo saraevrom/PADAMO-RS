@@ -7,4 +7,8 @@ edition = "2021"
 iced = "0.13.1"
 iced_aw = "0.12.2"
 padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive"}
+serde = { version = "1.0.228", optional = true }
 thiserror = "2.0.9"
+
+[features]
+serde = ["dep:serde"]

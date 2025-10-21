@@ -25,6 +25,8 @@ pub struct ActionBuffer<T:ActionType,A:ActionTrait<T>>{
 pub struct ActionMessage;
 
 #[derive(Clone,Debug,Default)]
+#[cfg(feature = "serde")]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Action<T:ActionType,A:ActionTrait<T>>{
     _pd1:PhantomData<T>,
     _pd2:PhantomData<A>,
