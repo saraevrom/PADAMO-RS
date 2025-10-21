@@ -19,11 +19,11 @@ static DATETIME_REGEXES:Lazy<Vec<Regex>> = Lazy::new(||{
     regexes.push(Regex::new(r"^\+\s*(?<pM>\d+)\s*m").unwrap());
     regexes.push(Regex::new(r"^\+\s*(?<pS>\d+)\s*s").unwrap());
 
-    regexes.push(Regex::new(r"^\-\s*(?<nms>\d)\s*ms").unwrap());
-    regexes.push(Regex::new(r"^\-\s*(?<nd>\d)\s*d").unwrap());
-    regexes.push(Regex::new(r"^\-\s*(?<nH>\d)\s*h").unwrap());
-    regexes.push(Regex::new(r"^\-\s*(?<nM>\d)\s*m").unwrap());
-    regexes.push(Regex::new(r"^\-\s*(?<nS>\d)\s*s").unwrap());
+    regexes.push(Regex::new(r"^\-\s*(?<nms>\d+)\s*ms").unwrap());
+    regexes.push(Regex::new(r"^\-\s*(?<nd>\d+)\s*d").unwrap());
+    regexes.push(Regex::new(r"^\-\s*(?<nH>\d+)\s*h").unwrap());
+    regexes.push(Regex::new(r"^\-\s*(?<nM>\d+)\s*m").unwrap());
+    regexes.push(Regex::new(r"^\-\s*(?<nS>\d+)\s*s").unwrap());
 
     regexes.push(Regex::new(r"^h\s*=\s*(?<H>\d+)").unwrap());
     regexes.push(Regex::new(r"^m\s*=\s*(?<M>\d+)").unwrap());
