@@ -1,6 +1,7 @@
 pub mod viewer;
 pub mod editor;
 pub mod plotter;
+pub mod plotter_new;
 pub mod trigger;
 pub mod detectors;
 
@@ -36,5 +37,7 @@ pub use editor::PadamoEditor;
 pub use plotter::Plotter;
 pub use trigger::PadamoTrigger;
 pub use detectors::PadamoDetectorManager;
+
+pub use plotter_new::PlotterNew;
 
 use crate::application::PadamoState;
