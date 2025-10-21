@@ -18,7 +18,7 @@ padamo-api = { path = "./padamo-api", features = ["serde"] }
 padamo-workspace = { path = "./padamo-workspace" }
 padamo-detectors = { path = "./padamo-detectors" }
 padamo-state-persistence = { path = "./padamo-state-persistence" }
-padamo-iced-forms = { path = "./padamo-iced-forms" }
+padamo-iced-forms = { path = "./padamo-iced-forms", features = ["serde"] }
 # padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive" }
 abi_stable = "0.11.3"
 plotters-layout = "0.1.0"
