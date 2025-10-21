@@ -428,6 +428,12 @@ impl CrossProgress{
     }
 
     fn form_sync_message(&self)->Option<PadamoAppMessage>{
-        Some(PadamoAppMessage::PlotterMessage(crate::tools::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer, force_clear:false }))
+        //Some(PadamoAppMessage::PlotterMessage(crate::tools::plotter::messages::PlotterMessage::SyncData { start: self.start, end: self.end+1, pointer: self.pointer, force_clear:false }))
+        Some(PadamoAppMessage::NewPlotterMessage(crate::tools::plotter_new::messages::NewPlotterMessage::SyncData {
+            start: self.start,
+            end: self.end+1,
+            pointer:Some(self.pointer),
+            poked_pixel:None,
+        }))
     }
 }

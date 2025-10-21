@@ -453,12 +453,18 @@ impl PadamoViewer{
         if let Some(rep) = self.playbar_state.update_signal_info(padamo){
             self.update_buffer(Some(padamo));
             self.fill_strings(padamo);
-            Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
+            Some(PadamoAppMessage::NewPlotterMessage(super::plotter_new::messages::NewPlotterMessage::SyncData {
                 start: rep.start,
                 end: rep.end+1,
-                pointer: rep.pointer,
-                force_clear:true,
+                pointer: Some(rep.pointer),
+                poked_pixel: None,
             }))
+            // Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
+            //     start: rep.start,
+            //     end: rep.end+1,
+            //     pointer: rep.pointer,
+            //     force_clear:true,
+            // }))
         }
         else{
             None
@@ -538,17 +544,26 @@ impl PadamoTool for PadamoViewer{
             self.form.view(None).map(ViewerMessage::EditForm),
         ].width(200).into();
 
-        let a1 = if self.window_view.is_primary(){
-            if let Some((a,b)) = self.playbar_state.get_interval(padamo, self.window_view.get_id()){
-                Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(a, b, x)))
-            }
-            else{
-                None
-            }
+        // let a1 = if self.window_view.is_primary(){
+        let id = self.window_view.get_id();
+        let a1 = if let Some((a,b)) = self.playbar_state.get_interval(padamo, self.window_view.get_id()){
+            //Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(a, b, x)))
+            Some(move |x| PadamoAppMessage::NewPlotterMessage(super::plotter_new::messages::NewPlotterMessage::SyncData {
+                start: a,
+                end: b+1,
+                pointer: None,
+                poked_pixel: Some(crate::tools::plotter_new::messages::PokedPixel {
+                    detector_id: id, pixel_id: x
+                }),
+            }))
         }
         else{
             None
         };
+        // }
+        // else{
+        //     None
+        // };
         let a2 = if self.window_view.is_primary(){
             Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x)))
         }

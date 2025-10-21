@@ -29,7 +29,7 @@ pub mod data_state;
 pub mod form;
 
 pub use form::{TimeAxisFormat,LCMode};
-
+use crate::detector_muxer::get_signal_var;
 
 
 
@@ -118,12 +118,44 @@ pub struct Plotter{
 }
 
 
-pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal,start:usize,end:usize)->thread::JoinHandle<data_state::DataCache>{
+pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal,start:usize,end:usize,secondary_provider:Option<(LazyDetectorSignal,LazyTimeSignal)>)->thread::JoinHandle<data_state::DataCache>{
     thread::spawn( move || {
         let spatial = lazy_spatial.request_range(start,end);
         let temporal:Vec<f64> = lazy_temporal.request_range(start,end).into();
 
         let spatial_out = spatial;
+
+        // let secondary = if let Some(pada)
+        // let (secondary_start, secondary_end) =
+        // let secondary = if let ((id, padamo)) = secondary_provider{
+        //
+        // }
+        // else{
+        //     None
+        // };
+
+        let secondary = if let Some((spatial_aux, temporal_aux)) = secondary_provider{
+            if end>start{
+                let start1 = temporal_aux.find_unixtime(lazy_temporal.request_range(start,start+1)[0]);
+                let end1 = temporal_aux.find_unixtime(lazy_temporal.request_range(end-1,end)[0]);
+                if end1>start1{
+                    let aux_signal = spatial_aux.request_range(start1, end1);
+                    let aux_t = temporal_aux.request_range(start1,end1).to_vec();
+                    Some((aux_signal,aux_t))
+                }
+                else{
+                    None
+                }
+
+            }
+            else{
+                None
+            }
+        }
+        else{
+            None
+        };
+
         let minv = spatial_out.flat_data.iter().fold(f64::INFINITY, |a, &b| a.min(b));
         let maxv = spatial_out.flat_data.iter().fold(-f64::INFINITY, |a, &b| a.max(b));
         let pixel_count_u64 = spatial_out.flat_data.len()/temporal.len();
@@ -153,6 +185,7 @@ pub fn spawn_loader(lazy_spatial:LazyDetectorSignal,lazy_temporal:LazyTimeSignal
 
         data_state::DataCache {
             primary:(spatial_out, temporal),
+            secondary,
             // time:temporal,
             time_step,
             // signal:spatial_out,
@@ -314,7 +347,7 @@ impl Plotter{
                 return;
             }
 
-            if let Some(padamo_api::prelude::Content::DetectorFullData(signal_in)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
+            if let Some(padamo_api::prelude::Content::DetectorFullData(signal_in)) = padamo.compute_graph.environment.0.get(get_signal_var(0).as_str()){
                 //let signal = (*signal_in).clone();
                 let lazy_spatial = signal_in.0.clone();
                 let lazy_temporal = signal_in.1.clone();
@@ -328,8 +361,21 @@ impl Plotter{
 
                 //let start = start;
                 //let end = end;
+                let secondary_provider = if let Some(prov) = &self.form_instance.dual_plot_settings{
+                    // let imm: &PadamoState = padamo;
+                    // Some((prov.detector_id,imm))
+                    if let Some(padamo_api::prelude::Content::DetectorFullData(signal_in_aux)) = padamo.compute_graph.environment.0.get(get_signal_var(prov.detector_id).as_str()){
+                        Some((signal_in_aux.0.clone(), signal_in_aux.1.clone()))
+                    }
+                    else{
+                        None
+                    }
+                }
+                else{
+                    None
+                };
 
-                let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end);
+                let loader = spawn_loader(lazy_spatial, lazy_temporal, start, end, secondary_provider);
                 // self.clear_pixels();
 
                 //self.loader = Some(loader);

@@ -194,7 +194,7 @@ impl PadamoTrigger{
                     }
                     let spatial = signal.0.clone();
                     let temporal = signal.1.clone();
-                    self.loader = Some(spawn_loader(spatial, temporal, event.position, event.position+event.duration));
+                    self.loader = Some(spawn_loader(spatial, temporal, event.position, event.position+event.duration, None));
                 }
 
             }

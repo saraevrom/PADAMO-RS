@@ -14,6 +14,7 @@ pub struct DataCache{
     // pub signal:ArrayND<f64>,
     // pub time:Vec<f64>,
     pub primary:(ArrayND<f64>, Vec<f64>),
+    pub secondary:Option<(ArrayND<f64>, Vec<f64>)>,
 
     pub time_step: f64,
     pub lc: Vec<f64>,

@@ -56,7 +56,9 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             let mut signal = signal_tri.0.request_range(frame, frame+1);
             signal.shape.drain(0..1);
             let time = signal_tri.1.request_range(frame, frame+1)[0];
-            self.buffer = Some((signal,time))
+            self.buffer = Some((signal,time));
+            self.fill_strings(padamo);
+            self.update_scale();
         }
     }
 
@@ -175,13 +177,16 @@ impl<T:Clone> SingleDetectorDisplay<T>{
     pub fn fill_strings(&mut self, padamo:&PadamoState){
 
         //TODO: Make proper multidetector
-        let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
+        if self.is_autoscale{
+            let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
 
-        if let Some(frame) = &self.buffer{
-            let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
-            self.min_signal_entry = min.to_string();
-            self.max_signal_entry = max.to_string();
+            if let Some(frame) = &self.buffer{
+                let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
+                self.min_signal_entry = min.to_string();
+                self.max_signal_entry = max.to_string();
+            }
         }
+
     }
 
     pub fn is_primary(&self)->bool{

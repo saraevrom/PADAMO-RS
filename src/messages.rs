@@ -2,6 +2,7 @@
 use crate::tools::editor::messages::EditorMessage;
 use crate::tools::viewer::ViewerMessage;
 use crate::tools::plotter::messages::PlotterMessage;
+use crate::tools::plotter_new::messages::NewPlotterMessage;
 use crate::tools::trigger::messages::TriggerMessage;
 use crate::tools::detectors::messages::DetectorManagerMessage;
 use crate::loaded_detectors_storage::LoadedDetectorsMessage;
@@ -15,6 +16,7 @@ pub enum PadamoAppMessage{
     ViewerMessage(ViewerMessage),
     PlotterMessage(PlotterMessage),
     TriggerMessage(TriggerMessage),
+    NewPlotterMessage(NewPlotterMessage),
     DetectorManagerMessage(DetectorManagerMessage),
     ChooseDetector,
     SetDetector(padamo_detectors::polygon::DetectorContent),
