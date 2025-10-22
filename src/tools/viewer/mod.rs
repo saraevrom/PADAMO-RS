@@ -546,7 +546,7 @@ impl PadamoTool for PadamoViewer{
 
         // let a1 = if self.window_view.is_primary(){
         let id = self.window_view.get_id();
-        let a1 = if let Some((a,b)) = self.playbar_state.get_interval(padamo, self.window_view.get_id()){
+        let a1 = if let Some((a,b)) = self.playbar_state.get_interval(padamo, 0){
             //Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(a, b, x)))
             Some(move |x| PadamoAppMessage::NewPlotterMessage(super::plotter_new::messages::NewPlotterMessage::SyncData {
                 start: a,
