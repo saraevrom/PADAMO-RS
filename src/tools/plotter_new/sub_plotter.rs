@@ -14,6 +14,50 @@ use iced::{widget::canvas::Cache, Length};
 use crate::{application::PadamoState, messages::PadamoAppMessage, tools::{plotter_new::messages::NewPlotterMessage, viewer::{cross_progress::CrossProgressMessage, ViewerMessage}}};
 use super::form::LCSelection;
 
+fn find_unixtime(haystack: &[f64],unixtime:f64)->Option<usize>{
+    //let unixtime:f64 = (dt.naive_utc().timestamp_millis() as f64)
+    let mut start:usize = 0;
+    let op_length = haystack.len();
+    let mut end:usize = op_length;
+    let mut middle:usize = (start+end)/2;
+    if op_length==0{
+        return None;
+    }
+
+    if unixtime>haystack[end-1]{
+        return None;
+    }
+    if unixtime<haystack[0]{
+        return None;
+    }
+    while start != middle{
+        let item = haystack[middle];
+        if item<=unixtime{
+            start = middle;
+        }
+        if item>=unixtime{
+            end = middle;
+        }
+        middle = (start+end)/2;
+    }
+    //println!("Datetime search result. req: {}, actual: {}",unixtime, op.request_item(middle));
+    let mut res = middle;
+    if middle>0{
+        let a = haystack[middle-1];
+        let b = haystack[middle];
+        if (a-unixtime).abs()<(b-unixtime).abs(){
+            res = middle-1;
+        }
+    }
+    if middle<op_length-1{
+        let a = haystack[middle];
+        let b = haystack[middle+1];
+        if (a-unixtime).abs()>(b-unixtime).abs(){
+            res = middle+1;
+        }
+    }
+    Some(res)
+}
 
 
 #[derive(Clone, Debug)]
@@ -67,6 +111,42 @@ impl Subplotter{
             self.cache.clear();
         }
         self.pointer = frame;
+    }
+
+    pub fn get_pointer_unixtime(&self)->Option<f64>{
+        if let Some(i) = self.pointer{
+            if let Some(s) = &self.displaying_signal{
+                if i>=s.start_frame && (i-s.start_frame)<s.time.len(){
+                    Some(s.time[i-s.start_frame])
+                }
+                else{
+                    None
+                }
+            }
+            else{
+                None
+            }
+        }
+        else{
+            None
+        }
+    }
+
+    pub fn set_pointer_unixtime(&mut self, unixtime: Option<f64>){
+        if let Some(ut) = unixtime{
+            if let Some(x) = &self.displaying_signal{
+                // use abi_stable::std_types::RVec;
+                if let Some(i) = find_unixtime(&x.time, ut){
+                    self.set_pointer(Some(i+x.start_frame));
+                }
+            }
+            else{
+                self.set_pointer(None);
+            }
+        }
+        else{
+            self.set_pointer(None);
+        }
     }
 
     pub fn get_mutable_detector_info<'a>(&'a mut self)-> (&'a mut Option<padamo_detectors::DetectorAndMask>, &'a mut Option<ArrayND<bool>>){

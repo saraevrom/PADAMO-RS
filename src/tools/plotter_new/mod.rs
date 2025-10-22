@@ -131,6 +131,7 @@ impl PadamoTool for PlotterNew{
             // self.secondary_plotter.set_data(None, None);
             self.last_request = None;
             self.primary_plotter.set_pointer(None);
+            self.secondary_plotter.set_pointer(None);
         }
         else if let PadamoAppMessage::NewPlotterMessage(msg_inner) = msg.as_ref(){
             match msg_inner {
@@ -199,6 +200,7 @@ impl PadamoTool for PlotterNew{
                         //self.primary_plotter.set_pointer();
                         //let x = if self.primary_plotter.
                         self.primary_plotter.set_pointer(Some(*p));
+                        self.secondary_plotter.set_pointer_unixtime(self.primary_plotter.get_pointer_unixtime());
                     }
                 },
             }
