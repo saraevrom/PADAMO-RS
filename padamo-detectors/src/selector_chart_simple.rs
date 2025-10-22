@@ -44,8 +44,8 @@ where
 
     fn build_chart<DB: DrawingBackend>(&self, _state: &Self::State, _builder: ChartBuilder<DB>) {}
 
-    fn draw_chart<DB: DrawingBackend>(&self, _state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
-        self.detector_plotter.build_chart_aux_simple(&self.detector,&root, self.pixel_mask, Margins { top: 5, bottom: 5, left: 5, right: 5 }, self.transform);
+    fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
+        self.detector_plotter.build_chart_aux_simple(&self.detector,&root, self.pixel_mask, Margins { top: 5, bottom: 5, left: 5, right: 5 }, self.transform, *state);
         //self.detector.build_chart_generic(&root, &self.source,self.scale,state);
     }
 

@@ -118,7 +118,10 @@ impl<Message> DetectorPlotter<Message>{
 //
 //     }
 
-    pub fn build_chart_aux_simple<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&ArrayND<bool>, margins:Margins, transform:Option<transformer::Transform>) {
+    pub fn build_chart_aux_simple<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>,
+                                                      pixels:&ArrayND<bool>, margins:Margins,
+                                                      transform:Option<transformer::Transform>,
+                                                      state:Option<((f64,f64),(i32,i32))>) {
         let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
 
@@ -172,6 +175,9 @@ impl<Message> DetectorPlotter<Message>{
         chart.draw_series::<BackendCoordOnly,PathElement<(f64,f64)>,_,_>(
             outlines.iter()
         ).unwrap();
+        display_pixel_id(detector, root, &None, state);
+
+
         *self.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
 
     }
@@ -184,7 +190,7 @@ impl<Message> DetectorPlotter<Message>{
                 map.set(&pixel, true);
             }
         }
-        self.build_chart_aux_simple(detector, root, &map, margins, None);
+        self.build_chart_aux_simple(detector, root, &map, margins, None, None);
 
         // let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
         // let min_range = (min_x..max_x, min_y..max_y);
@@ -301,24 +307,7 @@ impl<Message> DetectorPlotter<Message>{
             (0.0,1.0)
         };
 
-        if let Some((pos,unmapped)) = state{
-            if let Some(index) = detector.cells.position_index(*pos){
-                //println!("{:?}",index);
-
-                let mut unmapped_pos = *unmapped;
-                unmapped_pos.1 -= 20;
-                let txt = if let Some((buf,_t)) = pixels {
-                    if let Some(val) = buf.try_get(index){
-                        format!("{:?} {:.3}",index,val)
-                    }
-                    else{
-                        format!("{:?} MAPPING INVALID",index)
-                    }
-
-                } else{format!("{:?}",index)};
-                root.draw_text(&txt, &(("sans-serif", 15).into()), unmapped_pos).unwrap();
-            }
-        }
+        display_pixel_id(detector, root, pixels, *state);
 
         let cmap_builder = ChartLayout::new()
             .y_label_area_size(50)
@@ -392,6 +381,27 @@ impl<Message> DetectorPlotter<Message>{
             let warning = iced::widget::text("No detector");
             let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
             container.into()
+        }
+    }
+}
+
+fn display_pixel_id<DB:DrawingBackend>(detector: &DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels: &Option<(&ArrayND<f64>, f64)>, state: Option<((f64, f64), (i32, i32))>) {
+    if let Some((pos,unmapped)) = state{
+        if let Some(index) = detector.cells.position_index(pos){
+            //println!("{:?}",index);
+
+            let mut unmapped_pos = unmapped;
+            unmapped_pos.1 -= 20;
+            let txt = if let Some((buf,_t)) = pixels {
+                if let Some(val) = buf.try_get(index){
+                    format!("{:?} {:.3}",index,val)
+                }
+                else{
+                    format!("{:?} MAPPING INVALID",index)
+                }
+
+            } else{format!("{:?}",index)};
+            root.draw_text(&txt, &(("sans-serif", 15).into()), unmapped_pos).unwrap();
         }
     }
 }
