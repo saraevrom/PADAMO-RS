@@ -12,7 +12,7 @@ pub enum SingleDetectorDisplayMessage{
     // SetMaxSignal(String),
     // SetAutoscale(bool),
     NormEntryMessage(MultiEntryMessage),
-    PlotZoomMessage(TransformMessage)
+    PlotZoomMessage(TransformMessage),
 }
 
 pub struct SingleDetectorDisplay<T:Clone>
@@ -71,7 +71,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             },
             SingleDetectorDisplayMessage::NormEntryMessage(msg)=>{
                 self.scale_state.update(msg, self.detector_id);
-
+                padamo.persistent_state.serialize("viewer_color_norm", &self.scale_state);
             },
             SingleDetectorDisplayMessage::PlotZoomMessage(msg)=>{
                 self.view_transform.update(msg.clone());
@@ -185,5 +185,11 @@ impl<T:Clone> SingleDetectorDisplay<T>{
 
     pub fn get_scale(&self)->padamo_detectors::Scaling{
         self.scale_state.get_entry(self.detector_id).map(|x| x.get_scale()).unwrap_or(padamo_detectors::Scaling::Autoscale)
+    }
+
+    pub fn initialize(&mut self, padamo:&PadamoState){
+        if let Some(v) = padamo.persistent_state.deserialize("viewer_color_norm"){
+            self.scale_state = v;
+        }
     }
 }

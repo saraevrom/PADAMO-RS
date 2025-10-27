@@ -731,5 +731,9 @@ impl PadamoTool for PadamoViewer{
             _=>()
         }
     }
+
+    fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
+        self.window_view.initialize(&padamo);
+    }
 }
 
