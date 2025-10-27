@@ -3,29 +3,30 @@ use padamo_api::lazy_array_operations::LazyTriSignal;
 use padamo_detectors::DetectorPlotter;
 
 use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
-use super::cross_progress::get_icon;
+use super::norm_entry::{MultiEntry, MultiEntryMessage};
 
 #[derive(Clone, Debug)]
 pub enum SingleDetectorDisplayMessage{
     SetDetectorID(usize),
-    SetMinSignal(String),
-    SetMaxSignal(String),
-    SetAutoscale(bool),
+    // SetMinSignal(String),
+    // SetMaxSignal(String),
+    // SetAutoscale(bool),
+    NormEntryMessage(MultiEntryMessage),
     PlotZoomMessage(TransformMessage)
 }
 
 pub struct SingleDetectorDisplay<T:Clone>
 {
     detector_id: usize,
-    is_autoscale:bool,
-
-    min_signal_entry:String,
-    max_signal_entry:String,
+    // is_autoscale:bool,
+    //
+    // min_signal_entry:String,
+    // max_signal_entry:String,
+    scale_state:MultiEntry,
 
     buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
     plotter:DetectorPlotter<T>,
     view_transform: TransformState,
-    plot_scale:padamo_detectors::Scaling,
 }
 
 impl<T:Clone> SingleDetectorDisplay<T>{
@@ -34,11 +35,8 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             detector_id,
             plotter: DetectorPlotter::new(),
             buffer:None,
-            is_autoscale:true,
-            min_signal_entry: String::new(),
-            max_signal_entry: String::new(),
-            view_transform: TransformState::new(),
-            plot_scale: padamo_detectors::Scaling::Autoscale
+            scale_state: MultiEntry::new(),
+            view_transform: TransformState::new()
         }
     }
 
@@ -58,20 +56,10 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             let time = signal_tri.1.request_range(frame, frame+1)[0];
             self.buffer = Some((signal,time));
             self.fill_strings(padamo);
-            self.update_scale();
+            self.scale_state.get_entry_mut(self.detector_id).update_scale();
         }
     }
 
-    fn update_scale(&mut self){
-        if self.is_autoscale{
-            self.plot_scale = padamo_detectors::Scaling::Autoscale;
-        }
-        else{
-            let min = if let Ok(v) = self.min_signal_entry.parse::<f64>() {v} else {return;};
-            let max = if let Ok(v) = self.max_signal_entry.parse::<f64>() {v} else {return;};
-            self.plot_scale = padamo_detectors::Scaling::Fixed(min, max);
-        }
-    }
 
 
     pub fn update(&mut self, msg:SingleDetectorDisplayMessage, padamo: &mut PadamoState)->bool{
@@ -81,21 +69,10 @@ impl<T:Clone> SingleDetectorDisplay<T>{
                 self.buffer = None;
                 return true;
             },
-            SingleDetectorDisplayMessage::SetAutoscale(v)=>{
-                self.is_autoscale = v;
-                self.update_scale();
-                //request_buffer_fill = false;
-            }
-            SingleDetectorDisplayMessage::SetMinSignal(s)=>{
-                self.min_signal_entry = s.clone();
-                self.update_scale();
-                // request_buffer_fill = false;
-            }
-            SingleDetectorDisplayMessage::SetMaxSignal(s)=>{
-                self.max_signal_entry = s.clone();
-                self.update_scale();
-                // request_buffer_fill = false;
-            }
+            SingleDetectorDisplayMessage::NormEntryMessage(msg)=>{
+                self.scale_state.update(msg, self.detector_id);
+
+            },
             SingleDetectorDisplayMessage::PlotZoomMessage(msg)=>{
                 self.view_transform.update(msg.clone());
             }
@@ -118,17 +95,14 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             None
         };
 
-        let detector_frame = self.plotter.view(detector,frame,self.view_transform.transform(),self.plot_scale,
+        let detector_frame = self.plotter.view(detector,frame,self.view_transform.transform(),self.get_scale(),
                         a1,
                         a2,
         );
 
         let transform:iced::Element<'_, _> = self.view_transform.view().into();
         let footer:iced::Element<'_, _> = row![
-            iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(SingleDetectorDisplayMessage::SetAutoscale),
-            iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(SingleDetectorDisplayMessage::SetMinSignal),
-            iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
-            iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(SingleDetectorDisplayMessage::SetMaxSignal),
+            self.scale_state.view(self.detector_id).map(SingleDetectorDisplayMessage::NormEntryMessage),
             iced::widget::Space::new(10,10).width(iced::Length::Fill),
             transform.map(SingleDetectorDisplayMessage::PlotZoomMessage),
             // iced::widget::Space::new(10,10).width(iced::Length::Fill),
@@ -177,15 +151,20 @@ impl<T:Clone> SingleDetectorDisplay<T>{
     pub fn fill_strings(&mut self, padamo:&PadamoState){
 
         //TODO: Make proper multidetector
-        if self.is_autoscale{
-            let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
-
-            if let Some(frame) = &self.buffer{
-                let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
-                self.min_signal_entry = min.to_string();
-                self.max_signal_entry = max.to_string();
-            }
+        // if self.is_autoscale{
+        //     let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
+        //
+        //     if let Some(frame) = &self.buffer{
+        //         let (min,max) = self.plot_scale.get_bounds(&frame.0,&detector.alive_pixels);
+        //         self.min_signal_entry = min.to_string();
+        //         self.max_signal_entry = max.to_string();
+        //     }
+        // }
+        let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
+        if let Some(frame) = &self.buffer{
+            self.scale_state.get_entry_mut(self.detector_id).fill_strings(padamo, &frame.0, &detector.alive_pixels);
         }
+
 
     }
 
@@ -205,6 +184,6 @@ impl<T:Clone> SingleDetectorDisplay<T>{
     }
 
     pub fn get_scale(&self)->padamo_detectors::Scaling{
-        self.plot_scale
+        self.scale_state.get_entry(self.detector_id).map(|x| x.get_scale()).unwrap_or(padamo_detectors::Scaling::Autoscale)
     }
 }

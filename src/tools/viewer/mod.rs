@@ -3,6 +3,7 @@ mod animator;
 mod form;
 mod detector_display;
 pub mod cross_progress;
+mod norm_entry;
 
 use super::PadamoTool;
 use iced::widget::text::Catalog;

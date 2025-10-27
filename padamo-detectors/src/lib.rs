@@ -497,7 +497,7 @@ where
 
 
 
-#[derive(Clone,Copy,Debug)]
+#[derive(Clone,Copy,Debug,serde::Serialize, serde::Deserialize)]
 pub enum Scaling{
     Autoscale,
     Fixed(f64,f64)
