@@ -63,6 +63,10 @@ impl DetectorAndMask {
         }
     }
 
+    pub fn reset_mask(&mut self){
+        self.alive_pixels.flat_data.iter_mut().for_each(|x| *x = true);
+    }
+
     pub fn shape(&self)->&Vec<usize>{
         &self.cells.compat_shape
     }

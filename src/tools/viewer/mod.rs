@@ -509,17 +509,17 @@ impl PadamoViewer{
         self.export_status = "IDLE".into();
     }
 
-    fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
-        // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
-        let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
-        let mask = detector.alive_pixels_mask();
-        if save{
-            padamo.persistent_state.serialize("viewer_pixels",&mask);
-        }
-        padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(mask)));
-        //let arr = self.chart.alive_pixels.clone().to_ndarray();
-
-    }
+    // fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
+    //     // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+    //     let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
+    //     let mask = detector.alive_pixels_mask();
+    //     if save{
+    //         padamo.persistent_state.serialize("viewer_pixels",&mask);
+    //     }
+    //     padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(mask)));
+    //     //let arr = self.chart.alive_pixels.clone().to_ndarray();
+    //
+    // }
 }
 
 
@@ -565,12 +565,12 @@ impl PadamoTool for PadamoViewer{
         // else{
         //     None
         // };
-        let a2 = if self.window_view.is_primary(){
-            Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x)))
-        }
-        else{
-            None
-        };
+        // let a2 = if self.window_view.is_primary(){
+        //     Some(move |x| PadamoAppMessage::ViewerMessage(ViewerMessage::TogglePixel(x)))
+        // }
+        // else{
+        //     None
+        // };
 
         let top_row = row![
 
@@ -578,7 +578,6 @@ impl PadamoTool for PadamoViewer{
 
             self.window_view.view(padamo, |x| PadamoAppMessage::ViewerMessage(ViewerMessage::WindowView(x)),
                                 a1,
-                                a2,
                                 ),
 
             iced::widget::rule::Rule::vertical(10),
@@ -597,7 +596,7 @@ impl PadamoTool for PadamoViewer{
 
     fn update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef) {
         if let crate::messages::PadamoAppMessage::Run = msg.as_ref(){
-            self.update_pixels(padamo,true);
+            self.window_view.update_pixels(padamo,true);
         }
         else if let crate::messages::PadamoAppMessage::ViewerMessage(view) = msg.as_ref(){
             // let mut request_buffer_fill = true;
@@ -627,13 +626,19 @@ impl PadamoTool for PadamoViewer{
                         }
                     }
                 }
-                ViewerMessage::TogglePixel(pix)=>{
-                    if let Some(det) = padamo.detectors.get_primary_mut(){
-                        det.toggle_pixel(pix);
-                        self.update_pixels(padamo,true);
-                    }
-
-                }
+                // ViewerMessage::TogglePixel(pix)=>{
+                //     if let Some(det) = padamo.detectors.get_primary_mut(){
+                //         det.toggle_pixel(pix);
+                //         self.update_pixels(padamo,true);
+                //     }
+                //
+                // }
+                // ViewerMessage::ResetMask=>{
+                //     if let Some(det) = padamo.detectors.get_primary_mut(){
+                //         det.reset_mask();
+                //         self.update_pixels(padamo,true);
+                //     }
+                // }
                 ViewerMessage::WindowView(msg)=>{
                     self.window_view.update(msg.to_owned(), padamo);
                 },

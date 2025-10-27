@@ -48,7 +48,7 @@ impl TransformState{
             self.delta_x.view_row("X", "X pos", TransformMessage::MoveX),
             self.delta_y.view_row("Y", "Y pos", TransformMessage::MoveY),
             self.zoom.view_row("Z", "Zoom", TransformMessage::SetZoom),
-            widget::button("Reset").on_press(TransformMessage::Reset),
+            widget::button("Reset view").on_press(TransformMessage::Reset),
         ])
     }
 

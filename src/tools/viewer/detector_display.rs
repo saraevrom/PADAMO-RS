@@ -1,5 +1,5 @@
 use iced::widget::{column, row};
-use padamo_api::lazy_array_operations::LazyTriSignal;
+use padamo_api::{lazy_array_operations::LazyTriSignal, prelude::{make_lao_box, Content}};
 use padamo_detectors::DetectorPlotter;
 
 use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
@@ -13,6 +13,8 @@ pub enum SingleDetectorDisplayMessage{
     // SetAutoscale(bool),
     NormEntryMessage(MultiEntryMessage),
     PlotZoomMessage(TransformMessage),
+    TogglePixel(Vec<usize>),
+    ResetMask,
 }
 
 pub struct SingleDetectorDisplay<T:Clone>
@@ -60,7 +62,17 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         }
     }
 
+    pub fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
+        // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
+        let detector = if let Some(det) = padamo.detectors.get(self.get_id()){det} else {return;};
+        let mask = detector.alive_pixels_mask();
+        if save{
+            padamo.save_detectors();
+        }
+        padamo.compute_graph.environment.0.insert("alive_pixels".into(),Content::DetectorSignal(make_lao_box(mask)));
+        //let arr = self.chart.alive_pixels.clone().to_ndarray();
 
+    }
 
     pub fn update(&mut self, msg:SingleDetectorDisplayMessage, padamo: &mut PadamoState)->bool{
         match msg{
@@ -75,16 +87,27 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             },
             SingleDetectorDisplayMessage::PlotZoomMessage(msg)=>{
                 self.view_transform.update(msg.clone());
+            },
+            SingleDetectorDisplayMessage::TogglePixel(pix_id)=>{
+                if let Some(detector) = padamo.detectors.get_mut(self.detector_id){
+                    detector.toggle_pixel(&pix_id);
+                    self.update_pixels(padamo, true);
+                }
+            },
+            SingleDetectorDisplayMessage::ResetMask=>{
+                if let Some(detector) = padamo.detectors.get_mut(self.detector_id){
+                    detector.reset_mask();
+                    self.update_pixels(padamo, true);
+                }
             }
         }
         false
     }
 
-    pub fn view<'a, F,F1,F2>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>, a2:Option<F2>)->iced::Element<'a, T>
+    pub fn view<'a, F,F1>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>)->iced::Element<'a, T>
     where
         F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
         F1:'static+Fn(Vec<usize>)->T,
-        F2:'static+Fn(Vec<usize>)->T
     {
         let detector = padamo.detectors.get(self.detector_id);
 
@@ -94,6 +117,8 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         else{
             None
         };
+
+        let a2 = Some(move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x)));
 
         let detector_frame = self.plotter.view(detector,frame,self.view_transform.transform(),self.get_scale(),
                         a1,
@@ -105,6 +130,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             self.scale_state.view(self.detector_id).map(SingleDetectorDisplayMessage::NormEntryMessage),
             iced::widget::Space::new(10,10).width(iced::Length::Fill),
             transform.map(SingleDetectorDisplayMessage::PlotZoomMessage),
+            iced::widget::button("Reset mask").on_press(SingleDetectorDisplayMessage::ResetMask),
             // iced::widget::Space::new(10,10).width(iced::Length::Fill),
         ].into();
 

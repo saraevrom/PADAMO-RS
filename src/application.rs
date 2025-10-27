@@ -83,6 +83,10 @@ impl PadamoState{
         let mut rng = rand::thread_rng();
         self.current_seed.set_value(rng.next_u64());
     }
+
+    pub fn save_detectors(&self){
+        self.persistent_state.serialize("detectors", &self.detectors);
+    }
 }
 
 impl Padamo{
@@ -163,6 +167,7 @@ impl Padamo{
             }
         }
         if let Some(s) = self.state.persistent_state.read("detectors"){
+            println!("Loading persistent detector array");
             match serde_json::from_str::<LoadedDetectors>(&s){
                  Ok(v)=>{
                      self.state.detectors = v;
@@ -339,7 +344,7 @@ impl Padamo{
                     self.state.show_error(format!("{}",e));
                 }
                 else{
-                    self.state.persistent_state.write("detectors", &serde_json::to_string(&self.state.detectors).unwrap());
+                    self.state.save_detectors();
                 }
             },
             PadamoAppMessage::SetEditLoadedDetectors(v)=>self.state.is_editing_detectors = v,
