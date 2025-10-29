@@ -162,6 +162,10 @@ impl CalculationNode for TimeOffsetNode{
         "Time offset".into()
     }
 
+    fn category(&self,) -> RVec<RString>where {
+        rvec!["Signal manipulation".into()]
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = " Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO> {
