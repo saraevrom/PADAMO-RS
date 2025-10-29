@@ -65,3 +65,4 @@ mv -v libpadamorandom.so                plugins/
 mv -v libpadamostft.so                  plugins/
 mv -v libpadamoeusoroot.so              plugins/
 mv -v libpadamoplaintext.so             plugins/
+mv -v libpadamotransforms.so            plugins/
