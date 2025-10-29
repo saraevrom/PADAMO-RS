@@ -1,4 +1,5 @@
 use abi_stable::std_types::{RResult, RString, RVec};
+use nalgebra::Matrix4;
 use padamo_api::{constants, lazy_array_operations::ArrayND, ports, prelude::*};
 
 #[derive(Clone,Debug)]
@@ -10,6 +11,9 @@ pub struct RotationNode{
     id:String,
     axis:nalgebra::Vector3<f64>,
 }
+
+#[derive(Clone,Debug)]
+pub struct TransformParent;
 
 fn category() -> RVec<RString>where {
     vec![
@@ -45,6 +49,22 @@ impl RotationNode{
         let v:ArrayND<f64> = v.into();
         let v = make_lao_box(v);
         args.outputs.set_value("Matrix", v.into())
+    }
+}
+
+impl TransformParent{
+    fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>{
+        let child = args.inputs.request_detectorsignal("Child")?;
+        let parent = args.inputs.request_detectorsignal("Parent")?;
+
+        let child = child.request_range(0,child.length());
+        let parent = parent.request_range(0,parent.length());
+
+        let child:Matrix4<f64> = child.try_into().map_err(|_| ExecutionError::OtherError("Child transform must be 4x4 matrix".into()))?;
+        let parent:Matrix4<f64> = parent.try_into().map_err(|_| ExecutionError::OtherError("Parent transform must be 4x4 matrix".into()))?;
+        let combined = parent*child;
+        let combined:ArrayND<f64> = combined.into();
+        args.outputs.set_value("Combined", make_lao_box(combined).into())
     }
 }
 
@@ -87,6 +107,7 @@ impl CalculationNode for RotationNode{
     fn name(&self,) -> RString where {
         self.name.clone().into()
     }
+
     fn category(&self,) -> RVec<RString>where {
         category()
     }
@@ -114,5 +135,40 @@ impl CalculationNode for RotationNode{
 
     fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
         self.calculate(args).into()
+    }
+}
+
+impl CalculationNode for TransformParent{
+    fn name(&self,) -> RString where {
+        "Transform parent".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    fn identifier(&self,) -> RString where {
+        "transforms.parent".into()
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!()
+    }
+
+    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Parent", ContentType::DetectorSignal),
+            ("Child", ContentType::DetectorSignal),
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Combined", ContentType::DetectorSignal),
+        ]
     }
 }
