@@ -166,6 +166,10 @@ impl CalculationNode for TimeOffsetNode{
         rvec!["Signal manipulation".into()]
     }
 
+    fn identifier(&self,) -> RString where {
+        "padamosignalmanipulation.time_offset".into()
+    }
+
     #[allow(clippy::let_and_return)]
     #[doc = " Input definitions of node"]
     fn inputs(&self,) -> RVec<CalculationIO> {
