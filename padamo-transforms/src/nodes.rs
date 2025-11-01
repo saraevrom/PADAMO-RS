@@ -1,6 +1,9 @@
 use abi_stable::std_types::{RResult, RString, RVec};
 use nalgebra::Matrix4;
-use padamo_api::{constants, lazy_array_operations::ArrayND, ports, prelude::*};
+use padamo_api::{constants, lazy_array_operations::{ArrayND, LazyDetectorSignal}, ports, prelude::*};
+
+#[derive(Clone,Debug)]
+pub struct IdentityNode;
 
 #[derive(Clone,Debug)]
 pub struct PositionNode;
@@ -13,7 +16,10 @@ pub struct RotationNode{
 }
 
 #[derive(Clone,Debug)]
-pub struct TransformParent;
+pub struct TransformParentNode;
+
+#[derive(Clone,Debug)]
+pub struct ModelViewNode;
 
 fn category() -> RVec<RString>where {
     vec![
@@ -21,13 +27,33 @@ fn category() -> RVec<RString>where {
     ].into()
 }
 
+fn matrix_err<T:Into<RString>>(msg:T)->ExecutionError{
+    ExecutionError::OtherError(msg.into())
+}
+
+fn get_all(x:LazyDetectorSignal)->ArrayND<f64>{
+    x.request_range(0,x.length())
+}
+
+impl IdentityNode{
+    fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>where {
+        let v = nalgebra::Matrix4::identity();
+        let v:ArrayND<f64> = v.into();
+        let v = make_lao_box(v);
+        args.outputs.set_value("Matrix", v.into())
+    }
+}
+
 impl PositionNode{
     fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>where {
+        let input = get_all(args.inputs.request_detectorsignal("Matrix")?);
+        let input:Matrix4<f64> = input.try_into().map_err(|_| matrix_err("Input matrix must be 4x4"))?;
+
         let x = args.constants.request_float("x")?;
         let y = args.constants.request_float("y")?;
         let z = args.constants.request_float("z")?;
         let v = nalgebra::Vector3::new(x, y, z);
-        let v = nalgebra::Matrix4::new_translation(&v);
+        let v = nalgebra::Matrix4::new_translation(&v) * input;
         let v:ArrayND<f64> = v.into();
         let v = make_lao_box(v);
         args.outputs.set_value("Matrix", v.into())
@@ -40,31 +66,80 @@ impl RotationNode{
     }
 
     fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>where {
+        let input = get_all(args.inputs.request_detectorsignal("Matrix")?);
+        let input:Matrix4<f64> = input.try_into().map_err(|_| matrix_err("Input matrix must be 4x4"))?;
+
         let mut angle = args.constants.request_float("Angle")?;
         if args.constants.request_boolean("Degrees")?{
             angle = angle*std::f64::consts::PI/180.0;
         }
 
-        let v = nalgebra::Matrix4::new_rotation(self.axis*angle);
+        let v = nalgebra::Matrix4::new_rotation(self.axis*angle) * input;
         let v:ArrayND<f64> = v.into();
         let v = make_lao_box(v);
         args.outputs.set_value("Matrix", v.into())
     }
 }
 
-impl TransformParent{
+impl TransformParentNode{
     fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>{
-        let child = args.inputs.request_detectorsignal("Child")?;
-        let parent = args.inputs.request_detectorsignal("Parent")?;
+        let child = get_all(args.inputs.request_detectorsignal("Child")?);
+        let parent = get_all(args.inputs.request_detectorsignal("Parent")?);
 
-        let child = child.request_range(0,child.length());
-        let parent = parent.request_range(0,parent.length());
 
-        let child:Matrix4<f64> = child.try_into().map_err(|_| ExecutionError::OtherError("Child transform must be 4x4 matrix".into()))?;
-        let parent:Matrix4<f64> = parent.try_into().map_err(|_| ExecutionError::OtherError("Parent transform must be 4x4 matrix".into()))?;
+        let child:Matrix4<f64> = child.try_into().map_err(|_| matrix_err("Child transform must be 4x4 matrix"))?;
+        let parent:Matrix4<f64> = parent.try_into().map_err(|_| matrix_err("Parent transform must be 4x4 matrix"))?;
         let combined = parent*child;
         let combined:ArrayND<f64> = combined.into();
         args.outputs.set_value("Combined", make_lao_box(combined).into())
+    }
+}
+
+impl ModelViewNode{
+    fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>{
+        let model = get_all(args.inputs.request_detectorsignal("Model")?);
+        let view = get_all(args.inputs.request_detectorsignal("View")?);
+
+        let model:Matrix4<f64> = model.try_into().map_err(|_| matrix_err("Child transform must be 4x4 matrix"))?;
+        let view:Matrix4<f64> = view.try_into().map_err(|_| matrix_err("Parent transform must be 4x4 matrix"))?;
+        let view = view.try_inverse().ok_or(matrix_err("Cannot construct view matrix. Ensure that View Transform matrix is inversible."))?;
+
+        let combined =  view*model;
+        // let combined = parent*child;
+        let combined:ArrayND<f64> = combined.into();
+        args.outputs.set_value("Combined", make_lao_box(combined).into())
+    }
+}
+
+impl CalculationNode for IdentityNode{
+    fn name(&self) -> RString where {
+        "Identity".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    fn identifier(&self,) -> RString where {
+        "transforms.identity".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports![]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Matrix", ContentType::DetectorSignal)
+        ]
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![]
+    }
+
+    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
     }
 }
 
@@ -81,7 +156,9 @@ impl CalculationNode for PositionNode{
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![]
+        ports![
+            ("Matrix", ContentType::DetectorSignal)
+        ]
     }
 
     fn outputs(&self,) -> RVec<CalculationIO>where {
@@ -117,7 +194,9 @@ impl CalculationNode for RotationNode{
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports![]
+        ports![
+            ("Matrix", ContentType::DetectorSignal)
+        ]
     }
 
     fn outputs(&self,) -> RVec<CalculationIO>where {
@@ -138,7 +217,7 @@ impl CalculationNode for RotationNode{
     }
 }
 
-impl CalculationNode for TransformParent{
+impl CalculationNode for TransformParentNode{
     fn name(&self,) -> RString where {
         "Transform parent".into()
     }
@@ -163,6 +242,41 @@ impl CalculationNode for TransformParent{
         ports![
             ("Parent", ContentType::DetectorSignal),
             ("Child", ContentType::DetectorSignal),
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Combined", ContentType::DetectorSignal),
+        ]
+    }
+}
+
+impl CalculationNode for ModelViewNode{
+    fn name(&self,) -> RString where {
+        "Model-View".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    fn identifier(&self,) -> RString where {
+        "transforms.mv".into()
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants!()
+    }
+
+    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Model", ContentType::DetectorSignal),
+            ("View", ContentType::DetectorSignal),
         ]
     }
 
