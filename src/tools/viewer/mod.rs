@@ -3,6 +3,7 @@ mod animator;
 mod form;
 mod detector_display;
 pub mod cross_progress;
+pub mod test_objects;
 mod norm_entry;
 
 use super::PadamoTool;
@@ -543,7 +544,7 @@ impl PadamoTool for PadamoViewer{
             iced::widget::rule::Rule::horizontal(10),
 
             self.form.view(None).map(ViewerMessage::EditForm),
-        ].width(200).into();
+        ].width(250).into();
 
         // let a1 = if self.window_view.is_primary(){
         let id = self.window_view.get_id();

@@ -220,12 +220,13 @@ impl Padamo{
     fn new()->Self{
         let mut nodes = crate::nodes_interconnect::NodesRegistry::new();
 
-        nodes.register_node(builtin_nodes::viewer::LoadedFileNode).unwrap();
-        nodes.register_node(builtin_nodes::viewer::ViewerNode).unwrap();
-        nodes.register_node(builtin_nodes::viewer::AuxViewerNode).unwrap();
-        nodes.register_node(builtin_nodes::viewer::AuxViewerMaskNode).unwrap();
-
-        nodes.register_node(builtin_nodes::viewer::ViewerMaskNode).unwrap();
+        // nodes.register_node(builtin_nodes::viewer::LoadedFileNode).unwrap();
+        // nodes.register_node(builtin_nodes::viewer::ViewerNode).unwrap();
+        // nodes.register_node(builtin_nodes::viewer::AuxViewerNode).unwrap();
+        // nodes.register_node(builtin_nodes::viewer::AuxViewerMaskNode).unwrap();
+        //
+        // nodes.register_node(builtin_nodes::viewer::ViewerMaskNode).unwrap();
+        builtin_nodes::register_nodes(&mut nodes);
         nodes.register_node(padamo_api::calculation_nodes::full_reader::FullReaderNode).unwrap();
 
         let current_exe = std::env::current_exe().unwrap();

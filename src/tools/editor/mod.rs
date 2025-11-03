@@ -21,7 +21,7 @@ use once_cell::sync::Lazy;
 use iced::widget::pane_grid;
 use padamo_workspace::PadamoWorkspace;
 pub mod messages;
-use crate::detector_muxer::{get_signal_var};
+use crate::detector_muxer::{get_mask_var, get_signal_var, get_transform_var, VIEWER_TEST_OBJECT_KEY};
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
@@ -62,7 +62,10 @@ impl PadamoEditor{
         padamo.nodes.make_compute_graph(&mut x_mut, &self.state.nodes);
         for i in 0..padamo.detectors.len(){
             x_mut.environment.0.remove(get_signal_var(i).as_str());
+            x_mut.environment.0.remove(get_mask_var(i).as_str());
+            x_mut.environment.0.remove(get_transform_var(i).as_str());
         }
+        x_mut.environment.0.remove(VIEWER_TEST_OBJECT_KEY);
         if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value){
             padamo.show_error(format!("Execution error: {}",err));
             //println!("Execution error: {}",err);

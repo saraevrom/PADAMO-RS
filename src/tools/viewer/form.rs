@@ -38,12 +38,13 @@ pub struct FrameParameters{
     #[field_name("Height [pix]")] pub height:u32,
 }
 
-#[derive(Clone,Debug,IcedForm)]
+#[derive(Clone,Debug,IcedForm, Default)]
 pub struct ViewerForm{
     //#[field_name("Stop on trigger")] pub stop_on_trigger:bool,
     #[field_name("Animation")] pub animation:AnimationParameters,
     #[field_name("Export")] pub export:ExportParameters,
-    #[field_name("Single Frame")] pub single_frame:FrameParameters
+    #[field_name("Single Frame")] pub single_frame:FrameParameters,
+    #[field_name("Test object")] pub test_object:super::test_objects::TestObject,
 }
 
 #[derive(Clone,Debug)]
@@ -73,11 +74,11 @@ impl Default for ViewerActions{
     }
 }
 
-impl Default for ViewerForm{
-    fn default() -> Self {
-        Self {animation: Default::default(), export: Default::default(), single_frame: Default::default() }
-    }
-}
+// impl Default for ViewerForm{
+//     fn default() -> Self {
+//         Self {animation: Default::default(), export: Default::default(), single_frame: Default::default() }
+//     }
+// }
 
 impl Default for FrameParameters{
     fn default() -> Self {
