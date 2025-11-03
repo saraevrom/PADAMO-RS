@@ -527,7 +527,7 @@ impl PadamoTool for PadamoTrigger{
     fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage>{
         match msg.as_ref() {
             PadamoAppMessage::Run => {
-                if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
+                if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::detector_muxer::VIEWER_PRIMARY_SIGNAL_VAR){
                     //let signal_w = signal.clone();
                     let signal = signal.clone();
                     let length = signal.0.length();

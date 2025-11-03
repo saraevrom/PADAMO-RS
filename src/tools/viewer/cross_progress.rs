@@ -201,7 +201,7 @@ impl CrossProgress{
     }
 
     pub fn update_signal_info(&mut self, padamo: &mut PadamoState)->Option<IntervalReport>{
-        if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::builtin_nodes::viewer::VIEWER_SIGNAL_VAR){
+        if let Some(padamo_api::prelude::Content::DetectorFullData(signal)) = padamo.compute_graph.environment.0.get(crate::detector_muxer::VIEWER_PRIMARY_SIGNAL_VAR){
             //let signal_w = signal.clone();
             // self.signal = Some(signal.clone());
             //self.signal = Some((signal_w.0,signal_w.1,signal_w.2.into()));
@@ -385,6 +385,7 @@ impl CrossProgress{
             PlayState::Forward=>{
                 if self.pointer<self.end{
                     self.pointer += 1;
+                    self.fill_strings();
                     // self.update_buffer(Some(padamo));
                     // self.fill_strings();
                     true
@@ -397,6 +398,7 @@ impl CrossProgress{
             PlayState::Backward=>{
                 if self.pointer>self.start{
                     self.pointer-=1;
+                    self.fill_strings();
                     // self.update_buffer(Some(padamo));
                     // self.fill_strings();
                     true

@@ -21,7 +21,7 @@ use once_cell::sync::Lazy;
 use iced::widget::pane_grid;
 use padamo_workspace::PadamoWorkspace;
 pub mod messages;
-use crate::detector_muxer::{get_mask_var, get_signal_var, get_transform_var, VIEWER_TEST_OBJECT_KEY};
+use crate::detector_muxer::{get_mask_var, get_mask_var_by_name, get_signal_var, get_signal_var_by_name, get_transform_var, get_transform_var_by_name, VIEWER_TEST_OBJECT_KEY};
 
 static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);
 
@@ -64,6 +64,11 @@ impl PadamoEditor{
             x_mut.environment.0.remove(get_signal_var(i).as_str());
             x_mut.environment.0.remove(get_mask_var(i).as_str());
             x_mut.environment.0.remove(get_transform_var(i).as_str());
+
+            let nick = padamo.detectors.get(i).unwrap().get_friendly_name();
+            x_mut.environment.0.remove(get_signal_var_by_name(&nick).as_str());
+            x_mut.environment.0.remove(get_mask_var_by_name(&nick).as_str());
+            x_mut.environment.0.remove(get_transform_var_by_name(&nick).as_str());
         }
         x_mut.environment.0.remove(VIEWER_TEST_OBJECT_KEY);
         if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value){
@@ -73,6 +78,43 @@ impl PadamoEditor{
         else{
             println!("Execution success");
         }
+
+        // Postprocessing
+
+        let mut swap_map = Vec::new();
+
+        for (i,detector) in padamo.detectors.iter_detectors().enumerate(){
+            let nick = detector.get_friendly_name();
+            let src_signal = get_signal_var(i);
+            let tgt_signal = get_signal_var_by_name(&nick);
+            swap_map.push((src_signal, tgt_signal));
+
+            let src_mask = get_mask_var(i);
+            let tgt_mask = get_mask_var_by_name(&nick);
+            swap_map.push((src_mask, tgt_mask));
+
+            let src_tr = get_transform_var(i);
+            let tgt_tr = get_transform_var_by_name(&nick);
+
+            swap_map.push((src_tr, tgt_tr));
+
+        }
+
+        for (tgt, src) in swap_map.iter(){
+            let v = if let Some(got) = padamo.compute_graph.environment.0.get(src.as_str()){
+                // println!("Added redirect {}->{}", src, tgt);
+                Some(got.clone())
+            }
+            else{
+                None
+            };
+
+            // Borrow checker...
+            if let Some(got) = v{
+                let _ = padamo.compute_graph.environment.0.entry(tgt.clone().into()).or_insert(got);
+            }
+        }
+
     }
 
     fn try_load_from_string(&mut self, buf:&str, padamo: PadamoStateRef){

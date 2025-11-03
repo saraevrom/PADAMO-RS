@@ -12,6 +12,10 @@ pub fn get_signal_var(id:usize)->String{
     }
 }
 
+pub fn get_signal_var_by_name(name:&str)->String{
+    format!("ViewerSignalAux_({})",name)
+}
+
 pub fn get_mask_var(id:usize)->String{
     if id==0{
         VIEWER_PRIMARY_MASK_VAR.into()
@@ -21,6 +25,10 @@ pub fn get_mask_var(id:usize)->String{
     }
 }
 
+pub fn get_mask_var_by_name(name:&str)->String{
+    format!("alive_pixels_aux_({})",name)
+}
+
 pub fn get_transform_var(id:usize)->String{
     if id==0{
         "detector_transform".into()
@@ -28,4 +36,8 @@ pub fn get_transform_var(id:usize)->String{
     else{
         format!("detector_transform_aux_{}",id)
     }
+}
+
+pub fn get_transform_var_by_name(name:&str)->String{
+    format!("detector_transform_aux_({})",name)
 }

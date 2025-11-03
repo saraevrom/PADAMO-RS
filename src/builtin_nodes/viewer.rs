@@ -2,7 +2,7 @@ use padamo_api::{constants, prelude::*};
 use abi_stable::{rvec, std_types::{ROption::RSome, RString}};
 use padamo_api::ports;
 use abi_stable::std_types::RVec;
-use crate::detector_muxer::{get_mask_var, get_signal_var, get_transform_var, VIEWER_TEST_OBJECT_KEY};
+use crate::detector_muxer::{get_mask_var, get_mask_var_by_name, get_signal_var, get_signal_var_by_name, get_transform_var, VIEWER_TEST_OBJECT_KEY};
 
 #[derive(Clone,Debug)]
 pub struct ViewerNode;
@@ -10,8 +10,8 @@ pub struct ViewerNode;
 
 
 pub const VIEWER_FILENAME_VAR:&'static str = "ViewerOpenedFile";
-pub const VIEWER_SIGNAL_VAR:&'static str = "ViewerSignal";
-pub const VIEWER_MASK_VAR:&'static str = "alive_pixels";
+// pub const VIEWER_SIGNAL_VAR:&'static str = "ViewerSignal";
+// pub const VIEWER_MASK_VAR:&'static str = "alive_pixels";
 
 impl ViewerNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
@@ -22,7 +22,12 @@ impl ViewerNode{
 }
 
 
-
+fn category() -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
+    rvec![
+        "Application".into(),
+        "Viewer".into()
+    ]
+}
 
 impl CalculationNode for ViewerNode{
     fn name(&self,) -> abi_stable::std_types::RString where {
@@ -30,10 +35,7 @@ impl CalculationNode for ViewerNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn old_identifier(&self,) -> abi_stable::std_types::ROption<abi_stable::std_types::RString>where {
@@ -52,14 +54,6 @@ impl CalculationNode for ViewerNode{
         ports!(
             ("Signal", ContentType::DetectorFullData)
         )
-    }
-
-    fn outputs(&self) -> RVec<CalculationIO>{
-        ports!()
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        rvec![]
     }
 
     fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
@@ -84,10 +78,7 @@ impl CalculationNode for LoadedFileNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn old_identifier(&self,) -> abi_stable::std_types::ROption<abi_stable::std_types::RString>where {
@@ -106,10 +97,6 @@ impl CalculationNode for LoadedFileNode{
         ports!(
             ("File path", ContentType::String)
         )
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        rvec![]
     }
 
     fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
@@ -134,10 +121,7 @@ impl CalculationNode for ViewerMaskNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn old_identifier(&self,) -> abi_stable::std_types::ROption<abi_stable::std_types::RString>where {
@@ -148,18 +132,10 @@ impl CalculationNode for ViewerMaskNode{
         "builtin.viewer.detector_mask".into()
     }
 
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports!()
-    }
-
     fn outputs(&self,) -> RVec<CalculationIO>where {
         ports!(
             ("Alive pixels", ContentType::DetectorSignal)
         )
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        rvec![]
     }
 
     fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
@@ -186,10 +162,7 @@ impl CalculationNode for AuxViewerNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn identifier(&self,) -> abi_stable::std_types::RString where {
@@ -206,9 +179,6 @@ impl CalculationNode for AuxViewerNode{
         )
     }
 
-    fn outputs(&self) -> RVec<CalculationIO>{
-        ports!()
-    }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
@@ -242,18 +212,11 @@ impl CalculationNode for AuxViewerMaskNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn identifier(&self,) -> abi_stable::std_types::RString where {
         "builtin.viewer.detector_mask_aux".into()
-    }
-
-    fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports!()
     }
 
     fn outputs(&self,) -> RVec<CalculationIO>where {
@@ -273,59 +236,7 @@ impl CalculationNode for AuxViewerMaskNode{
     }
 }
 
-// #[derive(Clone,Debug)]
-// pub struct SmartViewerNode;
-//
-// impl SmartViewerNode{
-//     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
-//         let signal = args.inputs.request_detectorfulldata("Signal")?;
-//         let detector_id = args.constants.request_integer("detector")?;
-//         let detector_id:usize = detector_id.try_into().map_err(ExecutionError::from_error)?;
-//         args.environment.0.insert(get_signal_var(detector_id).into(),Content::DetectorFullData(signal));
-//         Ok(())
-//     }
-// }
-//
-// impl CalculationNode for SmartViewerNode{
-//     fn name(&self,) -> abi_stable::std_types::RString where {
-//         "Smart View".into()
-//     }
-//
-//     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-//         rvec![
-//             "Application".into(),
-//             "Viewer".into()
-//         ]
-//     }
-//
-//     fn identifier(&self,) -> abi_stable::std_types::RString where {
-//         "builtin.viewer.smart_view_aux".into()
-//     }
-//
-//     fn is_primary(&self,) -> bool where {
-//         true
-//     }
-//
-//     fn inputs(&self) -> RVec<CalculationIO>{
-//         ports!(
-//             ("Signal", ContentType::DetectorFullData)
-//         )
-//     }
-//
-//     fn outputs(&self) -> RVec<CalculationIO>{
-//         ports!()
-//     }
-//
-//     fn constants(&self,) -> RVec<CalculationConstant>where {
-//         constants![
-//             ("detector","Detector name","")
-//         ]
-//     }
-//
-//     fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
-//         self.calculate(args).into()
-//     }
-// }
+
 
 #[derive(Clone, Debug)]
 pub struct DetectorTransformNode;
@@ -346,10 +257,7 @@ impl CalculationNode for DetectorTransformNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn is_primary(&self,) -> bool where {
@@ -361,11 +269,6 @@ impl CalculationNode for DetectorTransformNode{
             ("Transform", ContentType::DetectorSignal)
         ]
     }
-
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports!()
-    }
-
 
     fn identifier(&self,) -> RString where {
         "builtin.viewer.detector_transform".into()
@@ -399,10 +302,7 @@ impl CalculationNode for TestObjectTransformNode{
     }
 
     fn category(&self,) -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
-        rvec![
-            "Application".into(),
-            "Viewer".into()
-        ]
+        category()
     }
 
     fn is_primary(&self,) -> bool where {
@@ -415,17 +315,8 @@ impl CalculationNode for TestObjectTransformNode{
         ]
     }
 
-    fn outputs(&self,) -> RVec<CalculationIO>where {
-        ports!()
-    }
-
-
     fn identifier(&self,) -> RString where {
         "builtin.viewer.test_object_transform".into()
-    }
-
-    fn constants(&self,) -> RVec<CalculationConstant>where {
-        constants!()
     }
 
     fn calculate(&self,args:CalculationNodeArguments) -> abi_stable::std_types::RResult<(),ExecutionError>where {
@@ -439,8 +330,8 @@ pub fn register_nodes(nodes:&mut crate::nodes_interconnect::NodesRegistry){
     nodes.register_node(ViewerNode).unwrap();
     nodes.register_node(AuxViewerNode).unwrap();
     nodes.register_node(AuxViewerMaskNode).unwrap();
-
     nodes.register_node(ViewerMaskNode).unwrap();
+
     nodes.register_node(DetectorTransformNode).unwrap();
     nodes.register_node(TestObjectTransformNode).unwrap();
 }
