@@ -160,6 +160,8 @@ pub struct CalculationNodeArguments<'a>{
 pub mod traits{
     use abi_stable::std_types::{RVec,RString,ROption,RResult,RBox};
     use abi_stable::{rvec, sabi_trait};
+    use crate::{constants, ports};
+
     use super::{CalculationIO,CalculationConstant,ExecutionError};
     use super::CalculationNodeArguments;
     /// Trait for calculation node
@@ -188,13 +190,19 @@ pub mod traits{
         }
 
         /// Input definitions of node
-        fn inputs(&self)->RVec<CalculationIO>;
+        fn inputs(&self)->RVec<CalculationIO>{
+            ports!()
+        }
 
         /// Output definition of node
-        fn outputs(&self)->RVec<CalculationIO>;
+        fn outputs(&self)->RVec<CalculationIO>{
+            ports!()
+        }
 
         /// Constants definition of node with default values.
-        fn constants(&self)->RVec<CalculationConstant>;
+        fn constants(&self)->RVec<CalculationConstant>{
+            constants!()
+        }
 
         /// Main calculation
         fn calculate(&self, args:CalculationNodeArguments)->RResult<(),ExecutionError>;
