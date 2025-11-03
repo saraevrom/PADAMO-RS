@@ -3,10 +3,7 @@ pub mod height_probe;
 
 use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 
-#[derive(Clone, Debug)]
-pub struct ProvidedDetectorInfo{
-    pub focal_distance: f64
-}
+
 
 // #[derive(Clone,Debug)]
 // pub struct CustomTestObject{
@@ -16,7 +13,7 @@ pub struct ProvidedDetectorInfo{
 #[derive(Clone,Debug, IcedForm)]
 pub enum TestObjectSelector{
     #[field_name("Height probe")] HeightProbe(height_probe::HeightProbeTestObject),
-    #[field_name("Custom")] Custom,
+    // #[field_name("Custom")] Custom,
 }
 
 impl Default for TestObjectSelector{

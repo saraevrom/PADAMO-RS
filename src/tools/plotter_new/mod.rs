@@ -208,9 +208,9 @@ impl PadamoTool for PlotterNew{
 
         self.state.update_state();
         if let Some((data, request)) = self.state.get_data_if_loaded(){
-            self.primary_plotter.set_data(Some(data.primary), padamo.detectors.get_primary().map(Clone::clone));
+            self.primary_plotter.set_data(Some(data.primary), padamo.detectors.get_primary().map(|x| x.detector.clone()));
             if let Some(aux) = request.aux_detector_id{
-                self.secondary_plotter.set_data(data.secondary, padamo.detectors.get(aux).map(Clone::clone));
+                self.secondary_plotter.set_data(data.secondary, padamo.detectors.get(aux).map(|x| x.detector.clone()));
             }
             else{
                 self.secondary_plotter.set_data(None, None);

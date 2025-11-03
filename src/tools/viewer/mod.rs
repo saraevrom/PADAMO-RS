@@ -16,6 +16,8 @@ use plotters_video::VideoBackend;
 use crate::application::PadamoState;
 use crate::custom_widgets::timeline::TimeLine;
 use crate::detector_muxer::get_signal_var;
+use crate::detector_muxer::get_transform_var;
+use crate::detector_muxer::VIEWER_TEST_OBJECT_KEY;
 use chrono::{DateTime, Utc};
 use iced::widget::{column,row};
 use crate::messages::PadamoAppMessage;
@@ -108,6 +110,34 @@ pub struct PadamoViewer{
 
     window_view:detector_display::SingleDetectorDisplay<PadamoAppMessage>,
     playbar_state: cross_progress::CrossProgress,
+}
+
+fn get_test_object_transform(padamo:&PadamoState)->anyhow::Result<nalgebra::Matrix4<f64>>{
+    if let Ok(o) = padamo.compute_graph.environment.request_detectorsignal(VIEWER_TEST_OBJECT_KEY.into()){
+        let obj = o.request_range(0,o.length());
+        TryInto::<nalgebra::Matrix4<f64>>::try_into(obj).map_err(|_| anyhow::format_err!("Test object transform must be 4x4 matrix"))
+    }
+    else{
+        Ok(nalgebra::Matrix4::identity())
+    }
+}
+
+fn get_detector_transform(padamo:&PadamoState, detector_id:usize)->anyhow::Result<nalgebra::Matrix4<f64>>{
+    if let Ok(o) = padamo.compute_graph.environment.request_detectorsignal(&get_transform_var(detector_id)){
+        let obj = o.request_range(0,o.length());
+        TryInto::<nalgebra::Matrix4<f64>>::try_into(obj).map_err(|_| anyhow::format_err!("Detector {} transform must be 4x4 matrix",detector_id))
+    }
+    else{
+        Ok(nalgebra::Matrix4::identity())
+    }
+
+}
+
+fn get_detector_view_transform(padamo:&PadamoState, detector_id:usize)->anyhow::Result<nalgebra::Matrix4<f64>>{
+    let m = get_test_object_transform(padamo)?;
+    let v = get_detector_transform(padamo, detector_id)?;
+    let v = v.try_inverse().ok_or(anyhow::format_err!("Non-inversible detector {} transformation matrix",detector_id))?;
+    Ok(v*m)
 }
 
 impl PadamoViewer{
@@ -282,7 +312,7 @@ impl PadamoViewer{
 
             //TODO: Make proper multidetector
             //let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
-            let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
+            let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){&det.detector} else {return;};
 
             let primary = padamo.compute_graph.environment.0.get(get_signal_var(0).as_str());
             let time_primary = if let Some(padamo_api::prelude::Content::DetectorFullData(signal_p)) = primary{
@@ -408,12 +438,12 @@ impl PadamoViewer{
                             "png" | "jpg" => {
                                 let backend = BitMapBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, &detector.detector, plot_scale);
                             },
                             "svg" => {
                                 let backend = SVGBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, &detector.detector, plot_scale);
                             },
                             ue=>{
                                 padamo.show_error(format!("Unsupported extension {}",ue));

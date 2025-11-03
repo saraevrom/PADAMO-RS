@@ -167,7 +167,7 @@ impl PadamoTrigger{
     }
 
     fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
-        padamo.detectors.get_primary()
+        padamo.detectors.get_primary().map(|x| &x.detector)
     }
 
     fn select_event(&mut self){

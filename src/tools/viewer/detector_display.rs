@@ -64,8 +64,8 @@ impl<T:Clone> SingleDetectorDisplay<T>{
 
     pub fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
         // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
-        let detector = if let Some(det) = padamo.detectors.get(self.get_id()){det} else {return;};
-        let mask = detector.alive_pixels_mask();
+        let detector_entry = if let Some(det) = padamo.detectors.get(self.get_id()){det} else {return;};
+        let mask = detector_entry.detector.alive_pixels_mask();
         if save{
             padamo.save_detectors();
         }
@@ -89,14 +89,14 @@ impl<T:Clone> SingleDetectorDisplay<T>{
                 self.view_transform.update(msg.clone());
             },
             SingleDetectorDisplayMessage::TogglePixel(pix_id)=>{
-                if let Some(detector) = padamo.detectors.get_mut(self.detector_id){
-                    detector.toggle_pixel(&pix_id);
+                if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
+                    detector_info.detector.toggle_pixel(&pix_id);
                     self.update_pixels(padamo, true);
                 }
             },
             SingleDetectorDisplayMessage::ResetMask=>{
-                if let Some(detector) = padamo.detectors.get_mut(self.detector_id){
-                    detector.reset_mask();
+                if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
+                    detector_info.detector.reset_mask();
                     self.update_pixels(padamo, true);
                 }
             }
@@ -109,7 +109,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
         F1:'static+Fn(Vec<usize>)->T,
     {
-        let detector = padamo.detectors.get(self.detector_id);
+        let detector = padamo.detectors.get(self.detector_id).map(|x| &x.detector);
 
         let frame = if let Some(buf) = &self.buffer{
             Some((&buf.0, buf.1))
@@ -136,10 +136,10 @@ impl<T:Clone> SingleDetectorDisplay<T>{
 
         let detector_view = if let Some(det) = padamo.detectors.get(self.detector_id){
             if self.detector_id==0{
-                iced::widget::text(format!("Primary detector: {}", det.cells.name))
+                iced::widget::text(format!("Primary detector: {}", det.detector.cells.name))
             }
             else{
-                iced::widget::text(format!("Aux detector {}: {}", self.detector_id, det.cells.name))
+                iced::widget::text(format!("Aux detector {}: {}", self.detector_id, det.detector.cells.name))
             }
         }
         else{
@@ -186,7 +186,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         //         self.max_signal_entry = max.to_string();
         //     }
         // }
-        let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
+        let detector = if let Some(det) = padamo.detectors.get(self.detector_id){&det.detector} else {return;};
         if let Some(frame) = &self.buffer{
             self.scale_state.get_entry_mut(self.detector_id).fill_strings(padamo, &frame.0, &detector.alive_pixels);
         }

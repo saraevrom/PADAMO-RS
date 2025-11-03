@@ -171,6 +171,7 @@ impl Padamo{
             match serde_json::from_str::<LoadedDetectors>(&s){
                  Ok(v)=>{
                      self.state.detectors = v;
+                     self.state.detectors.sync_forms();
                      let msg = PadamoAppMessage::DetectorUpdate;
                      self.update_tools_sequence(Rc::new(msg));
                  },
