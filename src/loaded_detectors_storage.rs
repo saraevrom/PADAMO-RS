@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use padamo_detectors::DetectorAndMask;
 use padamo_iced_forms::{ActionOrUpdate, IcedForm, IcedFormBuffer};
 use serde::{Deserialize, Serialize};
