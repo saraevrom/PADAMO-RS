@@ -462,6 +462,16 @@ impl PadamoViewer{
 
 
     }
+
+    fn propagate_form_info(&mut self, padamo: &mut PadamoState) {
+        let detector = if let Some(id) = self.form_instance.test_object.relative_to.get_detector_id(){
+            padamo.detectors.get(id).map(|x| &x.detector_info)
+        }
+        else{
+            None
+        };
+        self.mesh = self.form_instance.test_object.selected_object.generate_mesh(detector);
+    }
 }
 
 impl PadamoViewer{
@@ -709,13 +719,7 @@ impl PadamoTool for PadamoViewer{
                                 Ok(v) =>{
                                     self.form_instance = v;
 
-                                    let detector = if let Some(id) = self.form_instance.test_object.relative_to.get_detector_id(){
-                                        padamo.detectors.get(id).map(|x| &x.detector_info)
-                                    }
-                                    else{
-                                        None
-                                    };
-                                    self.mesh = self.form_instance.test_object.selected_object.generate_mesh(detector);
+                                    self.propagate_form_info(padamo);
 
                                     padamo.persistent_state.serialize("viewer_form", &self.form_instance);
                                 },
@@ -841,6 +845,7 @@ impl PadamoTool for PadamoViewer{
         if let Some(v) = padamo.persistent_state.deserialize("viewer_form"){
             self.form_instance = v;
             self.form.set(self.form_instance.clone());
+            self.propagate_form_info(padamo);
         }
     }
 }

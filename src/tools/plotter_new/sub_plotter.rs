@@ -3,10 +3,9 @@ use std::cell::RefCell;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_detectors::{DetectorChartMap, DetectorChart, DetectorPlotter};
 use padamo_iced_forms::{IcedForm, IcedFormBuffer};
-use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate}, prelude::Cartesian2d};
+use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate, Shift}, prelude::Cartesian2d};
 use plotters_iced::{
-    sample::lttb::{DataPoint, LttbSource},
-    Chart, ChartWidget, Renderer,
+    sample::lttb::{DataPoint, LttbSource}, Chart, ChartBuilder, ChartWidget, DrawingArea, DrawingBackend, Renderer
 };
 
 use iced::{widget::canvas::Cache, Length};
@@ -372,6 +371,12 @@ impl Chart<SubplotterMessage> for Subplotter{
             }
         }
         (iced::event::Status::Ignored,None)
+    }
+    #[inline]
+    fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, Shift>) {
+        root.fill(&plotters::prelude::WHITE).unwrap();
+        let builder = ChartBuilder::on(&root);
+        self.build_chart(state, builder);
     }
 
     fn build_chart<DB: plotters_iced::DrawingBackend>(&self, state: &Self::State, mut builder: plotters::prelude::ChartBuilder<DB>) {

@@ -32,7 +32,8 @@ impl HeightProbeTestObject{
         mesh.add_vertex(nalgebra::Vector3::new(0.0,0.0,0.0), self.marker_size, Marker::Circle);
         let pos = nalgebra::Vector3::new(-self.detector_x/detector.focal_distance, self.detector_y/detector.focal_distance, 1.0)*self.height;
         mesh.add_vertex(pos, self.marker_size, Marker::Cross);
-        mesh.regiester_path(vec![0,1]);
+        mesh.add_vertex(pos*4.0, self.marker_size, Marker::None);
+        mesh.regiester_path(vec![0,1,2]);
         Some(mesh)
     }
 }
