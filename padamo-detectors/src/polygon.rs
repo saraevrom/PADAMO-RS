@@ -1,4 +1,4 @@
-use padamo_api::lazy_array_operations::ndim_array::ArrayND;
+use padamo_arraynd::ArrayND;
 use serde::{Serialize,Deserialize};
 use plotters::prelude::*;
 use crate::{parser::parse_detector, scripted::parse_scripted};

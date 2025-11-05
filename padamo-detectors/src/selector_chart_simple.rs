@@ -1,5 +1,5 @@
 
-use padamo_api::lazy_array_operations::ArrayND;
+use padamo_arraynd::ArrayND;
 use plotters::{coord::ReverseCoordTranslate, prelude::*};
 use plotters_iced::Chart;
 

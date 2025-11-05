@@ -12,7 +12,8 @@ plotters = "0.3.5"
 plotters-iced = "0.11"
 plotters-layout = "0.1.0"
 serde = { version = "1.0.196", features = ["derive"] }
-padamo-api = { path = "../padamo-api", features = ["serde"] }
+# padamo-api = { path = "../padamo-api", features = ["serde"] }
+padamo-arraynd = { path = "../padamo-arraynd", features = ["serde"]}
 nom = { version = "7.1.3", features = ["alloc"] }
 abi_stable = "0.11.3"
 dyn-clone = "1.0.17"
