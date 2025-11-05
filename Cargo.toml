@@ -65,5 +65,5 @@ all_features = ["feature_workspace"]
 feature_workspace = []
 
 [workspace]
-members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime", "padamo-iced-forms", "index_remapper", "padamo-transforms"]
+members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime", "padamo-iced-forms", "index_remapper", "padamo-transforms", "padamo-arraynd"]
 resolver = "2"

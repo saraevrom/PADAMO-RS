@@ -1,0 +1,15 @@
+[package]
+name = "padamo-arraynd"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+abi_stable = "0.11.3"
+nalgebra = { version = "0.34.1", optional = true }
+ndarray = { version = "0.16.1", optional = true }
+serde = { version = "1.0.228", optional = true }
+
+[features]
+serde = ["dep:serde"]
+nalgebra = ["dep:nalgebra"]
+ndarray = ["dep:ndarray"]
