@@ -44,7 +44,9 @@ impl Vertex {
             None
         }
         else{
-            Some(expanded.xy()/expanded.w)
+            let mut point = expanded.xy();
+            point.x *= -1.0;
+            Some(point/expanded.w)
         }
     }
 }

@@ -610,12 +610,31 @@ impl PadamoTool for PadamoViewer{
         // };
 
         let mesh_info = if let Some(m) = &self.mesh{
-            let mut model = get_test_object_transform(padamo).unwrap();
+            let mut model = match get_test_object_transform(padamo) {
+                Ok(v) => v,
+                Err(e) => {
+                    println!("Model matrix error: {}",e);
+                    nalgebra::Matrix4::identity()
+                },
+            };
             if let Some(rel_id) = self.form_instance.test_object.relative_to.get_detector_id(){
-                model = get_detector_transform(padamo, rel_id).unwrap() * model;
+                match get_detector_transform(padamo, rel_id) {
+                    Ok(v) => {
+                        model = v * model;
+                    }
+                    Err(e) => {
+                        println!("View matrix error: {}",e);
+                    },
+                }
             }
 
-            let view = get_detector_view_transform(padamo, self.window_view.get_id()).unwrap();
+            let view = match get_detector_view_transform(padamo, self.window_view.get_id()){
+                Ok(v) => v,
+                Err(e) =>{
+                    println!("Model matrix error: {}",e);
+                    nalgebra::Matrix4::identity()
+                }
+            };
             if let Some(det) = padamo.detectors.get(self.window_view.get_id()){
                 let f = det.detector_info.focal_distance;
                 let projection = nalgebra::Matrix4::new(

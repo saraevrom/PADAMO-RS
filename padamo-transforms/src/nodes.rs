@@ -1,5 +1,6 @@
 use abi_stable::std_types::{RResult, RString, RVec};
 use nalgebra::Matrix4;
+use super::{get_all, matrix_err};
 use padamo_api::{constants, lazy_array_operations::{ArrayND, LazyDetectorSignal}, ports, prelude::*};
 
 #[derive(Clone,Debug)]
@@ -27,13 +28,7 @@ fn category() -> RVec<RString>where {
     ].into()
 }
 
-fn matrix_err<T:Into<RString>>(msg:T)->ExecutionError{
-    ExecutionError::OtherError(msg.into())
-}
 
-fn get_all(x:LazyDetectorSignal)->ArrayND<f64>{
-    x.request_range(0,x.length())
-}
 
 impl IdentityNode{
     fn calculate(&self,args:CalculationNodeArguments,) -> Result<(),ExecutionError>where {
