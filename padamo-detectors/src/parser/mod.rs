@@ -67,7 +67,7 @@ pub fn parse_detector<'a>(i:&'a str)-> IResult<&'a str, DetectorContent, nom::er
                 DetectorDataMod::CompatShape(s)=>{compat_shape = s},
             }
         }
-        DetectorContent{compat_shape,name,content:pixels}
+        DetectorContent{compat_shape: compat_shape.into(),name: name.into(),content:pixels.into()}
     });
     detector_parser.parse(i)
 }

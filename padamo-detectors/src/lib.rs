@@ -51,7 +51,7 @@ impl DetectorAndMask {
     }
 
     pub fn from_cells(cells:polygon::DetectorContent)->Self{
-        let alive_pixels = ArrayND::new(cells.compat_shape.clone(), true) ;
+        let alive_pixels = ArrayND::new(cells.compat_shape.to_vec(), true) ;
         DetectorAndMask::new(cells, alive_pixels)
     }
 
@@ -71,7 +71,7 @@ impl DetectorAndMask {
         self.alive_pixels.flat_data.iter_mut().for_each(|x| *x = true);
     }
 
-    pub fn shape(&self)->&Vec<usize>{
+    pub fn shape(&self)->&[usize]{
         &self.cells.compat_shape
     }
 
@@ -192,7 +192,7 @@ impl<Message> DetectorPlotter<Message>{
 
 
     pub fn build_chart_aux<DB: DrawingBackend>(&self, detector:&DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels:&[Vec<usize>], vis:&[bool], margins:Margins) {
-        let mut map = ArrayND::new(detector.cells.compat_shape.clone(), false);
+        let mut map = ArrayND::new(detector.cells.compat_shape.to_vec(), false);
         for (pixel, v) in pixels.iter().zip(vis.iter()){
             if *v{
                 map.set(&pixel, true);
@@ -489,14 +489,14 @@ where
                             if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right) = evt{
                                 if let Some(caller) = &self.rclick_event{
                                     if let Some(index) = self.detector.cells.position_index(inpoint){
-                                        msg = Some(caller(index.clone()));
+                                        msg = Some(caller(index.into()));
                                     }
                                 }
                             }
                             else if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left) = evt{
                                 if let Some(caller) = &self.lclick_event{
                                     if let Some(index) = self.detector.cells.position_index(inpoint){
-                                        msg = Some(caller(index.clone()));
+                                        msg = Some(caller(index.into()));
                                     }
                                 }
                             }

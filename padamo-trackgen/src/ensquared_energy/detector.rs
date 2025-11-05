@@ -22,14 +22,14 @@ impl DetectorPixelWireframe {
 impl Into<DetectorPixelWireframe> for &DetectorPixel{
     fn into(self) -> DetectorPixelWireframe {
         let tris = self.triangles();
-        DetectorPixelWireframe::new(tris, self.index.clone())
+        DetectorPixelWireframe::new(tris.iter().map(|x| x.map(|x| x.into_tuple())).collect(), self.index.to_vec())
     }
 }
 
 pub fn wireframe(detector:DetectorContent)->DetectorWireframe{
     let triangles = detector.content.iter().map(|x| x.into()).collect();
     let shape = detector.compat_shape;
-    let res = DetectorWireframe { triangles, shape };
+    let res = DetectorWireframe { triangles, shape: shape.into() };
     //println!("{:?}",res);
     res
 }

@@ -12,6 +12,9 @@ pub enum LoadedDetectorsMessage{
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, IcedForm)]
+
+#[cfg_attr(feature = "abi_stable", derive(abi_stable::StableAbi))]
+#[cfg_attr(feature = "abi_stable", repr(C))]
 pub struct ProvidedDetectorInfo{
     #[field_name("Focal distance")] pub focal_distance: f64,
     #[field_name("Nickname")] pub nickname: Option<String>,

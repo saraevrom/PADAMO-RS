@@ -60,7 +60,7 @@ impl BlankDataNode{
         let shape = detector.compat_shape.clone();
 
         let temporal = super::ops::ArtificialTime::new(length, time_offset,time_step);
-        let spatial = super::ops::ArtificialBlankSignal::new(length, shape);
+        let spatial = super::ops::ArtificialBlankSignal::new(length, shape.into());
 
         let signal:LazyTriSignal = (make_lao_box(spatial),make_lao_box(temporal),ROption::RNone).into();
 

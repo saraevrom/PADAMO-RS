@@ -57,7 +57,7 @@ pub struct SinglePixel{
 
 impl PixelMaker for SinglePixel{
     fn get_pixels(&self)->Vec<DetectorPixel> {
-        vec![DetectorPixel::new(self.index.clone(), self.polygon.0.clone())]
+        vec![DetectorPixel::new(self.index.clone().into(), self.polygon.0.iter().map(|x| (*x).into()).collect())]
     }
 }
 
@@ -207,7 +207,7 @@ pub enum IndexExtension {
 }
 
 impl IndexExtension{
-    pub fn modify_index(&self, index:&Vec<usize>)->Vec<usize>{
+    pub fn modify_index(&self, index:&[usize])->Vec<usize>{
         match &self{
             IndexExtension::Prepend(pre)=>{
                 let mut index2 = pre.clone();
@@ -215,7 +215,7 @@ impl IndexExtension{
                 index2
             }
             IndexExtension::Append(add)=>{
-                let mut index2 = index.clone();
+                let mut index2:Vec<_> = index.into();
                 index2.extend(add.clone());
                 index2
             }
@@ -260,7 +260,7 @@ impl PixelMaker for IndexExtend{
     fn get_pixels(&self)->Vec<DetectorPixel> {
         let mut pixels = self.source.get_pixels();
         pixels.iter_mut().for_each(|pix|{
-            pix.index = self.extension.modify_index(&pix.index)
+            pix.index = self.extension.modify_index(&pix.index).into()
         });
         pixels
     }

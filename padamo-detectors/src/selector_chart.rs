@@ -68,14 +68,14 @@ where
                             if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right) = evt{
                                 if let Some(caller) = &self.rclick_event{
                                     if let Some(index) = self.detector.cells.position_index(inpoint){
-                                        msg = Some(caller(index.clone()));
+                                        msg = Some(caller(index.to_vec()));
                                     }
                                 }
                             }
                             else if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left) = evt{
                                 if let Some(caller) = &self.lclick_event{
                                     if let Some(index) = self.detector.cells.position_index(inpoint){
-                                        msg = Some(caller(index.clone()));
+                                        msg = Some(caller(index.to_vec()));
                                     }
                                 }
                             }

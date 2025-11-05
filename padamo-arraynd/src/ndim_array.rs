@@ -124,7 +124,7 @@ where
         }
     }
 
-    pub fn form_compatible(&self, shape: &Vec<usize>)->bool{
+    pub fn form_compatible(&self, shape: &[usize])->bool{
         if self.shape.len()!= shape.len(){
             false
         }

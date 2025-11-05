@@ -80,7 +80,7 @@ pub fn get_color(i:usize,j:usize)->(f32,f32,f32){
     h_color(shift_id,(j as f32)*180.0/16.0,gray_shift*0.3,gray_shift*0.5)
 }
 
-pub(crate) fn get_color_indexed(data:&Vec<usize>)->(f32,f32,f32){
+pub(crate) fn get_color_indexed(data:&[usize])->(f32,f32,f32){
     let mut hasher = DefaultHasher::new();
     for i in data.iter(){
         hasher.write_usize(*i);
