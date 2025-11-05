@@ -1,71 +1,8 @@
 use padamo_detectors::DetectorAndMask;
-use padamo_iced_forms::{ActionOrUpdate, IcedForm, IcedFormBuffer};
+pub use padamo_detectors::loaded_detectors_storage::{DetectorEntry, LoadedDetectorsMessage};
+use padamo_iced_forms::ActionOrUpdate;
+use padamo_iced_forms::IcedFormBuffer;
 use serde::{Deserialize, Serialize};
-
-#[derive(Clone,Debug)]
-pub enum LoadedDetectorsMessage{
-    Clear,
-    // AddDetector(DetectorContent),
-    AddDetector,
-    SetPrimary(usize),
-    EntryForm(usize, ActionOrUpdate<ProvidedDetectorInfoMessage>)
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, IcedForm)]
-pub struct ProvidedDetectorInfo{
-    #[field_name("Focal distance")] pub focal_distance: f64,
-    #[field_name("Nickname")] pub nickname: Option<String>,
-}
-
-impl Default for ProvidedDetectorInfo{
-    fn default() -> Self {
-        Self {
-            focal_distance: 100.0,
-            nickname: None
-        }
-    }
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct DetectorEntry{
-    pub detector_info: ProvidedDetectorInfo,
-    pub detector: DetectorAndMask,
-    #[serde(skip_serializing, skip_deserializing)]
-    pub buffer:ProvidedDetectorInfoBuffer,
-}
-
-impl DetectorEntry {
-    pub fn new(detector_info: ProvidedDetectorInfo, detector: DetectorAndMask) -> Self {
-        let mut buffer = ProvidedDetectorInfoBuffer::default();
-        buffer.set(detector_info.clone());
-        Self { detector_info, detector, buffer }
-    }
-
-    pub fn from_detector(detector: DetectorAndMask) -> Self {
-        Self::new(Default::default(), detector)
-    }
-
-    pub fn sync_form(&mut self){
-        self.buffer.set(self.detector_info.clone());
-    }
-
-    pub fn update(&mut self, msg:ProvidedDetectorInfoMessage){
-        self.buffer.update(msg);
-        if let Ok(v) = self.buffer.get(){
-           self.detector_info = v;
-        }
-    }
-
-    pub fn get_friendly_name(&self)->&str{
-        if let Some(v) = &self.detector_info.nickname{
-            v
-        }
-        else{
-            &self.detector.cells.name
-        }
-    }
-}
-
 
 #[derive(Clone,Debug, Serialize, Deserialize)]
 pub struct LoadedDetectors{
@@ -158,7 +95,7 @@ impl LoadedDetectors{
             for (i,d) in self.iter_aux_detectors().enumerate(){
                 res = res.push(iced::widget::row![
                     iced::widget::button("S").on_press(LoadedDetectorsMessage::SetPrimary(i+1)),
-                    iced::widget::text(format!("{}: {}",i+1,d.detector.cells.name)),
+                               iced::widget::text(format!("{}: {}",i+1,d.detector.cells.name)),
                 ]);
                 res = res.push(d.buffer.view(None).map(move |x| LoadedDetectorsMessage::EntryForm(i+1, x)));
             }
@@ -168,7 +105,7 @@ impl LoadedDetectors{
         }
         res = res.push(iced::widget::row![
             iced::widget::button("Add").on_press(LoadedDetectorsMessage::AddDetector),
-            iced::widget::button("Clear").on_press(LoadedDetectorsMessage::Clear),
+                       iced::widget::button("Clear").on_press(LoadedDetectorsMessage::Clear),
         ]);
         res.into()
     }

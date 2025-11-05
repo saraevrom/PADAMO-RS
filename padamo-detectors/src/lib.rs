@@ -15,11 +15,15 @@ pub mod colors;
 pub mod selector_chart;
 pub mod selector_chart_simple;
 pub mod transformer;
+pub mod loaded_detectors_storage;
+pub mod mesh;
 // pub mod transform_widget;
 
 pub use transformer::Transform;
 // pub use transform_widget::TransformState;
 pub use selector_chart::DetectorChartMap;
+
+use crate::mesh::Mesh;
 
 //use polygon::StableColorMatrix;
 
@@ -248,7 +252,8 @@ impl<Message> DetectorPlotter<Message>{
                                                    pixels:&Option<(& ArrayND<f64>,f64)>,
                                                    scale:Scaling,
                                                    transform: crate::transformer::Transform,
-                                                   state:&Option<((f64,f64),(i32,i32))>) {
+                                                   state:&Option<((f64,f64),(i32,i32))>,
+                                                   mesh:Option<(&crate::mesh::Mesh, nalgebra::Matrix4<f64>, plotters::prelude::ShapeStyle)>) {
         root.fill(&plotters::prelude::WHITE).unwrap();
         let ((min_x, min_y), (max_x, max_y)) = detector.cells.size();
         let min_range = (min_x..max_x, min_y..max_y);
@@ -313,6 +318,10 @@ impl<Message> DetectorPlotter<Message>{
 
         display_pixel_id(detector, root, pixels, *state);
 
+        if let Some((mesh, matrix, sty)) = mesh{
+            mesh.draw(matrix, sty, chart);
+        }
+
         let cmap_builder = ChartLayout::new()
             .y_label_area_size(50)
             .x_label_area_size(28)
@@ -336,7 +345,7 @@ impl<Message> DetectorPlotter<Message>{
 
     }
 
-    pub fn view<'a,F1,F2>(&'a self, detector: Option<&'a DetectorAndMask>, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->iced::Element<'a,Message>
+    pub fn view<'a,F1,F2>(&'a self, detector: Option<&'a DetectorAndMask>, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>, mesh:Option<(&'a Mesh, nalgebra::Matrix4<f64>, plotters::prelude::ShapeStyle)>)->iced::Element<'a,Message>
     where
         F1:'static+Fn(Vec<usize>)->Message,
         F2:'static+Fn(Vec<usize>)->Message
@@ -349,7 +358,11 @@ impl<Message> DetectorPlotter<Message>{
                     return container.into();
                 }
             }
-            ChartWidget::new(DetectorChart::new(self, dm, source, transform, scale, lclick_event, rclick_event)).into()
+            let mut chart = DetectorChart::new(self, dm, source, transform, scale, lclick_event, rclick_event);
+            if let Some(x) = mesh{
+                chart = chart.with_mesh(x.0, x.1, x.2);
+            }
+            ChartWidget::new(chart).into()
         }
         else{
             let warning = iced::widget::text("No detector");
@@ -423,6 +436,7 @@ where
     transform: Transform,
     lclick_event:Option<F1>,
     rclick_event:Option<F2>,
+    mesh_info:Option<(&'a crate::mesh::Mesh, nalgebra::Matrix4<f64>, plotters::prelude::ShapeStyle)>,
 }
 
 impl<'a,Msg,F1,F2> DetectorChart<'a,Msg,F1,F2>
@@ -431,7 +445,12 @@ where
     F2:'static + Fn(Vec<usize>)->Msg,
 {
     pub fn new(detector_plotter:&'a DetectorPlotter<Msg>, detector:&'a DetectorAndMask, source:Option<(&'a ArrayND<f64>,f64)>, transform:Transform, scale:Scaling, lclick_event:Option<F1>, rclick_event:Option<F2>)->Self{
-        Self { detector_plotter, detector ,source, scale, lclick_event, rclick_event, transform}
+        Self { detector_plotter, detector ,source, scale, lclick_event, rclick_event, transform, mesh_info:None}
+    }
+
+    pub fn with_mesh(mut self, mesh:&'a crate::mesh::Mesh, matrix: nalgebra::Matrix4<f64>, style:plotters::prelude::ShapeStyle)->Self{
+        self.mesh_info = Some((mesh, matrix, style));
+        self
     }
 }
 
@@ -447,7 +466,7 @@ where
     fn build_chart<DB: DrawingBackend>(&self, _state: &Self::State, _builder: ChartBuilder<DB>) {}
 
     fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
-        self.detector_plotter.build_chart_generic(&self.detector, &root, &self.source,self.scale,self.transform,state);
+        self.detector_plotter.build_chart_generic(&self.detector, &root, &self.source,self.scale,self.transform,state, self.mesh_info);
     }
 
     fn update(

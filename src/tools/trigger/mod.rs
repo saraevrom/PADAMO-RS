@@ -269,7 +269,7 @@ impl PadamoTool for PadamoTrigger{
 
             //widget::container(
             widget::column![
-                self.chart.view(detector, view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+                self.chart.view(detector, view_content,self.view_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action, None),
                 view_transform.map(TriggerMessage::PlotZoomMessage)
             ].width(iced::Length::Fill),
 

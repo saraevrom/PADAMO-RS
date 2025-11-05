@@ -72,7 +72,7 @@ impl PadamoTool for PadamoDetectorManager{
                 Pane::DetectorView=>{
                     let controls:iced::Element<'_,_> = self.viewer_transform.view().into();
                     widget::container(iced::widget::column![
-                        self.chart.view(Some(&self.detector),None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action),
+                        self.chart.view(Some(&self.detector),None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action,None),
                         controls.map(DetectorManagerMessage::PlotZoomMessage),
                     ]).width(iced::Length::Fill).into()
                 }

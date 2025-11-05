@@ -18,7 +18,9 @@ pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a D
     frame.shape.drain(0..1);
     let tim = temporal.request_range(remapped_frame,remapped_frame+1)[0];
     root.fill(&WHITE).unwrap();
-    chart.build_chart_generic(detector,root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
+
+    //TODO provide test object
+    chart.build_chart_generic(detector,root,&Some((&frame,tim)),plot_scale,Default::default(),&None, None);
 }
 
 pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spatial:padamo_api::lazy_array_operations::LazyDetectorSignal,

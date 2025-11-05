@@ -98,7 +98,7 @@ pub struct PadamoViewer{
 
     form:form::ViewerFormBuffer,
     form_instance:ViewerForm,
-
+    mesh:Option<padamo_detectors::mesh::Mesh>,
 
     animator:Option<Worker<String>>,
     exporter:Option<Worker<String>>,
@@ -114,8 +114,11 @@ pub struct PadamoViewer{
 
 fn get_test_object_transform(padamo:&PadamoState)->anyhow::Result<nalgebra::Matrix4<f64>>{
     if let Ok(o) = padamo.compute_graph.environment.request_detectorsignal(VIEWER_TEST_OBJECT_KEY.into()){
+        // println!("Found test object transform matrix");
         let obj = o.request_range(0,o.length());
-        TryInto::<nalgebra::Matrix4<f64>>::try_into(obj).map_err(|_| anyhow::format_err!("Test object transform must be 4x4 matrix"))
+        let res = TryInto::<nalgebra::Matrix4<f64>>::try_into(obj).map_err(|_| anyhow::format_err!("Test object transform must be 4x4 matrix"));
+        //println!("M {:?}", res);
+        res
     }
     else{
         Ok(nalgebra::Matrix4::identity())
@@ -124,8 +127,11 @@ fn get_test_object_transform(padamo:&PadamoState)->anyhow::Result<nalgebra::Matr
 
 fn get_detector_transform(padamo:&PadamoState, detector_id:usize)->anyhow::Result<nalgebra::Matrix4<f64>>{
     if let Ok(o) = padamo.compute_graph.environment.request_detectorsignal(&get_transform_var(detector_id)){
+        // println!("Found detector {} object transform matrix", detector_id);
         let obj = o.request_range(0,o.length());
-        TryInto::<nalgebra::Matrix4<f64>>::try_into(obj).map_err(|_| anyhow::format_err!("Detector {} transform must be 4x4 matrix",detector_id))
+        let res = TryInto::<nalgebra::Matrix4<f64>>::try_into(obj).map_err(|_| anyhow::format_err!("Detector {} transform must be 4x4 matrix",detector_id));
+        //println!("D {:?}", res);
+        res
     }
     else{
         Ok(nalgebra::Matrix4::identity())
@@ -134,10 +140,9 @@ fn get_detector_transform(padamo:&PadamoState, detector_id:usize)->anyhow::Resul
 }
 
 fn get_detector_view_transform(padamo:&PadamoState, detector_id:usize)->anyhow::Result<nalgebra::Matrix4<f64>>{
-    let m = get_test_object_transform(padamo)?;
     let v = get_detector_transform(padamo, detector_id)?;
     let v = v.try_inverse().ok_or(anyhow::format_err!("Non-inversible detector {} transformation matrix",detector_id))?;
-    Ok(v*m)
+    Ok(v)
 }
 
 impl PadamoViewer{
@@ -475,6 +480,7 @@ impl PadamoViewer{
             animation_status:"IDLE".into(),
             window_view: detector_display::SingleDetectorDisplay::new(0),
             playbar_state: cross_progress::CrossProgress::new(0),
+            mesh: None
             // stop_on_trigger:false,
         };
         // res.fill_strings();
@@ -574,7 +580,7 @@ impl PadamoTool for PadamoViewer{
             iced::widget::rule::Rule::horizontal(10),
 
             self.form.view(None).map(ViewerMessage::EditForm),
-        ].width(250).into();
+        ].into();
 
         // let a1 = if self.window_view.is_primary(){
         let id = self.window_view.get_id();
@@ -603,16 +609,47 @@ impl PadamoTool for PadamoViewer{
         //     None
         // };
 
+        let mesh_info = if let Some(m) = &self.mesh{
+            let mut model = get_test_object_transform(padamo).unwrap();
+            if let Some(rel_id) = self.form_instance.test_object.relative_to.get_detector_id(){
+                model = get_detector_transform(padamo, rel_id).unwrap() * model;
+            }
+
+            let view = get_detector_view_transform(padamo, self.window_view.get_id()).unwrap();
+            if let Some(det) = padamo.detectors.get(self.window_view.get_id()){
+                let f = det.detector_info.focal_distance;
+                let projection = nalgebra::Matrix4::new(
+                    f, 0.0, 0.0, 0.0,
+                    0.0, f, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0,
+                    0.0, 0.0, 1.0, 0.0,
+                );
+                // println!("Model {:?}", model);
+                // println!("View {:?}", view);
+                // println!("Projection {:?}", projection);
+                let mvp = projection*view*model;
+
+                Some((m,mvp))
+            }
+            else{
+                None
+            }
+
+        }
+        else{
+            None
+        };
+
         let top_row = row![
 
 
 
             self.window_view.view(padamo, |x| PadamoAppMessage::ViewerMessage(ViewerMessage::WindowView(x)),
                                 a1,
-                                ),
-
+                                mesh_info,
+                             ),
             iced::widget::rule::Rule::vertical(10),
-            iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(200),
+            iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(300),
         ];
 
         column!(
@@ -650,7 +687,17 @@ impl PadamoTool for PadamoViewer{
                             self.form.update(u.to_owned());
                             match self.form.get(){
 
-                                Ok(v) =>self.form_instance = v,
+                                Ok(v) =>{
+                                    self.form_instance = v;
+
+                                    let detector = if let Some(id) = self.form_instance.test_object.relative_to.get_detector_id(){
+                                        padamo.detectors.get(id).map(|x| &x.detector_info)
+                                    }
+                                    else{
+                                        None
+                                    };
+                                    self.mesh = self.form_instance.test_object.selected_object.generate_mesh(detector);
+                                },
                                 Err(e)=>eprintln!("Form get error: {}",e),
                             }
 

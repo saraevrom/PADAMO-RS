@@ -1,6 +1,7 @@
 use iced::widget::{column, row};
 use padamo_api::{lazy_array_operations::LazyTriSignal, prelude::{make_lao_box, Content}};
-use padamo_detectors::DetectorPlotter;
+use padamo_detectors::{mesh::Mesh, DetectorPlotter};
+use plotters::style::Color;
 
 use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
 use super::norm_entry::{MultiEntry, MultiEntryMessage};
@@ -104,7 +105,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         false
     }
 
-    pub fn view<'a, F,F1>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>)->iced::Element<'a, T>
+    pub fn view<'a, F,F1>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>, mesh_data:Option<(&'a Mesh, nalgebra::Matrix4<f64>)>)->iced::Element<'a, T>
     where
         F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
         F1:'static+Fn(Vec<usize>)->T,
@@ -120,9 +121,12 @@ impl<T:Clone> SingleDetectorDisplay<T>{
 
         let a2 = Some(move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x)));
 
+        let md = mesh_data.map(|x| (x.0,x.1, plotters::prelude::RED.filled()));
+
         let detector_frame = self.plotter.view(detector,frame,self.view_transform.transform(),self.get_scale(),
                         a1,
                         a2,
+                        md
         );
 
         let transform:iced::Element<'_, _> = self.view_transform.view().into();
