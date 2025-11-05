@@ -46,7 +46,8 @@ impl<T:CalculationNode, U:CalculationNode> SignalTimeEmbeddedMergingNode<T,U>{
             outputs:&mut outputs_signal,
             constants:consts.clone(),
             environment:env,
-            rng
+            rng,
+            detectors_serialized: args.detectors_serialized
         };
 
         self.signal.calculate(args_signal).into_result()?;
@@ -58,7 +59,8 @@ impl<T:CalculationNode, U:CalculationNode> SignalTimeEmbeddedMergingNode<T,U>{
             outputs:&mut outputs_time,
             constants:consts.clone(),
             environment:env,
-            rng
+            rng,
+            detectors_serialized: args.detectors_serialized
         };
 
         self.time.calculate(args_time).into_result()?;

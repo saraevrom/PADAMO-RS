@@ -116,7 +116,7 @@ impl IOData{
     }
 
     pub fn set_value(&mut self, key:&str, value:Content)->Result<(),ExecutionError>{
-        if let Some(v) = self.data.get_mut(key.into()){
+        if let Some(v) = self.data.get_mut(key){
             *v = ROption::RSome(value);
             Ok(())
         }
@@ -126,7 +126,7 @@ impl IOData{
     }
 
     pub fn take_value(&mut self, key:&str)->Option<Content>{
-        self.data.remove(key.into()).into_option().map(|x| x.into_option()).flatten()
+        self.data.remove(key).into_option().map(|x| x.into_option()).flatten()
     }
 
     pub fn clarify(mut self)->Result<RHashMap<RString, Content>,ExecutionError>{
@@ -154,6 +154,7 @@ pub struct CalculationNodeArguments<'a>{
     pub constants:ConstantContentContainer,
     pub environment:&'a mut ContentContainer,
     pub rng:&'a mut RandomState,
+    pub detectors_serialized:&'a RVec<RString>,
 }
 
 #[allow(non_local_definitions)]
@@ -280,7 +281,7 @@ impl CalculationNodeObject{
     }
 
     pub fn connect_from(&mut self, port:&str, link:PortKey){
-        if let Some(x) = self.input_links.get_mut(port.into()){
+        if let Some(x) = self.input_links.get_mut(port){
             *x = ROption::RSome(link);
         }
     }

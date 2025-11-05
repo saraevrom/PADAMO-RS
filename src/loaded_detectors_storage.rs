@@ -9,6 +9,12 @@ pub struct LoadedDetectors{
     detectors: Vec<DetectorEntry>,
 }
 
+impl AsRef<[DetectorEntry]> for LoadedDetectors{
+    fn as_ref(&self) -> &[DetectorEntry] {
+        &self.detectors
+    }
+}
+
 impl LoadedDetectors{
     pub fn new()->Self{
         Self { detectors: Vec::new() }

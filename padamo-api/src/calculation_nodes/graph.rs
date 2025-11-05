@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
+use serde_json;
 use abi_stable::StableAbi;
-use abi_stable::std_types::RString;
+use abi_stable::std_types::{RString, RVec};
 use topo_sort::{TopoSort,SortResults};
 
 use crate::rng::RandomState;
@@ -46,7 +47,7 @@ impl CalculationSequenceStorage{
         }
     }
 
-    pub fn execute_node(&mut self, i:usize,random_state:&mut RandomState)->Result<(),ExecutionError>{
+    pub fn execute_node(&mut self, i:usize,random_state:&mut RandomState, detectors_serialized:&RVec<RString>)->Result<(),ExecutionError>{
         let node = &self.nodes[i];
         let mut inputs:RHashMap<RString, Content> = RHashMap::new();
         let mut input_mapping:HashMap<_, _> = node.get_connections().into_result()?.into();
@@ -86,7 +87,8 @@ impl CalculationSequenceStorage{
             outputs:&mut outputs,
             constants:consts,
             environment:&mut self.environment,
-            rng: random_state
+            rng: random_state,
+            detectors_serialized
         };
 
         node.calculator.calculate(args).into_result()?;
@@ -118,7 +120,7 @@ impl CalculationSequenceStorage{
         &mut self.nodes[i].constants
     }
 
-    pub fn execute(&mut self,random_seed:u64)->Result<(),ExecutionError>{
+    pub fn execute(&mut self,random_seed:u64, detectors:&[padamo_detectors::loaded_detectors_storage::DetectorEntry])->Result<(),ExecutionError>{
         let random_state = RandomState::new(random_seed);
         //println!("EXEC GRAPH {:?}",self.nodes);
         let mut sorter = TopoSort::with_capacity(self.nodes.len());
@@ -141,11 +143,14 @@ impl CalculationSequenceStorage{
             }
         }
 
+        let detectors_serialized: Vec<RString> = detectors.iter().map(serde_json::to_string).map(|x| Into::<RString>::into(x.unwrap())).collect();
+        let detectors_serialized: RVec<RString> = detectors_serialized.into();
+
         if let SortResults::Full(sorted) = sorter.into_vec_nodes(){
             for i in sorted.iter(){
                 //println!("Executing node {}", i);
                 let mut state2 = random_state.separate(*i as u64);
-                self.execute_node(*i,&mut state2)?;
+                self.execute_node(*i,&mut state2, &detectors_serialized)?;
             }
         }
         else{
