@@ -10,21 +10,22 @@ abi_stable = "0.11.3"
 topo_sort = "0.4.0"
 padamo-api-macros-internal = { path = "./padamo-api-macros-internal" }
 #iced = "0.12.0"
-ndarray = { version = "0.16.1", optional = true }
+# ndarray = { version = "0.16.1", optional = true }
 paste = "1.0.14"
 serde = { version = "1.0.196", features = ["derive"], optional = true }
-ndarray-linalg = "0.16.0"
+# ndarray-linalg = "0.16.0"
 atomic_refcell = "0.1.13"
 nom = "7.1.3"
 thiserror = "1.0.61"
 anyhow = { version = "1.0.93", optional = true }
 chrono = { version = "0.4", optional = true}
-nalgebra = { version = "0.34.1", optional = true }
+# nalgebra = { version = "0.34.1", optional = true }
+padamo-arraynd = { path = "../padamo-arraynd" }
 
 [features]
 default = ["ndarray", "chrono", "nalgebra"]
-ndarray = ["dep:ndarray"]
-serde = ["dep:serde"]
+nalgebra = ["padamo-arraynd/nalgebra"]
+ndarray = ["padamo-arraynd/ndarray"]
+serde = ["dep:serde", "padamo-arraynd/serde"]
 headless = ["dep:anyhow"]
 chrono = ["dep:chrono"]
-nalgebra = ["dep:nalgebra"]

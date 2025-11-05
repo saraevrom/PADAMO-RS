@@ -2,7 +2,6 @@ use abi_stable::std_types::{RBox, Tuple3, ROption, RVec};
 use std::fmt::Debug;
 
 pub mod ndim_array;
-pub mod operators;
 pub mod merge;
 pub mod cache;
 pub mod cutter;

@@ -9,7 +9,7 @@ use crate::expression::parse_expression;
 use crate::utils::{parse_comma_sep, parse_semicolon_sep, parse_shape_array};
 
 use crate::utils::IndexCalculator;
-use padamo_api::lazy_array_operations::ndim_array::indexing::ShapeIterator;
+use padamo_api::lazy_array_operations::ndim_array::ShapeIterator;
 
 
 fn index_is_inside(index:&[usize], shape:&[usize])->Result<bool, ReindexError>{
