@@ -2,6 +2,7 @@ pub mod height_probe;
 
 use padamo_detectors::{loaded_detectors_storage::ProvidedDetectorInfo, mesh::Mesh};
 use padamo_iced_forms::{IcedForm,IcedFormBuffer};
+use serde::{Deserialize, Serialize};
 
 
 
@@ -10,7 +11,7 @@ use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 //
 // }
 
-#[derive(Clone,Debug, IcedForm)]
+#[derive(Clone,Debug, IcedForm, Serialize, Deserialize)]
 pub enum TestObjectSelector{
     #[field_name("None")] None,
     #[field_name("Height probe")] HeightProbe(height_probe::HeightProbeTestObject),
@@ -32,7 +33,7 @@ impl TestObjectSelector{
     }
 }
 
-#[derive(Clone,Copy,Debug, IcedForm)]
+#[derive(Clone,Copy,Debug, IcedForm, Serialize, Deserialize)]
 pub enum Relation{
     #[field_name("Origin")] Origin,
     #[field_name("Primary detector")] Primary,
@@ -55,7 +56,7 @@ impl Relation{
     }
 }
 
-#[derive(Clone,Debug, Default, IcedForm)]
+#[derive(Clone,Debug, Default, IcedForm, Serialize, Deserialize)]
 #[spoiler_hidden]
 pub struct TestObject{
     #[field_name("Object type")] pub selected_object:TestObjectSelector,

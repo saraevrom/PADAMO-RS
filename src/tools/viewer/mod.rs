@@ -716,6 +716,8 @@ impl PadamoTool for PadamoViewer{
                                         None
                                     };
                                     self.mesh = self.form_instance.test_object.selected_object.generate_mesh(detector);
+
+                                    padamo.persistent_state.serialize("viewer_form", &self.form_instance);
                                 },
                                 Err(e)=>eprintln!("Form get error: {}",e),
                             }
@@ -836,6 +838,10 @@ impl PadamoTool for PadamoViewer{
 
     fn initialize(&mut self, padamo:crate::application::PadamoStateRef) {
         self.window_view.initialize(&padamo);
+        if let Some(v) = padamo.persistent_state.deserialize("viewer_form"){
+            self.form_instance = v;
+            self.form.set(self.form_instance.clone());
+        }
     }
 }
 

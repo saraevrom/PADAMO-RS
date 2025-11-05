@@ -1,7 +1,8 @@
 use padamo_detectors::{loaded_detectors_storage::ProvidedDetectorInfo, mesh::{Marker, Mesh}};
 use padamo_iced_forms::{IcedForm, IcedFormBuffer};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone,Debug, IcedForm)]
+#[derive(Clone,Debug, IcedForm, Serialize, Deserialize)]
 pub struct HeightProbeTestObject{
     #[field_name("Height")] pub height:f64,
     #[field_name("Detector X")] pub detector_x:f64,

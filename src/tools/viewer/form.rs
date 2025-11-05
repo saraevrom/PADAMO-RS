@@ -1,8 +1,9 @@
 use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 use padamo_iced_forms::make_action;
 use padamo_iced_forms::Action;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone,Debug,IcedForm)]
+#[derive(Clone,Debug,IcedForm, Serialize, Deserialize)]
 #[spoiler_hidden]
 pub struct AnimationParameters{
     #[field_name("Create animation")] _start:Action<ViewerActions,ViewerActionStartAnimation>,
@@ -15,7 +16,7 @@ pub struct AnimationParameters{
     //#[field_name("Display LC")] displaylc:bool,
 }
 
-#[derive(Clone,Debug,IcedForm)]
+#[derive(Clone,Debug,IcedForm, Serialize, Deserialize)]
 #[spoiler_hidden]
 pub struct ExportParameters{
     //#[field_name("Frames step")] pub framesstep:usize,
@@ -30,7 +31,7 @@ pub struct ExportParameters{
     //#[field_name("Display LC")] displaylc:bool,
 }
 
-#[derive(Clone,Debug,IcedForm)]
+#[derive(Clone,Debug,IcedForm, Serialize, Deserialize)]
 #[spoiler_hidden]
 pub struct FrameParameters{
     #[field_name("Save frame")] _action:Action<ViewerActions,ViewerActionMakeFrame>,
@@ -38,7 +39,7 @@ pub struct FrameParameters{
     #[field_name("Height [pix]")] pub height:u32,
 }
 
-#[derive(Clone,Debug,IcedForm, Default)]
+#[derive(Clone,Debug,IcedForm, Default, Serialize, Deserialize)]
 pub struct ViewerForm{
     //#[field_name("Stop on trigger")] pub stop_on_trigger:bool,
     #[field_name("Animation")] pub animation:AnimationParameters,
