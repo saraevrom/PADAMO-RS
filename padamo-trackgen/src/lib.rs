@@ -1,5 +1,5 @@
 use abi_stable::std_types::RString;
-use padamo_api::prelude::*;
+use padamo_api::{make_node_box, prelude::*};
 use abi_stable::{std_types::RVec, export_root_module, prefix_type::PrefixTypeTrait};
 use padamo_api::nodes_vec;
 use abi_stable::sabi_extern_fn;
@@ -25,7 +25,8 @@ pub fn nodes(_library_dir:RString)->RVec<CalculationNodeBox>{
     let mut res = nodes_vec!();
 
     res.extend(tracks_2d::nodes());
-    res.extend(tracks_3d::nodes());
+    // res.extend(tracks_3d::nodes());
+    res.push(make_node_box(tracks_3d::nodes::MeteorTrackNode));
     res.extend(background::nodes());
     res.extend(lightcurves::nodes());
     res.extend(legacy::nodes());

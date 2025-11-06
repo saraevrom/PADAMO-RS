@@ -55,9 +55,19 @@ impl BlankDataNode{
 
         //let shape = constants.request_string("shape")?;
         //let shape = crate::shape_parser::parse_usize_vec(&shape).ok_or_else(|| ExecutionError::OtherError(format!("Cannot parse shape {}",&shape).into()))?;
-        let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
-        let shape = detector.compat_shape.clone();
+        // let detector_content = args.environment.request_string("detector")?.to_string();
+        // let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector_name = args.constants.request_string("detector_name")?;
+        let mut detector = None;
+        for det in args.detectors.iter(){
+            if det.get_friendly_name()==detector_name.as_str(){
+                detector = Some(det);
+                break;
+            }
+        }
+
+        let detector = detector.ok_or(ExecutionError::OtherError(format!("Detector {} is not found", detector_name).into()))?;
+        let shape = detector.detector.shape();
 
         let temporal = super::ops::ArtificialTime::new(length, time_offset,time_step);
         let spatial = super::ops::ArtificialBlankSignal::new(length, shape.into());
@@ -107,6 +117,7 @@ impl CalculationNode for BlankDataNode{
     #[doc = r" Constants definition of node with default values."]
     fn constants(&self,) -> RVec<CalculationConstant> {
         constants![
+            ("detector_name", "Detector name", ""),
             ("length",100),
             ("time_offset",0.0),
             ("time_step",1.0),

@@ -1,49 +1,58 @@
-use nalgebra::Vector4;
 use padamo_api::lazy_array_operations::ArrayND;
 use padamo_api::lazy_array_operations::LazyArrayOperation;
 use padamo_api::lazy_array_operations::LazyDetectorSignal;
-use padamo_detectors::loaded_detectors_storage::ProvidedDetectorInfo;
 use crate::ensquared_energy;
 use crate::ensquared_energy::detector::DetectorWireframe;
 
 use padamo_api::function_operator::DoubleFunctionOperatorBox;
 
 #[derive(Clone,Debug)]
-pub struct LazyMeteorTrack{
+pub struct LazyGaussPSFMeteorTrack{
     pub motion_blur_steps:usize,
     pub modify_intensity:bool,
 
     pub data:LazyDetectorSignal,
     pub detector:DetectorWireframe,
-    pub detector_info: ProvidedDetectorInfo,
 
     pub pivot_frame:f64,
     pub lc:DoubleFunctionOperatorBox,
-    pub psf:DoubleFunctionOperatorBox,
 
-    pub v0:f64,
-    pub mv:nalgebra::Matrix4<f64>,
+    pub x0:f64,
+    pub y0:f64,
+    pub z0:f64,
+
+    pub v0_x:f64,
+    pub v0_y:f64,
+    pub v0_z:f64,
+
+    pub a0_x:f64,
+    pub a0_y:f64,
+    pub a0_z:f64,
+
+    pub f:f64,
+
+    pub sigma_x:f64,
+    pub sigma_y:f64,
+
 }
 
-impl LazyMeteorTrack{
+impl LazyGaussPSFMeteorTrack{
     fn kinematics(&self, t:f64)->(f64,f64,f64){
         let dt = t-self.pivot_frame;
-
-        let zero_pos = self.mv * Vector4::new(0.0,0.0,0.0,1.0);
-        let dir = self.mv * Vector4::new(0.0,0.0,1.0,0.0);
-
-        let pos = zero_pos+dir*self.v0*dt;
-        (pos.x, pos.y, pos.z)
+        (
+            self.x0+self.v0_x*dt+self.a0_x*dt*dt/2.0,
+            self.y0+self.v0_y*dt+self.a0_y*dt*dt/2.0,
+            self.z0+self.v0_z*dt+self.a0_z*dt*dt/2.0,
+        )
     }
 
     fn kinematics_2d(&self, t:f64)->(f64,f64){
         let (x,y,z) = self.kinematics(t);
-        (-x*self.detector_info.focal_distance/z,y*self.detector_info.focal_distance/z)
+        (x*self.f/z,y*self.f/z)
     }
 
     fn intensity_mod(&self, t:f64)->f64{
-        let zero_pos = self.mv * Vector4::new(0.0,0.0,0.0,1.0);
-        let d0 = zero_pos.dot(&zero_pos);
+        let d0 = self.x0*self.x0+self.y0*self.y0+self.z0*self.z0;
         let (x,y,z) = self.kinematics(t);
         let d = x*x+y*y+z*z;
         if d==0.0{
@@ -63,7 +72,7 @@ impl LazyMeteorTrack{
     }
 }
 
-impl LazyArrayOperation<ArrayND<f64>> for LazyMeteorTrack{
+impl LazyArrayOperation<ArrayND<f64>> for LazyGaussPSFMeteorTrack{
     fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
         // match &self.data{
         //     TrackData::Background(src)=>{src.calculate_overhead(start,end)},
@@ -96,7 +105,7 @@ impl LazyArrayOperation<ArrayND<f64>> for LazyMeteorTrack{
                 let lc = self.calculate_lc(t)/divider;
                 let (x,y) = self.kinematics_2d(t);
 
-                let spot = ensquared_energy::any_spot(&self.detector, x, y, |x| self.psf.calculate(x), lc);
+                let spot = ensquared_energy::gauss_spot(&self.detector, x, y, self.sigma_x, self.sigma_y,lc);
                 for i in 0..spot.flat_data.len(){
                     data.flat_data[(t_usize-start)*frame_size+i] += spot.flat_data[i];
                 }

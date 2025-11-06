@@ -59,3 +59,10 @@ pub fn moffat_spot(wireframe:&detector::DetectorWireframe,x0:f64,y0:f64,alpha:f6
     };
     make_frame(wireframe, &gauss)
 }
+
+pub fn any_spot<T:Fn(f64)->f64>(wireframe:&detector::DetectorWireframe,x0:f64,y0:f64, psf:T, energy:f64)->ArrayND<f64>{
+    make_frame(wireframe, &|x:f64,y:f64| {
+        let r = ((x-x0)*(x-x0)+ (y-y0)*(y-y0)).sqrt();
+        energy*psf(r)
+    })
+}

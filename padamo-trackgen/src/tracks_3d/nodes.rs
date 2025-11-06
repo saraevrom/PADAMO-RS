@@ -7,120 +7,101 @@ use abi_stable::rvec;
 
 
 #[derive(Debug,Clone)]
-pub struct GaussPSFMeteorTrackNode;
+pub struct MeteorTrackNode;
 
-impl GaussPSFMeteorTrackNode{
+impl MeteorTrackNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
-
-        let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector);
-
+        let detector_name = args.constants.request_string("detector_name")?;
+        let mut detector = None;
+        for det in args.detectors.iter(){
+            if det.get_friendly_name()==detector_name.as_str(){
+                detector = Some((det, det.detector_info.clone()));
+                break;
+            }
+        }
+        let (detector,detector_info) = detector.ok_or(ExecutionError::OtherError(format!("Detector {} is not found", detector_name).into()))?;
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
         let mut data = args.inputs.request_detectorfulldata("Background")?;
+        if data.0.length()==0{
+            return Err(ExecutionError::OtherError("No background data".into()));
+        }
+        let probe = data.0.request_range(0,1).take_frame().ok_or(ExecutionError::OtherError("Cannot take test frame".into()))?;
+
+        if !probe.form_compatible(&detector.shape){
+            return Err(ExecutionError::OtherError(format!("Background shape {:?} is not compatible with detector {}", probe.shape, detector_name).into()));
+        }
+
         let lc = args.inputs.request_function("Lightcurve")?;
+        let psf = args.inputs.request_function("PSF")?;
 
         let pivot_frame = args.constants.request_float("pivot_frame")?;
 
         let modify_intensity = args.constants.request_boolean("modify_intensity")?;
         let motion_blur_steps = crate::requesters::request_usize("motion_blur_steps",&args.constants)?;
 
-        let theta0 = args.constants.request_float("theta0")?*PI/180.0;
-        let phi0 = args.constants.request_float("phi0")?*PI/180.0;
-
-        let e0_x = -theta0.sin()*phi0.cos();
-        let e0_y = -theta0.sin()*phi0.sin();
-        let e0_z = -theta0.cos();
-
-
-        let x0_planar = args.constants.request_float("X0")?;
-        let y0_planar = args.constants.request_float("Y0")?;
-        let z0 = args.constants.request_float("z0")?;
-        let f = args.constants.request_float("f")?;
-        if f<=0.0{
-            return Err(ExecutionError::OtherError("Focal distance must be positive".into()));
-        }
-
-        let sigma_x = args.constants.request_float("sigma_x")?;
-        let sigma_y = args.constants.request_float("sigma_y")?;
-
-        let x0 = x0_planar*z0/f;
-        let y0 = y0_planar*z0/f;
 
         let v0 = args.constants.request_float("v0")?;
-        let a0 = args.constants.request_float("a0")?;
 
-        data.0 = make_lao_box(super::ops::LazyGaussPSFMeteorTrack{
+        let mv = args.inputs.request_detectorsignal("MV Matrix")?;
+        let mv = mv.request_range(0,mv.length());
+
+        let mv:nalgebra::Matrix4<f64> = mv.try_into().map_err(|_| ExecutionError::OtherError("Model-view matrix must be 4x4".into()))?;
+
+        data.0 = make_lao_box(super::ops::LazyMeteorTrack{
             motion_blur_steps,
             modify_intensity,
             data:data.0,
             detector,
+            detector_info,
             pivot_frame,
             lc,
-            x0,y0,z0,
-            v0_x: v0*e0_x,
-            v0_y: v0*e0_y,
-            v0_z: v0*e0_z,
-
-            a0_x: a0*e0_x,
-            a0_y: a0*e0_y,
-            a0_z: a0*e0_z,
-            f,
-            sigma_x,
-            sigma_y
+            psf,
+            v0,
+            mv,
         });
 
         args.outputs.set_value("Signal", data.into())?;
+        println!("Simulator prepared");
         Ok(())
     }
 }
 
-impl CalculationNode for GaussPSFMeteorTrackNode{
+
+impl CalculationNode for MeteorTrackNode{
     fn name(&self,) -> RString where {
-        "Gauss PSF Meteor track".into()
+        "Meteor simulator".into()
     }
 
-    #[doc = r" Category to place node in node list"]
-    fn category(&self,) -> RVec<RString> {
+    fn category(&self,) -> RVec<RString>where {
         rvec!["Artificial data".into(), "3D tracks".into()]
     }
 
     fn identifier(&self,) -> RString where {
-        "padamotrackgen.tracks3d.meteor_track".into()
+        "padamotrackgen.tracks3d.meteor_track_v2".into()
     }
 
     fn inputs(&self,) -> RVec<CalculationIO>where {
-        ports!(
+        ports![
             ("Background", ContentType::DetectorFullData),
             ("Lightcurve", ContentType::Function),
-        )
+            ("PSF", ContentType::Function),
+            ("MV Matrix", ContentType::DetectorSignal),
+        ]
     }
 
-    fn outputs(&self) -> RVec<CalculationIO> {
-        ports!(
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
             ("Signal", ContentType::DetectorFullData)
-        )
+        ]
     }
 
     fn constants(&self,) -> RVec<CalculationConstant>where {
         constants![
+            ("detector_name", "Detector name", ""),
             ("motion_blur_steps","Motion blur steps",5),
             ("modify_intensity", "Follow 1/r^2 falloff", false),
-
             ("pivot_frame","Zero frame [fr]", 0.0),
-
             ("v0","v0 [km/fr]",10.0),
-            ("a0","a0 [km/fr^2]",0.0),
-            ("z0","z0 [km]",100.0),
-
-            ("theta0","theta0 [deg]",0.0),
-            ("phi0","phi0 [deg]",0.0),
-
-            ("X0","X0 [mm]",0.0),
-            ("Y0","Y0 [mm]",0.0),
-            ("f","Focal distance [mm]",150.0),
-
-            ("sigma_x","Sigma X",1.0),
-            ("sigma_y","Sigma Y",1.0)
         ]
     }
 
