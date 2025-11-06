@@ -7,6 +7,7 @@ pub mod refs;
 pub mod buttons;
 pub mod errors;
 pub use errors::Result;
+pub mod proxy;
 
 // pub mod unit;
 pub use traits::{IcedForm,IcedFormBuffer};

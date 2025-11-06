@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+abi_stable = { version = "0.11.3", optional = true }
 iced = "0.13.1"
 iced_aw = "0.12.2"
 padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive"}
@@ -11,4 +12,6 @@ serde = { version = "1.0.228", optional = true }
 thiserror = "2.0.9"
 
 [features]
+default = ["abi_stable"]
 serde = ["dep:serde"]
+abi_stable = ["dep:abi_stable"]

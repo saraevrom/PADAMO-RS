@@ -72,7 +72,7 @@ impl PadamoEditor{
         }
         x_mut.environment.0.remove(VIEWER_TEST_OBJECT_KEY);
 
-        if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value,padamo.detectors.as_ref()){
+        if let Err(err) = x_mut.execute(padamo.current_seed.parsed_value,padamo.detectors.get_detectors()){
             padamo.show_error(format!("Execution error: {}",err));
             //println!("Execution error: {}",err);
         }

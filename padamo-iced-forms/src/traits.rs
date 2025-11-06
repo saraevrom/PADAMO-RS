@@ -39,7 +39,7 @@ pub trait IcedFormBuffer<Theme=iced::Theme,Renderer=iced::Renderer>:std::fmt::De
 }
 
 pub trait IcedForm:Default {
-    type Buffer: IcedFormBuffer;
+    type Buffer: IcedFormBuffer<FormType = Self>;
 }
 
 // impl<T:IcedFormBuffer> LocalDefault for T{

@@ -1,6 +1,7 @@
 
 use abi_stable::std_types::{RString,RVec,RHashMap,RResult, ROption, Tuple2};
 use abi_stable::StableAbi;
+use padamo_detectors::loaded_detectors_storage::DetectorEntry;
 use super::content::{Content, ContentContainer, ContentType, ConstantContent, ConstantContentContainer};
 use super::errors::ExecutionError;
 use super::graph::PortKey;
@@ -154,7 +155,7 @@ pub struct CalculationNodeArguments<'a>{
     pub constants:ConstantContentContainer,
     pub environment:&'a mut ContentContainer,
     pub rng:&'a mut RandomState,
-    pub detectors_serialized:&'a RVec<RString>,
+    pub detectors:&'a RVec<DetectorEntry>,
 }
 
 #[allow(non_local_definitions)]

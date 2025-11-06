@@ -40,6 +40,8 @@ pub struct Margins{
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(abi_stable::StableAbi)]
+#[repr(C)]
 pub struct DetectorAndMask{
     pub cells:polygon::DetectorContent,
     pub alive_pixels:ArrayND<bool>,
