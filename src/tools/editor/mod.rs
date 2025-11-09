@@ -43,6 +43,7 @@ pub struct PadamoEditor{
     //hor_divider_position: u16,
     panes: pane_grid::State<Pane>,
     current_scroll_offset: scrollable::RelativeOffset,
+    search: String,
 }
 
 impl PadamoEditor{
@@ -54,7 +55,12 @@ impl PadamoEditor{
         panes.resize(split2, 0.75);
 
         //println!("{:?}",tree);
-        Self{state: editor_program::EditorState::new(), tree, panes, current_scroll_offset: scrollable::RelativeOffset::START}
+        Self{
+            state: editor_program::EditorState::new(),
+            search:Default::default(),
+            current_scroll_offset: scrollable::RelativeOffset::START,
+            tree, panes,
+        }
     }
 
     fn run(&self,padamo:&mut PadamoState){
@@ -175,15 +181,18 @@ impl PadamoTool for PadamoEditor{
         //     EditorMessage::TreeSplitPositionSet
         // ).into();
         let split:iced::Element<'a, EditorMessage> = pane_grid::PaneGrid::new(&self.panes, |_id, pane, _maximized|{
-            let first:iced::Element<'_,EditorMessage> = scrollable::Scrollable::new(
-                iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x))))
-            )
+            let first:iced::Element<'_,EditorMessage> = iced::widget::column![
+                iced::widget::text_input("Search", &self.search).on_input(messages::EditorMessage::Search),
+                scrollable::Scrollable::new(
+                    iced::Element::new(self.tree.view(Some(|x| messages::EditorMessage::NodeListClicked(x)),&self.search))
+                )
                 .id(SCROLLABLE_ID.clone())
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .direction(scrollable::Direction::Vertical(Scrollbar::new().width(10).anchor(scrollable::Anchor::Start)))
-                .on_scroll(messages::EditorMessage::EditorScroll)
-                .into();
+                .on_scroll(messages::EditorMessage::EditorScroll),
+
+            ].into();
             let (second, third) = self.state.view();
             let second = second.map(messages::EditorMessage::CanvasMessage);
             let third = third.map(messages::EditorMessage::CanvasMessage);
@@ -272,6 +281,9 @@ impl PadamoTool for PadamoEditor{
                                 }
                             }
                         }
+                    },
+                    messages::EditorMessage::Search(s)=>{
+                        self.search = s.into();
                     }
                     _=>()
                 }

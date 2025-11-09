@@ -252,8 +252,8 @@ impl<T:std::fmt::Debug+Clone> Tree<T>{
         }
     }
 
-    pub fn view<Message,F:Fn(T)->Message>(&self, action:Option<F>)->TreeView<Message,T,F>{
-        TreeView::new(self, action)
+    pub fn view<'a, Message,F:Fn(T)->Message>(&'a self, action:Option<F>, search:&'a str)->TreeView<'a, Message,T,F>{
+        TreeView::new(self, action, search)
     }
 
     fn draw<Theme,Renderer: iced::advanced::text::Renderer>(
@@ -289,6 +289,7 @@ where
     F:Fn(T)->Message
 {
     tree:&'a Tree<T>,
+    search:&'a str,
     action:Option<F>
 }
 
@@ -296,8 +297,8 @@ impl<'a, Message,T:std::fmt::Debug+Clone,F> TreeView<'a, Message, T,F>
 where
     F:Fn(T)->Message
 {
-    pub fn new(tree:&'a Tree<T>, action:Option<F>)->Self{
-        Self{tree, action}
+    pub fn new(tree:&'a Tree<T>, action:Option<F>, search:&'a str)->Self{
+        Self{tree, action, search}
     }
 }
 

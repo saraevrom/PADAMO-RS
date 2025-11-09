@@ -28,5 +28,6 @@ pub enum EditorMessage{
     NodeListClicked(String),
     EditorScroll(scrollable::Viewport),
     CompileGraph,
+    Search(String),
 }
 
