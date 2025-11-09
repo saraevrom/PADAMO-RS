@@ -5,6 +5,7 @@ use crate::{application::PadamoState, messages::PadamoAppMessage};
 use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorage};
 
 use super::PadamoTool;
+use std::str::FromStr;
 use chrono::{Datelike, Timelike};
 use iced::{widget, Font};
 use padamo_api::{lazy_array_operations::ArrayND, trigger_operations::{sparse_event_storage::SparseTag, SparseTagArray}};
@@ -490,7 +491,7 @@ impl PadamoTool for PadamoTrigger{
                                         // };
 
                                         let tgt_path = std::path::Path::new(&path);
-                                        let file_path = tgt_path.join(format!("event_{}.h5",interval.tag));
+                                        let file_path = tgt_path.join(format!("event_{}.h5",i));
                                         if let Ok(file) = hdf5::File::create(file_path){
                                             let space_ds = file.new_dataset::<f64>()
                                                 .deflate(3)
@@ -503,6 +504,12 @@ impl PadamoTool for PadamoTrigger{
 
                                             space_ds.write(&frame).unwrap();
                                             time_ds.write(&tim).unwrap();
+
+                                            let grp = file.create_group("meta").unwrap();
+                                            let tag = grp.new_attr::<hdf5::types::VarLenUnicode>().create("Tag").unwrap();
+                                            let str_to_write: hdf5::types::VarLenUnicode = interval.tag.as_str().parse().unwrap();
+                                            tag.write_scalar(&str_to_write).unwrap();
+                                            //tag.write().unwrap();
                                         }
 
 
