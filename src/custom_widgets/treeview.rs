@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, cell::RefCell, rc::{Rc, Weak}};
 use iced::advanced::Widget;
+use rust_fuzzy_search::fuzzy_compare;
 
 const STEP:f32 = 22.0;
 const HEIGHT:f32 = 20.0;
@@ -38,6 +39,10 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
 
     pub fn is_top(&self)->bool{
         self.parent.upgrade().is_none()
+    }
+
+    pub fn fuzzy_compare_to(&self, reference:&str) -> f32{
+        fuzzy_compare(&self.name, reference)
     }
 
     pub fn is_active(&self)->bool{
@@ -278,6 +283,43 @@ impl<T:std::fmt::Debug+Clone> Tree<T>{
         *self.last_height.borrow_mut() =  y-bounds.y;
     }
 
+    fn draw_search<Theme,Renderer: iced::advanced::text::Renderer>(
+        &self,
+        search:&str,
+        state: &iced::advanced::widget::Tree,
+        renderer: &mut Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::advanced::mouse::Cursor,
+        viewport: &iced::Rectangle,)
+    {
+        let bounds = layout.bounds();
+        let mut y:f32 = bounds.y;
+        let mut nodes_to_draw:Vec<_> = self.nodes.iter()
+            .map(|x| x.borrow())
+            .filter(|x| x.is_final())
+            .collect();
+        nodes_to_draw.sort_by(|a,b| {
+            let a_score = a.fuzzy_compare_to(search);
+            let b_score = b.fuzzy_compare_to(search);
+            b_score.total_cmp(&a_score)
+        });
+
+        for node in nodes_to_draw.iter(){
+            y = node.draw(state, renderer, theme, style, layout, cursor, viewport, 0.0, y);
+        }
+
+        // for node in self.nodes.iter(){
+        //     let node_ref = node.borrow();
+        //     if node_ref.is_top(){
+        //         y = node_ref.draw(state, renderer, theme, style, layout, cursor, viewport, 0.0, y);
+        //     }
+        // }
+        //println!("Last height commit: {}", y-bounds.y);
+        *self.last_height.borrow_mut() =  y-bounds.y;
+    }
+
     fn get_last_height(&self)->f32{
         *self.last_height.borrow()
     }
@@ -335,7 +377,12 @@ where
         cursor: iced::advanced::mouse::Cursor,
         viewport: &iced::Rectangle,
     ) {
-        self.tree.draw(state,renderer,theme,style,layout,cursor,viewport);
+        if self.search.is_empty(){
+            self.tree.draw(state,renderer,theme,style,layout,cursor,viewport);
+        }
+        else{
+            self.tree.draw_search(self.search, state, renderer, theme, style, layout, cursor, viewport);
+        }
         // *self.last_height.borrow_mut() = y;
     }
 
@@ -350,25 +397,33 @@ where
         shell: &mut iced::advanced::Shell<'_, Message>,
         _viewport: &iced::Rectangle,
     ) -> iced::event::Status {
+        
+
         if let iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) = event{
             for node in self.tree.nodes.iter(){
                 if let Some(pos) = cursor.position(){
                     let mut node_ref = node.borrow_mut();
-                    if node_ref.is_active() && node_ref.contains_point(pos){
-                        if node_ref.is_final(){
-                            if let Some(action) = &self.action{
-                                println!("{:?}",node_ref.metadata);
-                                if let Some(m) = node_ref.metadata.clone(){
-                                    shell.publish(action(m));
+                    if node_ref.contains_point(pos){
+                        let is_searching = !self.search.is_empty();
+                        if node_ref.is_active() || is_searching{
+                            if node_ref.is_final(){
+                                if let Some(action) = &self.action{
+                                    println!("{:?}",node_ref.metadata);
+                                    if let Some(m) = node_ref.metadata.clone(){
+                                        shell.publish(action(m));
+                                    }
                                 }
+                                //println!("{}",node_ref.path());
+                                return iced::event::Status::Captured;
                             }
-                            //println!("{}",node_ref.path());
+                            else if !is_searching{
+                                node_ref.visible = !node_ref.visible;
+                                return iced::event::Status::Captured;
+                            }
                         }
-                        else{
-                            node_ref.visible = !node_ref.visible;
-                        }
-                        return iced::event::Status::Captured;
                     }
+
+
                 }
             }
 
