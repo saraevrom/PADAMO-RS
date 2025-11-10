@@ -8,6 +8,7 @@ pub mod ensquared_energy;
 pub mod lightcurves;
 pub mod tracks_2d;
 pub mod tracks_3d;
+pub mod tracks_3d_old;
 pub mod legacy;
 pub mod background;
 pub mod requesters;

@@ -4,7 +4,7 @@ use padamo_api::{constants, ports, prelude::*};
 use abi_stable::std_types::{RResult, RString, RVec};
 use abi_stable::rvec;
 
-
+use crate::detector_finder::find_primary_detector;
 
 #[derive(Debug,Clone)]
 pub struct GaussPSFMeteorTrackNode;
@@ -12,9 +12,8 @@ pub struct GaussPSFMeteorTrackNode;
 impl GaussPSFMeteorTrackNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
 
-        let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector);
+        let detector = find_primary_detector(&args).ok_or(ExecutionError::OtherError("No primary detector is found".into()))?;
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
 
         let mut data = args.inputs.request_detectorfulldata("Background")?;
         let lc = args.inputs.request_function("Lightcurve")?;
@@ -76,12 +75,12 @@ impl GaussPSFMeteorTrackNode{
 
 impl CalculationNode for GaussPSFMeteorTrackNode{
     fn name(&self,) -> RString where {
-        "Gauss PSF Meteor track".into()
+        "Gauss PSF Meteor track (Legacy)".into()
     }
 
     #[doc = r" Category to place node in node list"]
     fn category(&self,) -> RVec<RString> {
-        rvec!["Artificial data".into(), "3D tracks".into()]
+        rvec!["Artificial data".into(), "3D tracks".into(), "Legacy".into()]
     }
 
     fn identifier(&self,) -> RString where {
