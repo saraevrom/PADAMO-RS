@@ -1,10 +1,9 @@
 use std::cell::RefCell;
 
 use padamo_api::lazy_array_operations::ArrayND;
-use padamo_iced_forms::IcedFormBuffer;
 use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate, Shift}, prelude::Cartesian2d};
 use plotters_iced::{
-    sample::lttb::{DataPoint, LttbSource}, Chart, ChartBuilder, ChartWidget, DrawingArea, DrawingBackend, Renderer
+    Chart, ChartBuilder, ChartWidget, DrawingArea, DrawingBackend, Renderer
 };
 
 use iced::{widget::canvas::Cache, Length};

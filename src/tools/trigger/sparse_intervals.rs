@@ -159,13 +159,7 @@ pub struct UnixIntervalStorage{
     pub container:Vec<UnixInterval>
 }
 
-#[derive(Clone,Debug,Serialize,Deserialize)]
-pub struct BinaryUnixIntervalStorage{
-    pub positives:UnixIntervalStorage,
-    pub negatives:UnixIntervalStorage,
-}
-
-
+#[allow(dead_code)]
 impl IntervalStorage{
     pub fn new_full(length:usize)->Self{
         Self { container: vec![Interval::new(0,length)] }
@@ -184,7 +178,6 @@ impl IntervalStorage{
         }
     }
 
-    #[allow(dead_code)]
     pub fn print_contents(&self){
         for i in self.container.iter(){
             print!("{} ",i);
@@ -338,6 +331,7 @@ impl IntervalStorage{
 }
 
 
+#[allow(dead_code)]
 pub fn split_intervals(trigger_result:&Vec<bool>)->(Vec<Interval>,Vec<Interval>){
     let mut positives = Vec::new();
     let mut negatives = Vec::new();

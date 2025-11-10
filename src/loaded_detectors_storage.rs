@@ -12,6 +12,7 @@ pub struct LoadedDetectors{
     buffers:Vec<ProvidedDetectorInfoBuffer>,
 }
 
+#[allow(dead_code)]
 impl LoadedDetectors{
     pub fn new()->Self{
         Self { detectors: RVec::new(), buffers: Vec::new() }
