@@ -1,7 +1,6 @@
 use crate::DetectorAndMask;
 use abi_stable::std_types::{ROption, RString};
 use padamo_iced_forms::{ActionOrUpdate, IcedForm, IcedFormBuffer};
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone,Debug)]
 pub enum LoadedDetectorsMessage{

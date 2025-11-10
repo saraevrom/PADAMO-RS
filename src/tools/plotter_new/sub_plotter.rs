@@ -1,8 +1,7 @@
 use std::cell::RefCell;
 
 use padamo_api::lazy_array_operations::ArrayND;
-use padamo_detectors::{DetectorChartMap, DetectorChart, DetectorPlotter};
-use padamo_iced_forms::{IcedForm, IcedFormBuffer};
+use padamo_iced_forms::IcedFormBuffer;
 use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate, Shift}, prelude::Cartesian2d};
 use plotters_iced::{
     sample::lttb::{DataPoint, LttbSource}, Chart, ChartBuilder, ChartWidget, DrawingArea, DrawingBackend, Renderer
@@ -10,7 +9,7 @@ use plotters_iced::{
 
 use iced::{widget::canvas::Cache, Length};
 
-use crate::{application::PadamoState, messages::PadamoAppMessage, tools::{plotter_new::messages::NewPlotterMessage, viewer::{cross_progress::CrossProgressMessage, ViewerMessage}}};
+use crate::{application::PadamoState, messages::PadamoAppMessage, tools::viewer::{cross_progress::CrossProgressMessage, ViewerMessage}};
 use super::form::LCSelection;
 
 fn find_unixtime(haystack: &[f64],unixtime:f64)->Option<usize>{

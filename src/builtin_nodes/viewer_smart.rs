@@ -1,8 +1,8 @@
 use padamo_api::{constants, prelude::*};
-use abi_stable::{rvec, std_types::{ROption::RSome, RString}};
+use abi_stable::{rvec, std_types::RString};
 use padamo_api::ports;
 use abi_stable::std_types::RVec;
-use crate::detector_muxer::{get_mask_var, get_mask_var_by_name, get_signal_var, get_signal_var_by_name, get_transform_var, get_transform_var_by_name, VIEWER_TEST_OBJECT_KEY};
+use crate::detector_muxer::{get_mask_var_by_name, get_signal_var_by_name, get_transform_var_by_name};
 
 #[derive(Clone,Debug)]
 pub struct SmartViewNode;

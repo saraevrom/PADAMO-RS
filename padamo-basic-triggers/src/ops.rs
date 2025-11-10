@@ -1,11 +1,7 @@
-use abi_stable::std_types::RVec;
-use padamo_api::lazy_array_operations::{ArrayND, LazyArrayOperation, LazyDetectorSignal};
-use padamo_api::lazy_array_operations::ndim_array;
+use padamo_api::lazy_array_operations::{LazyArrayOperation, LazyDetectorSignal};
 use padamo_api::trigger_operations::SparseTagArray;
-use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
-use ndarray::{SliceInfo,SliceInfoElem};
+use rayon::iter::ParallelIterator;
 use medians::Medianf64;
-use std::sync::{Arc,Mutex};
 
 #[derive(Clone,Debug)]
 pub struct LazyPixelThresholdTrigger{

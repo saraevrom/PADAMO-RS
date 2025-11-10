@@ -1,5 +1,5 @@
 use abi_stable::std_types::{RString, RVec};
-use nalgebra::{Matrix, Matrix4, Vector3};
+use nalgebra::{Matrix4, Vector3};
 use padamo_api::{constants, lazy_array_operations::ArrayND, ports, prelude::*};
 use super::{get_all, matrix_err};
 

@@ -1,7 +1,7 @@
 use abi_stable::std_types::{RResult, RString, RVec};
 use nalgebra::Matrix4;
 use super::{get_all, matrix_err};
-use padamo_api::{constants, lazy_array_operations::{ArrayND, LazyDetectorSignal}, ports, prelude::*};
+use padamo_api::{constants, lazy_array_operations::ArrayND, ports, prelude::*};
 
 #[derive(Clone,Debug)]
 pub struct IdentityNode;

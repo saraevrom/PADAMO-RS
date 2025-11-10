@@ -1,7 +1,7 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use crate::{IcedForm, IcedFormBuffer};
-use abi_stable::std_types::{RVec, RString, ROption};
+use abi_stable::std_types::{RString, ROption};
 
 // pub trait ProxyMark<T:IcedForm>: abi_stable::StableAbi{}
 

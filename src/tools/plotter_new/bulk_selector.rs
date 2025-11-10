@@ -1,5 +1,5 @@
 use padamo_api::lazy_array_operations::ArrayND;
-use padamo_iced_forms::{make_action, ActionOrUpdate, IcedForm, IcedFormBuffer, Action};
+use padamo_iced_forms::{make_action, IcedForm, IcedFormBuffer, Action};
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone,Copy,Debug,Default,IcedForm, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ pub enum Selector{
 }
 
 impl Selector{
-    pub fn apply<T:Iterator<Item = f64>>(&self, mut input:T)->f64{
+    pub fn apply<T:Iterator<Item = f64>>(&self, input:T)->f64{
         match self{
             Self::Max=>input.max_by(|a, b| a.total_cmp(b)).unwrap_or(0.0),
             Self::Mean=>{

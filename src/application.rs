@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 use std::fs;
 use std::rc::Rc;
 
-use iced::alignment::Horizontal;
 use iced::widget::{button, container};
 use iced::Length;
 use padamo_detectors::polygon::DetectorContent;

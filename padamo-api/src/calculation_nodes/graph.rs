@@ -1,6 +1,5 @@
 use std::collections::{HashMap, VecDeque};
 use padamo_detectors::loaded_detectors_storage::DetectorEntry;
-use serde_json;
 use abi_stable::StableAbi;
 use abi_stable::std_types::{RString, RVec};
 use topo_sort::{TopoSort,SortResults};

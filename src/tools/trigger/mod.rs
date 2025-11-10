@@ -2,11 +2,9 @@ use std::{thread, sync::mpsc};
 
 use crate::{application::PadamoState, messages::PadamoAppMessage};
 
-use self::sparse_intervals::{IntervalStorage, Interval, BinaryUnixIntervalStorage};
+use self::sparse_intervals::{IntervalStorage, Interval};
 
 use super::PadamoTool;
-use std::str::FromStr;
-use chrono::{Datelike, Timelike};
 use iced::{widget, Font};
 use padamo_api::{lazy_array_operations::ArrayND, trigger_operations::{sparse_event_storage::SparseTag, SparseTagArray}};
 use padamo_detectors::{DetectorAndMask, DetectorPlotter};
@@ -21,7 +19,7 @@ use interval_selector::IntervalSelectionDialog;
 // use padamo_iced_forms::IcedFormInterface;
 use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 use crate::tools::viewer::Worker;
-use sparse_intervals::{split_intervals, UnixIntervalStorage};
+use sparse_intervals::UnixIntervalStorage;
 use iced_aw::selection_list;
 use super::plotter::{spawn_loader,data_state::DataCache, get_maxes};
 

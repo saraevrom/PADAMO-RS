@@ -4,7 +4,7 @@ use std::thread::{self, JoinHandle};
 use padamo_api::lazy_array_operations::{ArrayND, LazyTriSignal};
 
 use crate::application::PadamoState;
-use crate::detector_muxer::{get_mask_var, get_signal_var};
+use crate::detector_muxer::get_signal_var;
 
 pub struct StoredSignal{
     pub signals: ArrayND<f64>,

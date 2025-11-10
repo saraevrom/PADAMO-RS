@@ -1,5 +1,5 @@
 use crate::trigger_ops::{LazyTriggerMerge, LazyTriggerRemoveOverlap};
-use abi_stable::{rvec, std_types::{ROption::{self, RSome}, RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::{self}, RResult, RString, RVec}};
 use padamo_api::{constants, nodes_vec, ports, prelude::*};
 
 

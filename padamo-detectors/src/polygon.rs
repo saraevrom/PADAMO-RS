@@ -5,7 +5,6 @@ use serde::{Serialize,Deserialize};
 use plotters::prelude::*;
 use crate::{parser::parse_detector, scripted::parse_scripted};
 use rhai::{serde::from_dynamic, CustomType, EvalAltResult, TypeBuilder};
-use rhai::{Position, Dynamic};
 use abi_stable::{rvec, StableAbi};
 
 //use super::colors::
@@ -493,15 +492,6 @@ pub struct ColorIterator<'a>{
     pub detector:&'a DetectorContent,
     current_index:usize,
     pixel_map:&'a ArrayND<bool>,
-}
-
-fn search_vec(haystack:&[Vec<usize>], needle:&Vec<usize>)->Option<usize>{
-    for (i,x) in haystack.iter().enumerate(){
-        if x==needle{
-            return Some(i);
-        }
-    }
-    None
 }
 
 impl<'a> ColorIterator<'a>{

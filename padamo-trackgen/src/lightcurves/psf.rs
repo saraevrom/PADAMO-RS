@@ -1,9 +1,8 @@
 use std::f64::consts::PI;
 
 use abi_stable::rvec;
-use abi_stable::std_types::ROption::RSome;
-use abi_stable::std_types::{ROption, RResult, RString, RVec};
-use padamo_api::function_operator::{DoubleFunctionOperator,DoubleFunctionOperatorBox, make_function_box};
+use abi_stable::std_types::{RResult, RString, RVec};
+use padamo_api::function_operator::{DoubleFunctionOperator,DoubleFunctionOperatorBox};
 use padamo_api::{constants, ports, prelude::*};
 
 fn category() -> RVec<RString>where {

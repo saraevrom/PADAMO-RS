@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use abi_stable::{rvec, StableAbi};
 
 use super::ArrayND;
-use crate::lazy_array_operations::{cache::Cache, LazyArrayOperation};
+use crate::lazy_array_operations::LazyArrayOperation;
 
 
 impl<T:StableAbi+Clone+Debug+Send+Sync> LazyArrayOperation<ArrayND<T>> for ArrayND<T>{

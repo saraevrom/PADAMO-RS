@@ -1,7 +1,7 @@
-use abi_stable::{rvec, std_types::ROption::RSome};
+use abi_stable::rvec;
 use padamo_api::{constants, ports, prelude::*};
 use super::ops::LazyRemapper;
-use index_remapper::{parse_f64_remapper, parse_bool_remapper};
+use index_remapper::parse_f64_remapper;
 
 #[derive(Clone,Debug)]
 pub struct RemapperNode;

@@ -34,7 +34,6 @@ pub trait PadamoTool{
 
 pub use viewer::PadamoViewer;
 pub use editor::PadamoEditor;
-pub use plotter::Plotter;
 pub use trigger::PadamoTrigger;
 pub use detectors::PadamoDetectorManager;
 

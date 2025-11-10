@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use super::ArrayND;
 
-use nalgebra::{ArrayStorage, Dim};
+use nalgebra::ArrayStorage;
 use nalgebra::Matrix;
 
 // impl<T, R, C, S> Into<Matrix<T, R, C, S>> for ArrayND<T>

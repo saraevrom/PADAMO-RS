@@ -1,6 +1,4 @@
-use std::thread::JoinHandle;
 
-use padamo_api::lazy_array_operations::ArrayND;
 use padamo_iced_forms::{ActionOrUpdate, IcedFormBuffer};
 
 use crate::{application::PadamoState, messages::PadamoAppMessage};

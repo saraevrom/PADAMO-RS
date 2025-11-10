@@ -211,7 +211,7 @@ impl IndexExtension{
         match &self{
             IndexExtension::Prepend(pre)=>{
                 let mut index2 = pre.clone();
-                index2.extend(index.clone());
+                index2.extend(index);
                 index2
             }
             IndexExtension::Append(add)=>{
