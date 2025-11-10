@@ -3,6 +3,7 @@ use padamo_api::{constants, ports, prelude::*};
 use abi_stable::std_types::{RResult, RString, RVec};
 use abi_stable::rvec;
 
+use crate::detector_finder::find_detector;
 
 
 #[derive(Debug,Clone)]
@@ -10,15 +11,18 @@ pub struct MeteorTrackNode;
 
 impl MeteorTrackNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+
+        // let mut detector = None;
+        // for det in args.detectors.iter(){
+        //     if det.get_friendly_name()==detector_name.as_str(){
+        //         detector = Some((det, det.detector_info.clone()));
+        //         break;
+        //     }
+        // }
         let detector_name = args.constants.request_string("detector_name")?;
-        let mut detector = None;
-        for det in args.detectors.iter(){
-            if det.get_friendly_name()==detector_name.as_str(){
-                detector = Some((det, det.detector_info.clone()));
-                break;
-            }
-        }
-        let (detector,detector_info) = detector.ok_or(ExecutionError::OtherError(format!("Detector {} is not found", detector_name).into()))?;
+        let detector = find_detector(&args, detector_name.as_str()).ok_or(ExecutionError::OtherError(format!("Detector {} is not found", detector_name).into()))?;
+        let detector_info = detector.detector_info.clone();
+        // let (detector,detector_info) = detector
         let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
         let mut data = args.inputs.request_detectorfulldata("Background")?;
         if data.0.length()==0{

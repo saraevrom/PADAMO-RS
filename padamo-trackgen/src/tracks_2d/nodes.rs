@@ -3,6 +3,7 @@ use padamo_api::{constants, ports, prelude::*};
 use abi_stable::std_types::{ROption, RResult, RString, RVec};
 use abi_stable::rvec;
 
+use crate::detector_finder::find_primary_detector;
 
 #[derive(Debug,Clone)]
 pub struct AnyLCLinearTrackGeneratorDynamicGaussNode;
@@ -45,9 +46,10 @@ fn request_usize(name:&str,constants:&ConstantContentContainer)->Result<usize,Ex
 impl AnyLCLinearTrackGeneratorDynamicGaussNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
-        let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector);
+        // let detector_content = args.environment.request_string("detector")?.to_string();
+        // let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector = find_primary_detector(&args).ok_or(ExecutionError::OtherError("No primary detector is found".into()))?;
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
         let pivot_frame = request_nonnegative("pivot_frame", &args.constants)?;
@@ -143,9 +145,8 @@ impl CalculationNode for AnyLCLinearTrackGeneratorDynamicGaussNode{
 impl AnyLCLinearTrackGeneratorDynamicMoffatNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
-        let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector);
+        let detector = find_primary_detector(&args).ok_or(ExecutionError::OtherError("No primary detector is found".into()))?;
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
         let pivot_frame = request_nonnegative("pivot_frame", &args.constants)?;

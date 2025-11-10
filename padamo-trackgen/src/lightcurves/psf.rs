@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 
 use abi_stable::rvec;
 use abi_stable::std_types::{RResult, RString, RVec};
-use padamo_api::function_operator::{DoubleFunctionOperator,DoubleFunctionOperatorBox};
+use padamo_api::function_operator::DoubleFunctionOperatorBox;
 use padamo_api::{constants, ports, prelude::*};
 
 fn category() -> RVec<RString>where {

@@ -12,7 +12,7 @@ pub mod legacy;
 pub mod background;
 pub mod requesters;
 
-
+mod detector_finder;
 mod shape_parser;
 
 #[export_root_module]
