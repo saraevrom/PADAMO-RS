@@ -315,14 +315,22 @@ where
 }
 
 #[cfg(feature = "ndarray")]
-impl<T> Into<ndarray::ArrayBase<OwnedRepr<T>,IxDyn>> for ArrayND<T>
+impl<T> From<ArrayND<T>> for ndarray::ArrayBase<OwnedRepr<T>,IxDyn>
 where
-T: Clone+StableAbi,
+    T: Clone+StableAbi,
 {
-    fn into(self) -> ndarray::ArrayBase<OwnedRepr<T>, IxDyn> {
-        self.to_ndarray()
+    fn from(value: ArrayND<T>) -> Self {
+        value.to_ndarray()
     }
 }
+// impl<T> Into<ndarray::ArrayBase<OwnedRepr<T>,IxDyn>> for ArrayND<T>
+// where
+// T: Clone+StableAbi,
+// {
+//     fn into(self) -> ndarray::ArrayBase<OwnedRepr<T>, IxDyn> {
+//         self.to_ndarray()
+//     }
+// }
 
 impl<T> Index<&Vec<usize>> for ArrayND<T>
 where

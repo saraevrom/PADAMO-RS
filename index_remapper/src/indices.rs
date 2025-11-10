@@ -13,8 +13,8 @@ pub struct IndexWidthSource(pub usize);
 #[derive(Debug)]
 pub struct ConstantSource(pub i64);
 
-#[derive(Debug)]
-pub struct NothingSource;
+// #[derive(Debug)]
+// pub struct NothingSource;
 
 
 
@@ -36,11 +36,11 @@ impl IndexCalculator for IndexWidthSource{
     }
 }
 
-impl IndexCalculator for NothingSource{
-    fn calculate(&self, _index_src:&[usize], _index_sizes:&[usize])->Option<i64> {
-        None
-    }
-}
+// impl IndexCalculator for NothingSource{
+//     fn calculate(&self, _index_src:&[usize], _index_sizes:&[usize])->Option<i64> {
+//         None
+//     }
+// }
 
 
 

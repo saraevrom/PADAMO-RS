@@ -22,13 +22,26 @@ fn read_time_key(filename:&str, temporal:&str)->f64{
     if s.len()>1{
         println!("MATLAB time detected in {}", temporal);
         let sliced = dataset.read_slice_2d::<f64,_>((0..1,0..1)).unwrap();
-        println!("{:?}",sliced);
-        sliced.into_raw_vec()[0]
+        // println!("{:?}",sliced);
+        let raw = sliced.into_raw_vec_and_offset();
+        if let Some(o) = raw.1{
+            raw.0[o]
+        }
+        else{
+            raw.0[0]
+        }
+
     }
     else{
         let sliced = dataset.read_slice_1d::<f64,_>(0..1).unwrap();
-        println!("{:?}",sliced);
-        sliced.into_raw_vec()[0]
+        // println!("{:?}",sliced);
+        let raw = sliced.into_raw_vec_and_offset();
+        if let Some(o) = raw.1{
+            raw.0[o]
+        }
+        else{
+            raw.0[0]
+        }
     }
 
 }

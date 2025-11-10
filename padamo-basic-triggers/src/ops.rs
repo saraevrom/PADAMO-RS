@@ -1,6 +1,6 @@
 use padamo_api::lazy_array_operations::{LazyArrayOperation, LazyDetectorSignal};
 use padamo_api::trigger_operations::SparseTagArray;
-use rayon::iter::ParallelIterator;
+// use rayon::iter::ParallelIterator;
 use medians::Medianf64;
 
 #[derive(Clone,Debug)]

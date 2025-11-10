@@ -79,50 +79,6 @@ fn resample(xdata:&[f64],ydata:&[f64],x_new:&[f64])->Vec<f64>{
     res
 }
 
-
-fn estimate_bool_interp1d(xdata:&[f64],ydata:&[bool], xnew:f64, start_index:usize)->(usize,bool){
-    for i in start_index..xdata.len(){
-        if xdata[i]>xnew{
-            if i==0{
-                //eprintln!("LEFT bound hit");
-                return (0,ydata[i]);
-            }
-            else{
-                let x1 = xdata[i-1];
-                let x2 = xdata[i];
-                let mid_x = (x1+x2)/2.0;
-                let y1 = ydata[i-1];
-                let y2 = ydata[i];
-                if x1==x2{
-                    return (i-1,y1 || y2);
-                }
-                else if xnew>=mid_x{
-                    return (i-1,y2);
-                }
-                else{
-                    return (i-1,y1);
-                }
-            }
-        }
-
-    }
-    //eprintln!("RIGHT bound hit");
-    (xdata.len()-1,ydata[xdata.len()-1])
-}
-
-fn resample_bool(xdata:&[f64],ydata:&[bool],x_new:&[f64])->Vec<bool>{
-    let mut res = Vec::with_capacity(x_new.len());
-    res.resize(x_new.len(), false);
-    let mut search_start:usize = 0;
-    for (i,x) in x_new.iter().enumerate(){
-        let (a,b) = estimate_bool_interp1d(xdata, ydata, *x, search_start);
-        search_start = a;
-        res[i] = b;
-    }
-    res
-}
-
-
 #[derive(Clone,Debug)]
 pub struct SyncedSignalStretcher{
     pub source:LazyDetectorSignal,

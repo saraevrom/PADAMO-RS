@@ -83,12 +83,13 @@ where
         //let sliced:ndarray::Array3<T> = self.dataset.read_slice((start..end,..,..)).unwrap();
         let sliced = self.dataset.read_slice::<T, Selection, ndarray::IxDyn>(make_slab(self.dataset.shape().len(), start..end)).unwrap();
 
-        let mut shape = vec![end-start];
-        let shape_add:Vec<_> = self.dataset.shape().iter().skip(1).map(|x| *x).collect();
-        shape.extend(shape_add);
-        //let flat:Vec<T> = sliced.into();
-        let flat_data:Vec<T> = sliced.into_raw_vec();
-        let res = ArrayND{shape:shape.into(), flat_data:flat_data.into()};
+        // let mut shape = vec![end-start];
+        // let shape_add:Vec<_> = self.dataset.shape().iter().skip(1).map(|x| *x).collect();
+        // shape.extend(shape_add);
+        // //let flat:Vec<T> = sliced.into();
+        // let flat_data:Vec<T> = sliced.into_raw_vec();
+        // let res = ArrayND{shape:shape.into(), flat_data:flat_data.into()};
+        let res:ArrayND<T> = sliced.into();
         //*cache = Some((start,end,res.clone()));
         res
     }
@@ -186,15 +187,23 @@ where
             let sliced = self.dataset.read_slice_2d::<T,_>((start..end,..)).unwrap();
             //let shape:Vec<usize> = self.dataset.shape().iter().skip(1).map(|x| *x).collect();
             //let flat:Vec<T> = sliced.into();
-            let flat_data = sliced.into_raw_vec();
-            flat_data.into()
+            let flat_data = sliced.into_raw_vec_and_offset();
+            let mut res = flat_data.0;
+            if let Some(s) = flat_data.1{
+                res = res[s..].into();
+            }
+            res.into()
         }
         else{
             let sliced = self.dataset.read_slice_1d::<T,_>(start..end).unwrap();
             //let shape:Vec<usize> = self.dataset.shape().iter().skip(1).map(|x| *x).collect();
             //let flat:Vec<T> = sliced.into();
-            let flat_data = sliced.into_raw_vec();
-            flat_data.into()
+            let flat_data = sliced.into_raw_vec_and_offset();
+            let mut res = flat_data.0;
+            if let Some(s) = flat_data.1{
+                res = res[s..].into();
+            }
+            res.into()
         }
 
     }
