@@ -36,7 +36,7 @@ impl DualSignalsCache{
     }
 }
 
-fn spawn_data_loader(padamo:&PadamoState, aux_detector:Option<usize>, start:usize, end:usize)->Option<JoinHandle<DualSignalsCache>>{
+pub fn spawn_data_loader(padamo:&PadamoState, aux_detector:Option<usize>, start:usize, end:usize)->Option<JoinHandle<DualSignalsCache>>{
     // let primary_detector = padamo.detectors.get_primary()?;
     let signal = padamo.compute_graph.environment.request_detectorfulldata(get_signal_var(0).as_str()).ok()?;
     let signal_aux = if let Some(aux) = aux_detector{

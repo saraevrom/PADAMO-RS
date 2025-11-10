@@ -21,10 +21,26 @@ use padamo_iced_forms::{IcedForm,IcedFormBuffer};
 use crate::tools::viewer::Worker;
 use sparse_intervals::UnixIntervalStorage;
 use iced_aw::selection_list;
-use super::plotter::{spawn_loader,data_state::DataCache, get_maxes};
+
+// use super::plotter::{spawn_loader,data_state::DataCache, get_maxes};
+use super::plotter_new::loader::{DualSignalsCache, spawn_data_loader};
 
 use std::fs;
 
+fn get_maxes(pix_data:&ArrayND<f64>)->ArrayND<f64>{
+    let res_shape:Vec<usize> = pix_data.shape.iter().skip(1).cloned().collect();
+    let mut maxes:ArrayND<f64> = ArrayND::<f64>::defaults(res_shape);
+    for (i,v) in maxes.flat_data.iter_mut().enumerate(){
+        *v = pix_data.flat_data[i];
+    }
+    for i in pix_data.enumerate(){
+        let tgt_index:Vec<usize> = i.iter().skip(1).cloned().collect();
+        if pix_data[&i]>maxes[&tgt_index]{
+            maxes.set(&tgt_index, pix_data[&i]);
+        }
+    }
+    maxes
+}
 
 pub enum TriggerProcessMessage{
     Status(String),
@@ -73,8 +89,8 @@ pub struct PadamoTrigger{
     export_process:Option<Worker<ExportProcessMessage>>,
     export_status:String,
 
-    loader:Option<thread::JoinHandle<DataCache>>,
-    data:Option<(DataCache,ArrayND<f64>)>,
+    loader:Option<thread::JoinHandle<DualSignalsCache>>,
+    data:Option<(DualSignalsCache,ArrayND<f64>)>,
     view_transform: crate::transform_widget::TransformState,
 }
 
@@ -169,7 +185,7 @@ impl PadamoTrigger{
         padamo.detectors.get_primary().map(|x| &x.detector)
     }
 
-    fn select_event(&mut self){
+    fn select_event(&mut self, padamo:&PadamoState){
         let trigger_form = &self.trigger_form_instance;
         if let Some(signal) = &self.signal{
             if let Some(sel) = self.selection{
@@ -191,9 +207,10 @@ impl PadamoTrigger{
                     if self.loader.is_some(){
                         return;
                     }
-                    let spatial = signal.0.clone();
-                    let temporal = signal.1.clone();
-                    self.loader = Some(spawn_loader(spatial, temporal, event.position, event.position+event.duration, None));
+                    // let spatial = signal.0.clone();
+                    // let temporal = signal.1.clone();
+                    // self.loader = Some(spawn_loader(spatial, temporal, event.position, event.position+event.duration, None));
+                    self.loader = spawn_data_loader(padamo, None, event.position, event.position+event.duration);
                 }
 
             }
@@ -224,7 +241,7 @@ impl PadamoTool for PadamoTrigger{
         // };
 
         let view_content = if let Some(v) = &self.data{
-            Some((&v.1,v.0.primary.1[0]))
+            Some((&v.1,v.0.primary.time[0]))
         }
         else{
             None
@@ -350,7 +367,7 @@ impl PadamoTool for PadamoTrigger{
                     }
                     TriggerMessage::SelectEvent(i, _)=>{
                         self.selection = Some(*i);
-                        self.select_event();
+                        self.select_event(padamo);
                     }
                     // TriggerMessage::SelectPositive(i, _)=>{
                     //     self.selection = Some(*i);
@@ -604,7 +621,7 @@ impl PadamoTool for PadamoTrigger{
                     if worker.is_finished(){
                         match worker.join() {
                             Ok(v)=>{
-                                let maxes = get_maxes(&v.primary.0);
+                                let maxes = get_maxes(&v.primary.signals);
                                 self.data = Some((v,maxes));
                             }
                             Err(_)=>{

@@ -1,7 +1,7 @@
 
 use crate::tools::editor::messages::EditorMessage;
 use crate::tools::viewer::ViewerMessage;
-use crate::tools::plotter::messages::PlotterMessage;
+// use crate::tools::plotter::messages::PlotterMessage;
 use crate::tools::plotter_new::messages::NewPlotterMessage;
 use crate::tools::trigger::messages::TriggerMessage;
 use crate::tools::detectors::messages::DetectorManagerMessage;
@@ -14,7 +14,7 @@ pub enum PadamoAppMessage{
     // FontLoaded(Result<(), font::Error>),
     EditorMessage(EditorMessage),
     ViewerMessage(ViewerMessage),
-    PlotterMessage(PlotterMessage),
+    // PlotterMessage(PlotterMessage),
     TriggerMessage(TriggerMessage),
     NewPlotterMessage(NewPlotterMessage),
     DetectorManagerMessage(DetectorManagerMessage),

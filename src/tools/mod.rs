@@ -1,6 +1,6 @@
 pub mod viewer;
 pub mod editor;
-pub mod plotter;
+// pub mod plotter;
 pub mod plotter_new;
 pub mod trigger;
 pub mod detectors;
