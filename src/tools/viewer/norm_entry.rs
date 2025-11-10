@@ -74,7 +74,7 @@ impl NormEntryState{
         iced::widget::row![
             iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(NormEntryMessage::SetAutoscale),
             iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(NormEntryMessage::SetMinSignal),
-            iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(100),
+            iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(20),
             iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(NormEntryMessage::SetMaxSignal),
         ].into()
     }

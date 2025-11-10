@@ -132,11 +132,10 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         let transform:iced::Element<'_, _> = self.view_transform.view().into();
         let footer:iced::Element<'_, _> = row![
             self.scale_state.view(self.detector_id).map(SingleDetectorDisplayMessage::NormEntryMessage),
-            iced::widget::Space::new(10,10).width(iced::Length::Fill),
+            iced::widget::horizontal_space(),
             transform.map(SingleDetectorDisplayMessage::PlotZoomMessage),
-            iced::widget::button("Reset mask").on_press(SingleDetectorDisplayMessage::ResetMask),
             // iced::widget::Space::new(10,10).width(iced::Length::Fill),
-        ].into();
+        ].height(iced::Length::Shrink).into();
 
         let detector_view = if let Some(det) = padamo.detectors.get(self.detector_id){
             if self.detector_id==0{
@@ -166,6 +165,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
             iced::widget::Space::new(10,10).width(iced::Length::Fill),
             left_btn,
             right_btn,
+            iced::widget::button("Reset mask").on_press(SingleDetectorDisplayMessage::ResetMask)
         ];
         let top:iced::Element<'_, SingleDetectorDisplayMessage> = top.into();
 
@@ -196,10 +196,6 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         }
 
 
-    }
-
-    pub fn is_primary(&self)->bool{
-        self.detector_id==0
     }
 
     pub fn pump_frame(&mut self, padamo: &PadamoState, timeline:&super::cross_progress::CrossProgress){
