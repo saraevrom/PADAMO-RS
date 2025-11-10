@@ -200,7 +200,7 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
         for i in 0usize..blocks_w{
             for j in 0usize..blocks_h{
                 println!("Block {}, {}", i, j);
-                let block = source_data.slice(ndarray::s![..,i..i+self.size_hint.1,j..j+self.size_hint.2]);
+                let block = source_data.slice(ndarray::s![..,i*self.size_hint.1..(i+1)*self.size_hint.1,j*self.size_hint.2..(j+1)*self.size_hint.2]);
                 println!("Slice 1 OK");
                 let windows_amount = (src_time-self.size_hint.0)/self.stride+1;
                 println!("There are {} windows",windows_amount);
