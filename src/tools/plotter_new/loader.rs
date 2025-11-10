@@ -1,4 +1,3 @@
-use std::any::Any;
 use std::thread::{self, JoinHandle};
 
 use padamo_api::lazy_array_operations::{ArrayND, LazyTriSignal};
@@ -6,12 +5,14 @@ use padamo_api::lazy_array_operations::{ArrayND, LazyTriSignal};
 use crate::application::PadamoState;
 use crate::detector_muxer::get_signal_var;
 
+#[allow(dead_code)]
 pub struct StoredSignal{
     pub signals: ArrayND<f64>,
     pub time: Vec<f64>,
     pub detector_id:usize,
     pub start_frame:usize,
 }
+
 
 impl StoredSignal {
     pub fn new(signals: ArrayND<f64>, time: Vec<f64>, detector_id: usize, start_frame:usize) -> Self {
@@ -28,12 +29,6 @@ impl StoredSignal {
 pub struct DualSignalsCache{
     pub primary:StoredSignal,
     pub secondary:Option<StoredSignal>
-}
-
-impl DualSignalsCache{
-    pub fn new(primary: StoredSignal, secondary: Option<StoredSignal>) -> Self {
-        Self { primary, secondary }
-    }
 }
 
 pub fn spawn_data_loader(padamo:&PadamoState, aux_detector:Option<usize>, start:usize, end:usize)->Option<JoinHandle<DualSignalsCache>>{
@@ -75,7 +70,7 @@ pub enum CurrentData{
     Loading(JoinHandle<DualSignalsCache>, super::SyncDataRequest),
     Loaded(DualSignalsCache, super::SyncDataRequest),
     Unloaded,
-    Error(Box<dyn Any+Send+'static>)
+    Error,
 }
 
 
@@ -87,7 +82,7 @@ impl CurrentData{
                 if loader.is_finished(){
                     match loader.join(){
                         Ok(r)=>Self::Loaded(r, request),
-                        Err(e)=>Self::Error(e),
+                        Err(_)=>Self::Error,
                     }
                 }
                 else{
@@ -118,7 +113,7 @@ impl CurrentData{
         }
     }
 
-    pub fn pin_to_load(&mut self, padamo:&PadamoState, request:super::SyncDataRequest){
+    pub fn pin_to_load(&mut self, _padamo:&PadamoState, request:super::SyncDataRequest){
             if let Self::Loading(_,_) = self{
                 return;
             }

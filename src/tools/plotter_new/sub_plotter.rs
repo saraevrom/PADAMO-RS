@@ -259,7 +259,7 @@ impl Subplotter{
         }
     }
 
-    pub fn update(&mut self, msg: SubplotterMessage, padamo:&mut PadamoState){
+    pub fn update(&mut self, msg: SubplotterMessage, _padamo:&mut PadamoState){
         match msg{
             SubplotterMessage::TogglePixel(id)=>{
                         if let Some(pixels) = &mut self.pixels{
@@ -377,7 +377,7 @@ impl Chart<SubplotterMessage> for Subplotter{
         self.build_chart(state, builder);
     }
 
-    fn build_chart<DB: plotters_iced::DrawingBackend>(&self, state: &Self::State, mut builder: plotters::prelude::ChartBuilder<DB>) {
+    fn build_chart<DB: plotters_iced::DrawingBackend>(&self, _state: &Self::State, mut builder: plotters::prelude::ChartBuilder<DB>) {
         use plotters::prelude::*;
         // let y_range = self.y_range.unwrap_or((0.0,1.0));
         let x_range = self.get_x_scale().unwrap();

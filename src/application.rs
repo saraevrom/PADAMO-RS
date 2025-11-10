@@ -157,14 +157,6 @@ impl Padamo{
     }
 
     fn try_load_detector(&mut self){
-        if let Some(s) = self.state.persistent_state.read("detector"){
-            println!("Loading persistent detector");
-            // self.set_detector(s, false);
-            if let Some(detector) = self.set_detector(s, false){
-                let msg = PadamoAppMessage::SetDetector(detector);
-                self.update_tools_sequence(Rc::new(msg));
-            }
-        }
         if let Some(s) = self.state.persistent_state.read("detectors"){
             println!("Loading persistent detector array");
             match serde_json::from_str::<LoadedDetectors>(&s){
@@ -349,27 +341,6 @@ impl Padamo{
                 }
             },
             PadamoAppMessage::SetEditLoadedDetectors(v)=>self.state.is_editing_detectors = v,
-            PadamoAppMessage::ChooseDetector=>{
-                if let Some(path) = self.state.workspace.workspace("detectors").open_dialog(vec![("Detector",vec!["json"])]){
-                    let s = match std::fs::read_to_string(path) {
-                        Ok(v)=>{v},
-                        Err(e)=> {self.state.show_error(format!("{:?}",e)); return;}
-                    };
-                    if let Some(detector) = self.set_detector(s, true){
-                        let msg = PadamoAppMessage::SetDetector(detector);
-                        self.update_tools_loop(Rc::new(msg));
-                    }
-                    // let detector = serde_json::from_str(&s);
-                    //
-                    // let detector = match detector{
-                    //     Ok(v)=>{v},
-                    //     Err(e)=> {self.state.show_error(format!("{:?}",e)); return;}
-                    // };
-                    // self.state.compute_graph.environment.0.insert("detector".into(), padamo_api::calculation_nodes::content::Content::String(s.into()));
-                    // let msg = PadamoAppMessage::SetDetector(detector);
-                    // self.update_tools_loop(Rc::new(msg));
-                }
-            }
             PadamoAppMessage::ClearState=>{
                 self.state.persistent_state.clear();
                 let vtl = serde_json::to_string(&DetectorContent::default_vtl()).unwrap();

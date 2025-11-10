@@ -28,7 +28,7 @@ impl NormEntryState{
         }
     }
 
-    pub fn fill_strings(&mut self, padamo:&PadamoState, ref_frame:&ArrayND<f64>, ref_mask:&ArrayND<bool>){
+    pub fn fill_strings(&mut self, _padamo:&PadamoState, ref_frame:&ArrayND<f64>, ref_mask:&ArrayND<bool>){
         if self.is_autoscale{
             // let detector = if let Some(det) = padamo.detectors.get(self.detector_id){det} else {return;};
             // if let Some(frame) = &self.buffer{

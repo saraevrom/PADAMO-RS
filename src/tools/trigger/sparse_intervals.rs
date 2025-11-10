@@ -31,6 +31,7 @@ impl UnixInterval{
     }
 }
 
+#[allow(dead_code)]
 impl Interval{
     pub fn new(start:usize,end:usize)->Self{
         if end<start{

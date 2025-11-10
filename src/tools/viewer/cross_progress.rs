@@ -93,7 +93,7 @@ impl CrossProgress{
         }
     }
 
-    pub fn view(&self, padamo:&PadamoState) -> iced::Element<'_,CrossProgressMessage>{
+    pub fn view(&self, _padamo:&PadamoState) -> iced::Element<'_,CrossProgressMessage>{
         let frame_num = &self.pointer_str;
         let start_frame = &self.start_str;
         let end_frame = &self.end_str;

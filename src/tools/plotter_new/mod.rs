@@ -81,7 +81,7 @@ impl PadamoTool for PlotterNew{
         "Signal plotter".into()
     }
 
-    fn view<'a>(&'a self, padamo:&'a crate::application::PadamoState)->iced::Element<'a, PadamoAppMessage> {
+    fn view<'a>(&'a self, _padamo:&'a crate::application::PadamoState)->iced::Element<'a, PadamoAppMessage> {
         let form_view: iced::Element<'a, _>= self.form_buffer.view(None).into();
 
         let mut plots_column = iced::widget::column![];
@@ -222,7 +222,7 @@ impl PadamoTool for PlotterNew{
         }
     }
 
-    fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
+    fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, _padamo:crate::application::PadamoStateRef)->Option<crate::messages::PadamoAppMessage> {
         if let PadamoAppMessage::NewPlotterMessage(msg_inner) = msg.as_ref(){
             match msg_inner{
                 messages::NewPlotterMessage::PrimarySubplotterMessage(subplotter_message) => {

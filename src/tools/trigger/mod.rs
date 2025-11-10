@@ -187,7 +187,7 @@ impl PadamoTrigger{
 
     fn select_event(&mut self, padamo:&PadamoState){
         let trigger_form = &self.trigger_form_instance;
-        if let Some(signal) = &self.signal{
+        if self.signal.is_some(){
             if let Some(sel) = self.selection{
 
                 // let interval = if self.selection_positive{
@@ -338,9 +338,6 @@ impl PadamoTool for PadamoTrigger{
 
     fn update(&mut self, msg: std::rc::Rc<PadamoAppMessage>, padamo:crate::application::PadamoStateRef){
         match msg.as_ref() {
-            PadamoAppMessage::SetDetector(v) => {
-                //self.chart = Detector::from_cells(v.clone());
-            }
             PadamoAppMessage::TriggerMessage(msg) => {
                 match msg {
                     TriggerMessage::ChooseTrigger=>{

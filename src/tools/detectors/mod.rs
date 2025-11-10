@@ -50,7 +50,7 @@ impl PadamoTool for PadamoDetectorManager{
         "Detector manager".into()
     }
 
-    fn view<'a>(&'a self, padamo:&PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
+    fn view<'a>(&'a self, _padamo:&PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
         let action:Option<fn(Vec<usize>)->DetectorManagerMessage> = None;
         // let frame:iced::Element<DetectorManagerMessage> = widget::row![
         //         Split::new(
