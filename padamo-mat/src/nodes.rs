@@ -1,5 +1,5 @@
 use abi_stable::std_types::{ROption::RSome, RResult, RString, RVec};
-use padamo_api::{constants, ports, prelude::*};
+use padamo_api::{constants, lazy_array_operations::ArrayND, ports, prelude::*};
 use crate::ops::{self, ConstantArray, ConstantVec};
 
 #[derive(Clone,Debug)]
@@ -12,21 +12,19 @@ impl MatReadNode{
         let file = std::fs::File::open(&filename).map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
         let mat_file = matfile::MatFile::parse(file).map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
         if let Some(d) = mat_file.find_by_name(&field){
+            if let matfile::NumericData::Double { real:real_data, imag:None } = d.data(){
+                let mut data:padamo_api::lazy_array_operations::ArrayND<f64> = ArrayND::from_f(d.size().clone().into(), real_data);
 
-            let data:ndarray::ArrayD<f64> = d.try_into().map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
-            let mut data:padamo_api::lazy_array_operations::ArrayND<f64> = data.into();//crate::compat::ndarray_to_arraynd(data);
+                if args.constants.request_boolean("flip")?{
+                    data = data.flip_indices();
+                }
 
-            if args.constants.request_boolean("flip")?{
-                data = data.flip_indices();
+                let data:ConstantArray<f64> = ops::ConstantArray::new(data);
+                args.outputs.set_value("Array", Content::DetectorSignal(make_lao_box(data)))?;
+                return Ok(());
             }
-
-            let data:ConstantArray<f64> = ops::ConstantArray::new(data);
-            args.outputs.set_value("Array", Content::DetectorSignal(make_lao_box(data)))?;
-            Ok(())
         }
-        else{
-            Err(ExecutionError::OtherError(format!("Field {} is not found", field).into()))
-        }
+        Err(ExecutionError::OtherError(format!("Field {} is not found", field).into()))
     }
 }
 
@@ -91,21 +89,23 @@ impl MatReadTimeNode{
         let file = std::fs::File::open(&filename).map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
         let mat_file = matfile::MatFile::parse(file).map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
         if let Some(d) = mat_file.find_by_name(&field){
+            if let matfile::NumericData::Double { real:real_data, imag:None } = d.data(){
+                let data:padamo_api::lazy_array_operations::ArrayND<f64> = ArrayND::from_f(d.size().clone().into(), real_data);
+                // data.assert_shape();
 
-            let data:ndarray::ArrayD<f64> = d.try_into().map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
-            let data:padamo_api::lazy_array_operations::ArrayND<f64> = data.into();
-            let data = data.squeeze();
-            if data.shape.len()!=1{
-                return Err(ExecutionError::OtherError("MAT data time length is wrong".into()));
+                let data = data.squeeze();
+                if data.shape.len()!=1{
+                    return Err(ExecutionError::OtherError("MAT data time length is wrong".into()));
+                }
+
+                let data:ConstantVec<f64> = ops::ConstantVec::new(data.flat_data);
+                args.outputs.set_value("Time", Content::DetectorTime(make_lao_box(data)))?;
+                return Ok(())
             }
-
-            let data:ConstantVec<f64> = ops::ConstantVec::new(data.flat_data);
-            args.outputs.set_value("Time", Content::DetectorTime(make_lao_box(data)))?;
-            Ok(())
+            // let data:ndarray::ArrayBase<OwnedRepr<f64>,IxDyn, f64> = d.try_into().map_err(|e| ExecutionError::OtherError(format!("{}",e).into()))?;
+            // let mat_data = d.size().into();
         }
-        else{
-            Err(ExecutionError::OtherError(format!("Field {} is not found", field).into()))
-        }
+        Err(ExecutionError::OtherError(format!("Field {} is not found", field).into()))
     }
 }
 

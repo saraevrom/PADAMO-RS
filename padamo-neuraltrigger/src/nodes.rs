@@ -1,7 +1,7 @@
-use std::{error::Error, sync::Arc};
+use std::{error::Error, sync::{Arc, Mutex}};
 
 use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
-use ort::Session;
+use ort::session::Session;
 use padamo_api::{constants, ports, prelude::*};
 
 #[derive(Clone,Debug)]
@@ -10,7 +10,7 @@ pub struct ANN3DNode{
     id:String,
     old_name:String,
     //ann_model_path:String,
-    ann_model:Arc<ort::Session>,
+    ann_model:Arc<Mutex<ort::session::Session>>,
     size_hint:(usize,usize,usize),
     output_layer:String,
 }
@@ -28,7 +28,7 @@ fn request_usize(constants:&ConstantContentContainer,key:&str)->Result<usize,Exe
 
 impl ANN3DNode {
     pub fn new(name: &str, ann_model_path: &str, size_hint: (usize,usize,usize), output_layer:String, id:&str,old_name:&str) -> Result<Self,Box<dyn Error>> {
-        let ann_model = Arc::new(Session::builder()?.commit_from_file(ann_model_path)?);
+        let ann_model = Arc::new(Mutex::new(Session::builder()?.commit_from_file(ann_model_path)?));
         Ok(Self { name:name.into(), ann_model, size_hint, output_layer, id:id.to_owned(), old_name:old_name.to_owned() })
     }
 

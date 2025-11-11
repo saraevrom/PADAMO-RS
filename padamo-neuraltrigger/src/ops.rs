@@ -1,5 +1,6 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug, sync::{Arc, Mutex}};
 
+use ort::value::Tensor;
 use padamo_api::{lazy_array_operations::{cutter::CutError, ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal}, trigger_operations::SparseTagArray};
 // use tract_core::ndarray::{IxDyn, OwnedRepr};
 // use tract_onnx::prelude::*;
@@ -42,7 +43,7 @@ pub enum ANNError {
 #[derive(Clone)]
 pub struct LazyANNTrigger3D{
     //path:String,
-    model:Arc<ort::Session>,
+    model:Arc<Mutex<ort::session::Session>>,
     //model:SimplePlan<TypedFact,Box<dyn TypedOp>,Graph<TypedFact,Box<dyn TypedOp>>>,
     source:LazyDetectorSignal,
     threshold:f32,
@@ -69,7 +70,7 @@ impl LazyANNTrigger3D{
         source.cut(0, aligned_length)
     }
 
-    pub fn new(model: Arc<ort::Session>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool, tag_prefix:String)-> Result<Self, Box<dyn std::error::Error>>{
+    pub fn new(model: Arc<Mutex<ort::session::Session>>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool, tag_prefix:String)-> Result<Self, Box<dyn std::error::Error>>{
         let source_length = source.length();
         if source_length==0{
             return Err(Box::new(ANNError::EmptySource));
@@ -214,9 +215,11 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
 
                 println!("Slice 2 OK");
 
+                let mut model_lock = self.model.lock().unwrap();
+                let outputs = model_lock.run(ort::inputs![Tensor::from_array(slided).unwrap()]).unwrap();
 
-                let outputs = self.model.run(ort::inputs!["input" => slided.view()].unwrap()).unwrap();
-                let output = outputs[self.output_layer.as_str()].try_extract_tensor::<f32>().unwrap().into_owned();
+                let output = outputs[self.output_layer.as_str()].try_extract_array::<f32>().unwrap().to_owned();
+                // drop(model_lock);
 
                 // let input:Tensor = slided.into();
                 // let found = self.model.run(tvec![input.into()]);

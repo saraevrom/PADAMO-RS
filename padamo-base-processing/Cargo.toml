@@ -14,12 +14,13 @@ crate-type = ["dylib"]
 [dependencies]
 # For things to work
 abi_stable = "0.11.3"
-ndarray = { version = "0.16.1", features = ["rayon"]}
-ndarray-stats = "0.6.0"
-noisy_float = "0.2.0"
+# ndarray-old = { version = "0.16.1", features = ["rayon"], package = "ndarray"}
+ndarray = { version = "0.17.1", features = ["rayon"]}
+
 # Main padamo api
-padamo-api = { path = "../padamo-api" }
+padamo-api = { path = "../padamo-api", features = ["ndarray"] }
 rayon = "1.10.0"
 fast_mm = { path = "./fast_mm" }
 num_cpus = "1.16.0"
 medians = "3.0.12"
+standalone_quantiles = { path = "../standalone_quantiles" }

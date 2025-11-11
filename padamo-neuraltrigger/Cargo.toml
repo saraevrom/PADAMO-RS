@@ -10,13 +10,13 @@ crate-type = ["dylib"]
 [dependencies]
 abi_stable = "0.11.3"
 # Main padamo api
-padamo-api = { path = "../padamo-api" }
-ndarray = "0.16.1"
+padamo-api = { path = "../padamo-api", features = ["ndarray"] }
+ndarray = "0.17.1"
 #tract-core = { version = "0.21.5", features = ["openblas"] }
 #tract-onnx = "0.21.5"
 thiserror = "1.0.61"
 #openblas-src = { version = "0.10.9", features = ["static"] }
 
-ort = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic"], rev = "568f635" }
-ort-sys = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic"], rev = "568f635" }
+ort = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic"], rev = "ea968ff" }
+ort-sys = { git = "https://github.com/pykeio/ort", features = ["cuda"], rev = "ea968ff" }
 libloading = "0.8.3"

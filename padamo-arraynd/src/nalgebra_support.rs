@@ -65,7 +65,7 @@ where
 mod test_conversions{
     use nalgebra::Matrix3x4;
 
-    use crate::lazy_array_operations::ArrayND;
+    use crate::ArrayND;
 
     #[test]
     fn test_into_and_back(){

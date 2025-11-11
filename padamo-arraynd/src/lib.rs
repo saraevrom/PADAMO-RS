@@ -5,3 +5,7 @@ pub mod operators;
 
 #[cfg(feature = "nalgebra")]
 pub mod nalgebra_support;
+
+// Because semvers are cursed.
+#[cfg(feature = "ndarray")]
+pub use ndarray;

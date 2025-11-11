@@ -23,6 +23,20 @@ fn calculate_offset(shape: &[usize], indices: &[usize]) -> usize {
     res
 }
 
+fn calculate_offset_f(shape: &[usize], indices: &[usize]) -> usize {
+    if indices.len()!=shape.len(){
+        panic!("Incompatible shapes")
+    }
+    let mut multiplier:usize = 1;
+    let mut res:usize = 0;
+    for (i,index) in indices.iter().enumerate(){
+        res += index*multiplier;
+        multiplier*=shape[i];
+    }
+    //println!("IN indices {:?} ,out index: {:?}",indices, res);
+    res
+}
+
 /// FFI safe ndarray-like structure
 #[repr(C)]
 #[derive(Clone,Debug,StableAbi)]
@@ -53,6 +67,18 @@ where
         Self { flat_data, shape:shape.into() }
     }
 
+    pub fn from_f(shape:Vec<usize>,flat_data_ref:&[T])->Self{
+        // let capacity:usize = shape.iter().fold(1, |a,b| a*b);
+        let mut flat_data:RVec<T> = flat_data_ref.into();
+        for i in ShapeIterator::new(shape.clone()){
+            flat_data[calculate_offset(&shape, &i)] = flat_data_ref[calculate_offset_f(&shape, &i)].clone();
+        }
+
+        let res = Self{shape: shape.into(), flat_data};
+        res.assert_shape();
+        res
+    }
+
     pub fn frame_size(&self)->usize{
         if self.shape.len()>0{
             let new_shape:Vec<usize> = self.shape.as_slice().iter().skip(1).copied().collect();
@@ -74,9 +100,7 @@ where
         }
     }
 
-    pub fn defaults<U:Clone + StableAbi+Default>(shape:Vec<usize>)->ArrayND<U>{
-        ArrayND::new(shape,U::default())
-    }
+
 
     pub fn extract_dataset(&self, reference:&Vec<usize>)->Vec<T>{
         let mut index = vec![0usize];
@@ -257,9 +281,16 @@ where
         //ArrayND{flat_data:flat_data.into(), shape: new_shape.into() }
         res
     }
-
-
 }
+
+impl<T> ArrayND<T>
+where
+T: Clone + StableAbi + Default{
+    pub fn defaults(shape:Vec<usize>)->ArrayND<T>{
+        ArrayND::new(shape,T::default())
+    }
+}
+
 impl<T> ArrayND<T>
 where
     T: Clone + StableAbi + Copy

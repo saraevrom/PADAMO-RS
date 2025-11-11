@@ -25,7 +25,7 @@ padamo-detectors = { path = "../padamo-detectors"}
 serde_json = "1.0.145"
 
 [features]
-default = ["ndarray", "chrono", "nalgebra"]
+default = ["chrono"]
 nalgebra = ["padamo-arraynd/nalgebra"]
 ndarray = ["padamo-arraynd/ndarray"]
 serde = ["dep:serde", "padamo-arraynd/serde"]
