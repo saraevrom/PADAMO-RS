@@ -219,12 +219,12 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySlidingQuantileNormalize{
         let iterated_array = sourced.make_pixel_iterators();
 
         iterated_array.enumerate().par_bridge().for_each(|index_id|{
-            let src = slide_quantile(iterated_array[&index_id].clone(), window, q);
-            let divisors = iterated_array[&index_id].clone().skip(window/2).clone();
+            let src = slide_quantile(iterated_array[&index_id].clone().map(|x| x.abs()*k), window, q);
+            let divisors = iterated_array[&index_id].clone().skip(window/2).take(end-start);
 
             for (i, divisor) in divisors.enumerate(){
 
-                let mut divider = src[i].abs()*k;
+                let mut divider = src[i];
 
                 if use_variance{
                     divider *= divider;
