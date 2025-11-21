@@ -161,8 +161,13 @@ impl LazyArrayOperation<SparseTagArray> for LazyTriggerExpand{
 
         let mut sourcepart = self.source.request_range(request_start,request_end);
         sourcepart.tags.iter_mut().for_each(|tag|{
-            let new_position = tag.position + self.left;
-            let mut new_duration = tag.duration + self.left + self.right;
+            let new_position = if tag.position > self.left {
+                tag.position - self.left
+            }
+            else{
+                0
+            };
+            let mut new_duration = tag.duration + (tag.position - new_position) + self.right;
             if new_position+new_duration>len{
                 new_duration = len - new_position;
             }
