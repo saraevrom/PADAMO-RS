@@ -1,4 +1,4 @@
-use crate::trigger_ops::{LazyTriggerMerge, LazyTriggerRemoveOverlap};
+use crate::trigger_ops::{LazyTriggerExpand, LazyTriggerMerge, LazyTriggerRemoveOverlap};
 use abi_stable::{rvec, std_types::{ROption::{self}, RResult, RString, RVec}};
 use padamo_api::{constants, nodes_vec, ports, prelude::*};
 
@@ -197,12 +197,73 @@ impl CalculationNode for TriggerRemoveOverlapNode {
     }
 }
 
+#[derive(Clone,Debug)]
+pub struct TriggerExpandNode;
+
+impl TriggerExpandNode{
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal = args.inputs.request_detectorfulldata("Signal")?;
+        let left = args.constants.request_integer("left")?;
+        let right = args.constants.request_integer("right")?;
+
+        let left = left.try_into().map_err(ExecutionError::from_error)?;
+        let right = right.try_into().map_err(ExecutionError::from_error)?;
+
+        signal.2 = if let ROption::RSome(x) = signal.2{
+            ROption::RSome(make_lao_box(LazyTriggerExpand::new(x, left, right)))
+        }
+        else{
+            ROption::RNone
+        };
+
+        args.outputs.set_value("Signal", signal.into())
+    }
+}
+
+impl CalculationNode for TriggerExpandNode{
+    fn name(&self,) -> RString where {
+        "Expand trigger".into()
+    }
+
+    fn category(&self,) -> RVec<RString>where {
+        category()
+    }
+
+    fn identifier(&self,) -> RString where {
+        "padamocore.trigger_manipulation.expand_trigger_2".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>where {
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![
+            ("left", 0),
+            ("right", 0)
+        ]
+    }
+
+    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
+    }
+}
+
 pub fn nodes()->RVec<CalculationNodeBox>{
     nodes_vec![
         //TriggerExpandNode,
         TriggerExchangeNode,
         TriggerMergeNode,
         TriggerRemoveOverlapNode,
+        TriggerExpandNode,
         //TriggerNegateNode,
         //TriggerAndNode,
         //TriggerOrNode

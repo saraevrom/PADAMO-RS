@@ -122,3 +122,53 @@ impl LazyArrayOperation<SparseTagArray> for LazyTriggerRemoveOverlap{
     }
 
 }
+
+#[derive(Clone,Debug)]
+pub struct LazyTriggerExpand{
+    source:LazyTrigger,
+    left:usize,
+    right:usize
+
+}
+
+impl LazyTriggerExpand {
+    pub fn new(source: LazyTrigger, left: usize, right: usize) -> Self {
+        Self { source, left, right }
+    }
+}
+
+impl LazyArrayOperation<SparseTagArray> for LazyTriggerExpand{
+    #[allow(clippy::let_and_return)]
+    fn length(&self,) -> usize where {
+        self.source.length()
+    }
+
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize where {
+        self.source.calculate_overhead(start,end)
+    }
+
+    fn request_range(&self,start:usize,end:usize,) -> SparseTagArray where {
+        let len = self.length();
+
+        let request_start = start+self.left;
+        let mut request_end = end+self.left;
+
+        if request_start>=len{
+            return SparseTagArray::new();
+        }
+
+        request_end = request_end.min(len);
+
+        let mut sourcepart = self.source.request_range(request_start,request_end);
+        sourcepart.tags.iter_mut().for_each(|tag|{
+            let new_position = tag.position + self.left;
+            let mut new_duration = tag.duration + self.left + self.right;
+            if new_position+new_duration>len{
+                new_duration = len - new_position;
+            }
+            tag.position = new_position;
+            tag.duration = new_duration;
+        });
+        sourcepart
+    }
+}
