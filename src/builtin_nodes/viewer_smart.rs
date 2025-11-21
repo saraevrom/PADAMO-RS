@@ -32,8 +32,15 @@ impl SmartViewNode{
 
 impl SmartMaskNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
-        let detector = args.constants.request_string("detector")?;
-        let mask= args.environment.request_detectorsignal(&get_mask_var_by_name(&detector))?;
+        let detector_name = args.constants.request_string("detector")?;
+        let detector = super::find_detector(&args, detector_name.as_str()).ok_or(
+            ExecutionError::OtherError(format!("Cannot find detector {}", detector_name).into())
+        )?;
+
+        let mask = detector.detector.alive_pixels.clone();
+        let mask = make_lao_box(mask.cast::<f64>());
+
+        // let mask= args.environment.request_detectorsignal(&get_mask_var_by_name(&detector))?;
         args.outputs.set_value("Alive pixels", mask.into())?;
         Ok(())
     }

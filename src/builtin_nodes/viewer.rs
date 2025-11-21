@@ -109,7 +109,14 @@ pub struct ViewerMaskNode;
 
 impl ViewerMaskNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
-        let mask= args.environment.request_detectorsignal(&get_mask_var(0))?;
+        let detector = super::find_primary_detector(&args).ok_or(
+            ExecutionError::OtherError("No detectors present".into())
+        )?;
+
+        let mask = detector.detector.alive_pixels.clone();
+        let mask = make_lao_box(mask.cast::<f64>());
+
+        // let mask= args.environment.request_detectorsignal(&get_mask_var(0))?;
         args.outputs.set_value("Alive pixels".into(), mask.into())?;
         Ok(())
     }
@@ -200,7 +207,14 @@ impl AuxViewerMaskNode{
         let detector_id = args.constants.request_integer("detector")?;
         let detector_id:usize = detector_id.try_into().map_err(ExecutionError::from_error)?;
 
-        let mask = args.environment.request_detectorsignal(&get_mask_var(detector_id))?;
+        let detector = args.detectors.get(detector_id).ok_or(
+            ExecutionError::OtherError(format!("Cannot find detector with id {}", detector_id).into())
+        )?;
+
+        let mask = detector.detector.alive_pixels.clone();
+        let mask = make_lao_box(mask.cast::<f64>());
+
+        // let mask = args.environment.request_detectorsignal(&get_mask_var(detector_id))?;
         args.outputs.set_value("Alive pixels".into(), mask.into())?;
         Ok(())
     }
