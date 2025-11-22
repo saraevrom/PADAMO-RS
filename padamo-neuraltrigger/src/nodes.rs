@@ -1,6 +1,6 @@
 use std::{error::Error, sync::{Arc, Mutex}};
 
-use abi_stable::{rvec, std_types::{ROption::RSome, RResult, RString, RVec}};
+use abi_stable::{rvec, std_types::{ROption::{RNone, RSome}, RResult, RString, RVec}};
 use ort::session::Session;
 use padamo_api::{constants, ports, prelude::*};
 
@@ -8,7 +8,7 @@ use padamo_api::{constants, ports, prelude::*};
 pub struct ANN3DNode{
     name:String,
     id:String,
-    old_name:String,
+    old_name:Option<String>,
     //ann_model_path:String,
     ann_model:Arc<Mutex<ort::session::Session>>,
     size_hint:(usize,usize,usize),
@@ -27,9 +27,9 @@ fn request_usize(constants:&ConstantContentContainer,key:&str)->Result<usize,Exe
 
 
 impl ANN3DNode {
-    pub fn new(name: &str, ann_model_path: &str, size_hint: (usize,usize,usize), output_layer:String, id:&str,old_name:&str) -> Result<Self,Box<dyn Error>> {
+    pub fn new(name: &str, ann_model_path: &str, size_hint: (usize,usize,usize), output_layer:String, id:&str,old_name:Option<String>) -> Result<Self,Box<dyn Error>> {
         let ann_model = Arc::new(Mutex::new(Session::builder()?.commit_from_file(ann_model_path)?));
-        Ok(Self { name:name.into(), ann_model, size_hint, output_layer, id:id.to_owned(), old_name:old_name.to_owned() })
+        Ok(Self { name:name.into(), ann_model, size_hint, output_layer, id:id.to_owned(), old_name:old_name })
     }
 
     fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
@@ -69,7 +69,13 @@ impl CalculationNode for ANN3DNode{
     }
 
     fn old_identifier(&self,) -> abi_stable::std_types::ROption<RString>where {
-        RSome(format!("ANN 3D triggers/{}",self.old_name).into())
+        if let Some(o) = &self.old_name{
+            RSome(format!("ANN 3D triggers/{}",o).into())
+        }
+        else{
+            RNone
+        }
+
     }
 
     #[allow(clippy::let_and_return)]

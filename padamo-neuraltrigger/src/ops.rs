@@ -198,14 +198,16 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
 
         println!("Blocks {}, {}", blocks_w, blocks_h);
 
+        let windows_amount = (src_time-self.size_hint.0)/self.stride+1;
+        let mut slided = Array::<f32,_>::zeros((windows_amount,self.size_hint.0,self.size_hint.1,self.size_hint.2));
+
         for i in 0usize..blocks_w{
             for j in 0usize..blocks_h{
                 println!("Block {}, {}", i, j);
                 let block = source_data.slice(ndarray::s![..,i*self.size_hint.1..(i+1)*self.size_hint.1,j*self.size_hint.2..(j+1)*self.size_hint.2]);
                 println!("Slice 1 OK");
-                let windows_amount = (src_time-self.size_hint.0)/self.stride+1;
                 println!("There are {} windows",windows_amount);
-                let mut slided = Array::<f32,_>::zeros((windows_amount,self.size_hint.0,self.size_hint.1,self.size_hint.2));
+                // let mut slided = Array::<f32,_>::zeros((windows_amount,self.size_hint.0,self.size_hint.1,self.size_hint.2));
                 for k in 0..windows_amount{
                     let base = k*self.stride;
                     let src = block.slice(ndarray::s![base..base+self.size_hint.0,..,..]);
@@ -216,9 +218,10 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
                 println!("Slice 2 OK");
 
                 let mut model_lock = self.model.lock().unwrap();
-                let outputs = model_lock.run(ort::inputs![Tensor::from_array(slided).unwrap()]).unwrap();
+                let outputs = model_lock.run(ort::inputs![Tensor::from_array(slided.clone()).unwrap()]).unwrap();
 
                 let output = outputs[self.output_layer.as_str()].try_extract_array::<f32>().unwrap().to_owned();
+                println!("ANN OK");
                 // drop(model_lock);
 
                 // let input:Tensor = slided.into();
