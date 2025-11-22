@@ -38,8 +38,14 @@ esac
 cp  -rv "./assets" "./target/${BUILD_TARGET}/"
 
 cd "./target/${BUILD_TARGET}/"
+
+
+#Preserving config
+[ -f "plugins/padamo-neuraltrigger/config.toml" ] && mv -v plugins/padamo-neuraltrigger/config.toml ann_config.toml
+
 mkdir -pv plugins
 rm -rvf plugins/*
+
 
 
 # ANN trigger subdir
@@ -47,6 +53,7 @@ rm -rf padamo-neuraltrigger
 mkdir -pv padamo-neuraltrigger
 mv libpadamoneuraltrigger.so padamo-neuraltrigger/
 cp -fv ../../padamo-neuraltrigger/*.onnx padamo-neuraltrigger/
+[ -f "ann_config.toml" ] && mv -v ann_config.toml padamo-neuraltrigger/config.toml
 
 mv padamo-neuraltrigger/ plugins/
 
