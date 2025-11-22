@@ -1,3 +1,4 @@
+use atomic_float::AtomicF64;
 use fast_mm::DoubleHeap;
 use padamo_api::lazy_array_operations::ArrayND;
 use std::sync::{Arc,Mutex};
@@ -37,7 +38,13 @@ pub fn temporal_moving_median(array:ArrayND<f64>,window:usize)->ArrayND<f64>{
     target_shape[0] = shape[0] - window + 1;
     let target_length = target_shape[0];
 
-    let target = Arc::new(Mutex::new(ArrayND::<f64>::new(target_shape.into(),-666.0)));
+    // let target = Arc::new(Mutex::new(ArrayND::<f64>::new(target_shape.into(),-666.0)));
+    let target_flat_len:usize = target_shape.iter().map(|x|*x).product();
+    let mut target_flat:Vec<AtomicF64> = Vec::with_capacity(target_flat_len);
+    target_flat.resize_with(target_flat_len, || AtomicF64::new(0.0));
+
+    let target_flat = Arc::new(target_flat);
+
     let source = Arc::new(array);
 
     let threadcount = num_cpus::get();
@@ -45,7 +52,8 @@ pub fn temporal_moving_median(array:ArrayND<f64>,window:usize)->ArrayND<f64>{
 
     for pixel in 0..frame_size{
         free_threads(&mut threads, threadcount);
-        let tgt = target.clone();
+        // let tgt = target.clone();
+        let tgt_f = target_flat.clone();
         let src = source.clone();
         // let pixel_index = pixel;
         let offset = pixel;
@@ -73,7 +81,8 @@ pub fn temporal_moving_median(array:ArrayND<f64>,window:usize)->ArrayND<f64>{
                 //println!("Pixel M={}", roller.median());
                 //roller.print_stats();
                 //println!("Pixel {} afterroll {}", pixel_index, i);
-                tgt.lock().unwrap().flat_data[i*frame_size+offset] = roller.median();
+                tgt_f[i*frame_size+offset].fetch_add(roller.median(), std::sync::atomic::Ordering::Relaxed);
+                // tgt.lock().unwrap().flat_data[i*frame_size+offset] = roller.median();
                 //println!("Pixel {} write {}", pixel_index, i+window-1);
             }
             // }
@@ -86,7 +95,11 @@ pub fn temporal_moving_median(array:ArrayND<f64>,window:usize)->ArrayND<f64>{
 
     free_threads(&mut threads, 1);
 
-    let lock = Arc::try_unwrap(target).unwrap();
-    lock.into_inner().unwrap()
+    // let lock = Arc::try_unwrap(target).unwrap();
+    // lock.into_inner().unwrap()
 
+    let mut target_flat = Arc::try_unwrap(target_flat).unwrap();
+    let result = ArrayND {shape:target_shape.into(), flat_data: target_flat.drain(..).map(|x| x.into_inner()).collect()};
+    result.assert_shape();
+    result
 }

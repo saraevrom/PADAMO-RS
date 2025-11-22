@@ -1,11 +1,13 @@
 use super::roller::SwapperRollerArray;
-use atomic_refcell::AtomicRefCell;
-use std::sync::Arc;
+// use atomic_refcell::AtomicRefCell;
+use std::{cell::RefCell, rc::Rc};
 
-type Comparator = &'static dyn Fn(f64,f64)->bool;
+type Comparator = fn(f64,f64)->bool;
+// type SharedRoller = Arc<AtomicRefCell<SwapperRollerArray>>;
+type SharedRoller = Rc<RefCell<SwapperRollerArray>>;
 
 pub struct HeapContainer{
-    roller: Arc<AtomicRefCell<SwapperRollerArray>>,
+    roller: SharedRoller,
     offset:usize,
     upper_fn:Comparator,
 
@@ -33,7 +35,7 @@ fn get_parent_index(child:usize)->Option<usize>{
 }
 
 impl HeapContainer{
-    pub fn new(roller:Arc<AtomicRefCell<SwapperRollerArray>>,offset:usize, upper_fn:Comparator)->Self{
+    pub fn new(roller:SharedRoller,offset:usize, upper_fn:Comparator)->Self{
         Self{roller, offset,upper_fn}
     }
 
@@ -164,18 +166,19 @@ impl HeapContainer{
 
 
 pub struct DoubleHeap{
-    container:Arc<AtomicRefCell<SwapperRollerArray>>,
+    container:SharedRoller,
     lower:HeapContainer,
     upper:HeapContainer,
 }
 
 impl DoubleHeap{
     pub fn new(window_size:usize)->Self{
-        let container = Arc::new(AtomicRefCell::new(SwapperRollerArray::new(window_size)));
+        // let container = Arc::new(AtomicRefCell::new(SwapperRollerArray::new(window_size)));
+        let container = Rc::new(RefCell::new(SwapperRollerArray::new(window_size)));
         //heap of elements with size lower than median. Max heap
-        let lower = HeapContainer::new(container.clone(),0,&gt_compare);
+        let lower = HeapContainer::new(container.clone(),0,gt_compare);
         //heap of elements with size larger than median. Min heap
-        let upper = HeapContainer::new(container.clone(),1,&lt_compare);
+        let upper = HeapContainer::new(container.clone(),1,lt_compare);
         Self{lower,upper,container}
     }
 

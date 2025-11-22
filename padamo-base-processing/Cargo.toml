@@ -24,3 +24,4 @@ fast_mm = { path = "./fast_mm" }
 num_cpus = "1.16.0"
 medians = "3.0.12"
 standalone_quantiles = { path = "../standalone_quantiles" }
+atomic_float = "1.1.0"
