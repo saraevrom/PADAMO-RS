@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
+use atomic_float::AtomicF64;
 use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyDetectorSignal};
 use super::ops::free_threads;
 
@@ -56,7 +57,12 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverterPerformant{
         let threadcount = num_cpus::get();
         let mut threads:VecDeque<thread::JoinHandle<()>> = VecDeque::with_capacity(10);
 
-        let target = Arc::new(Mutex::new(ArrayND::<f64>::new(tgt_shape.into(),0.0)));
+        let target_flat_len:usize = tgt_shape.iter().map(|x|*x).product();
+        let mut target_flat:Vec<AtomicF64> = Vec::with_capacity(target_flat_len);
+        target_flat.resize_with(target_flat_len, || AtomicF64::new(0.0));
+        let target_flat = Arc::new(target_flat);
+
+        // let target = Arc::new(Mutex::new(ArrayND::<f64>::new(tgt_shape.into(),0.0)));
         let source = Arc::new(raw_data);
 
         for pixel in 0usize..frame_size{
@@ -64,7 +70,8 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverterPerformant{
 
             let length = end-start;
             let src = source.clone();
-            let tgt = target.clone();
+            // let tgt = target.clone();
+            let tgt_f = target_flat.clone();
 
             let handle = thread::spawn(move || {
                 for i in 0..length{
@@ -75,7 +82,8 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverterPerformant{
                     if !is_sum{
                         sum/=divider as f64;
                     }
-                    tgt.lock().unwrap().flat_data[i*frame_size+pixel] = sum;
+                    tgt_f[i*frame_size+pixel].fetch_add(sum, std::sync::atomic::Ordering::Relaxed);
+                    // tgt.lock().unwrap().flat_data[i*frame_size+pixel] = sum;
                 }
             });
 
@@ -84,7 +92,13 @@ impl LazyArrayOperation<ArrayND<f64>> for LazySpaceConverterPerformant{
 
         free_threads(&mut threads, 1);
 
-        let lock = Arc::try_unwrap(target).unwrap();
-        lock.into_inner().unwrap()
+        let mut target_flat = Arc::try_unwrap(target_flat).unwrap();
+
+        let result = ArrayND {shape:tgt_shape.into(), flat_data: target_flat.drain(..).map(|x| x.into_inner()).collect()};
+        result.assert_shape();
+        result
+
+        // let lock = Arc::try_unwrap(target).unwrap();
+        // lock.into_inner().unwrap()
     }
 }

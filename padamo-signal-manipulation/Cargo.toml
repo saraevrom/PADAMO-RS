@@ -20,3 +20,4 @@ num_cpus = "1.16.0"
 # Main padamo api
 padamo-api = { path = "../padamo-api" }
 rayon = "1.10.0"
+atomic_float = "1.1.0"
