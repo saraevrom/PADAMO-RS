@@ -402,6 +402,7 @@ impl PadamoTool for PadamoTrigger{
                                         let mut start = interval.start;
                                         let max_step = settings.chunksize;
                                         let length = interval.length();
+                                        tx_status.send(TriggerProcessMessage::Status("Started".into())).unwrap();
                                         while start<interval.end{
                                             if let Ok(v) = rx.try_recv(){
                                                 if v{
@@ -433,7 +434,7 @@ impl PadamoTool for PadamoTrigger{
                                             // }
 
                                             start += step;
-                                            tx_status.send(TriggerProcessMessage::Status(format!("{}/{}",start,length))).unwrap();
+                                            tx_status.send(TriggerProcessMessage::Status(format!("{}/{}",start-interval.start,length))).unwrap();
                                         }
                                         tx_status.send(TriggerProcessMessage::Status("DONE".into())).unwrap();
                                     });
