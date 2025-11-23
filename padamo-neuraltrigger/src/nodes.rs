@@ -38,13 +38,14 @@ impl ANN3DNode {
         let squeeze = args.constants.request_boolean("Squeeze")?;
         let mut signal = args.inputs.request_detectorfulldata("Signal")?;
         let prefix = args.constants.request_string("Tag prefix")?;
+        let minimal_amplitude = args.constants.request_float("min_amplitude")?;
 
         signal.0 = crate::ops::LazyANNTrigger3D::align_data(signal.0, stride, self.size_hint).map_err(ExecutionError::from_error)?;
         signal.1 = crate::ops::LazyANNTrigger3D::align_data(signal.1, stride, self.size_hint).map_err(ExecutionError::from_error)?;
 
         signal.2 = RSome(make_lao_box(
             crate::ops::LazyANNTrigger3D::new(self.ann_model.clone(), signal.0.clone(), threshold, stride, self.size_hint,
-                                              self.output_layer.clone(),squeeze,prefix.into()).map_err(ExecutionError::from_dyn_error)?
+                                              self.output_layer.clone(),squeeze,prefix.into(), minimal_amplitude).map_err(ExecutionError::from_dyn_error)?
         ));
 
         args.outputs.set_value("Signal",signal.into())?;
@@ -102,7 +103,7 @@ impl CalculationNode for ANN3DNode{
             ("Stride",1),
             ("Squeeze", false),
             ("Tag prefix", "Event"),
-
+            ("min_amplitude", "Minimal amplitude", 0.0)
         ]
     }
 

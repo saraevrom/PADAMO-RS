@@ -52,6 +52,7 @@ pub struct LazyANNTrigger3D{
     output_layer:String,
     squeeze_source:bool,
     tag_prefix:String,
+    minimal_amplitude:f64
     //output_shape:Vec<usize>,
 }
 
@@ -70,7 +71,7 @@ impl LazyANNTrigger3D{
         source.cut(0, aligned_length)
     }
 
-    pub fn new(model: Arc<Mutex<ort::session::Session>>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool, tag_prefix:String)-> Result<Self, Box<dyn std::error::Error>>{
+    pub fn new(model: Arc<Mutex<ort::session::Session>>, source:LazyDetectorSignal,threshold:f32,stride:usize,size_hint:(usize,usize,usize),output_layer:String,squeeze_source:bool, tag_prefix:String, minimal_amplitude:f64)-> Result<Self, Box<dyn std::error::Error>>{
         let source_length = source.length();
         if source_length==0{
             return Err(Box::new(ANNError::EmptySource));
@@ -120,7 +121,7 @@ impl LazyANNTrigger3D{
             return Err(Box::new(ANNError::Misaligned));
         }
 
-        Ok(Self { model, source,threshold, stride,size_hint, output_layer, squeeze_source, tag_prefix})
+        Ok(Self { model, source,threshold, stride,size_hint, output_layer, squeeze_source, tag_prefix, minimal_amplitude})
     }
 }
 
@@ -201,6 +202,8 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
         let windows_amount = (src_time-self.size_hint.0)/self.stride+1;
         let mut slided = Array::<f32,_>::zeros((windows_amount,self.size_hint.0,self.size_hint.1,self.size_hint.2));
 
+        let min_ampl = self.minimal_amplitude as f32;
+
         for i in 0usize..blocks_w{
             for j in 0usize..blocks_h{
                 println!("Block {}, {}", i, j);
@@ -208,42 +211,56 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
                 println!("Slice 1 OK");
                 println!("There are {} windows",windows_amount);
                 // let mut slided = Array::<f32,_>::zeros((windows_amount,self.size_hint.0,self.size_hint.1,self.size_hint.2));
-                for k in 0..windows_amount{
-                    let base = k*self.stride;
-                    let src = block.slice(ndarray::s![base..base+self.size_hint.0,..,..]);
-                    slided.slice_mut(ndarray::s![k,..,..,..]).zip_mut_with(&src, |a,b|{*a = *b});
-                }
-
-
-                println!("Slice 2 OK");
-
-                let mut model_lock = self.model.lock().unwrap();
-                let outputs = model_lock.run(ort::inputs![Tensor::from_array(slided.clone()).unwrap()]).unwrap();
-
-                let output = outputs[self.output_layer.as_str()].try_extract_array::<f32>().unwrap().to_owned();
-                println!("ANN OK");
-                // drop(model_lock);
-
-                // let input:Tensor = slided.into();
-                // let found = self.model.run(tvec![input.into()]);
-                // println!("ANN OK");
-                // let found = found.unwrap().remove(0);
-                // println!("ANN unwrap OK");
-                // let found_array = found.to_array_view::<f32>().unwrap();
-
-                let triggered = output.map(|x| *x>self.threshold);
-                let triggered = triggered.fold_axis(Axis(1), 0u64, |a,b| {((*a)<<1) + (if *b {1} else {0})});
-                println!("ANN threshold OK {:?}",triggered);
-
-
-                triggered.iter().enumerate().for_each(|(i1,v)|{
-                    if *v>0{
-                        let position = i1*self.stride+cut_start;
-                        let tag = format!("{}(Block {} {}): {}",self.tag_prefix, i,j,v);
-                        println!("{}",tag);
-                        res.push(tag, position, self.size_hint.0);
+                let viable = block.map(|x| *x > min_ampl).fold(false, |a,b| a || *b);
+                // let full_amp = block.fold(0.0f32, |a,b| a.max(*b));
+                if viable{
+                    for k in 0..windows_amount{
+                        let base = k*self.stride;
+                        let src = block.slice(ndarray::s![base..base+self.size_hint.0,..,..]);
+                        // let source_is_active = true;//src.map(|x| *x > min_ampl).fold(false, |a,b| a || *b);
+                        // let amp:f32 = src.fold(std::f32::MIN, |a,b| a.max(*b));
+                        slided.slice_mut(ndarray::s![k,..,..,..]).zip_mut_with(&src, |a,b|{*a = *b});
                     }
-                });
+
+                    println!("Slice 2 OK");
+
+
+                    let mut model_lock = self.model.lock().unwrap();
+                    let outputs = model_lock.run(ort::inputs![Tensor::from_array(slided.clone()).unwrap()]).unwrap();
+
+                    let output = outputs[self.output_layer.as_str()].try_extract_array::<f32>().unwrap().to_owned();
+                    println!("ANN OK");
+                    // drop(model_lock);
+
+                    // let input:Tensor = slided.into();
+                    // let found = self.model.run(tvec![input.into()]);
+                    // println!("ANN OK");
+                    // let found = found.unwrap().remove(0);
+                    // println!("ANN unwrap OK");
+                    // let found_array = found.to_array_view::<f32>().unwrap();
+
+                    let triggered = output.map(|x| *x>self.threshold);
+                    let triggered = triggered.fold_axis(Axis(1), 0u64, |a,b| {((*a)<<1) + (if *b {1} else {0})});
+                    println!("ANN threshold OK {:?}",triggered);
+
+
+                    triggered.iter().enumerate().for_each(|(i1,v)|{
+                        if *v>0{
+                            let base = i1*self.stride;
+                            let active = block.slice(ndarray::s![base..base+self.size_hint.0,..,..]).map(|x| *x>min_ampl).fold(false, |a,b| a || *b);
+                            if active{
+                                let position = base+cut_start;
+                                let tag = format!("{}(Block {} {}): {}",self.tag_prefix, i,j,v);
+                                println!("{}",tag);
+                                res.push(tag, position, self.size_hint.0);
+                            }
+
+                        }
+                    });
+                }
+                else{
+                    println!("Block skipped");
+                }
                 // let mut expanded = Array::<bool,_>::default(src_time);
                 // triggered.iter().enumerate().for_each(|(i,v)|{
                 //     let base = i*self.stride;
