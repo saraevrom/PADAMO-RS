@@ -9,7 +9,7 @@ use std::ops::{IndexMut, Index};
 //use ndarray::prelude::*;
 use super::indexing::ShapeIterator;
 
-fn calculate_offset(shape: &[usize], indices: &[usize]) -> usize {
+pub fn calculate_offset(shape: &[usize], indices: &[usize]) -> usize {
     if indices.len()!=shape.len(){
         panic!("Incompatible shapes")
     }
@@ -23,7 +23,7 @@ fn calculate_offset(shape: &[usize], indices: &[usize]) -> usize {
     res
 }
 
-fn calculate_offset_f(shape: &[usize], indices: &[usize]) -> usize {
+pub fn calculate_offset_f(shape: &[usize], indices: &[usize]) -> usize {
     if indices.len()!=shape.len(){
         panic!("Incompatible shapes")
     }
