@@ -14,9 +14,11 @@ crate-type = ["dylib"]
 abi_stable = "0.11.3"
 # Main padamo api
 padamo-api = { path = "../padamo-api" }
+padamo-arraynd = { path = "../padamo-arraynd"}
 rayon = "1.10.0"
 ndarray-stats = "0.6.0"
 ndarray = { version = "0.16.1", features = ["rayon"]}
 noisy_float = "0.2.0"
 standalone_quantiles = { path = "../standalone_quantiles" }
+atomic_float = "1.1.0"
 # dyn-clone = "1.0.17"

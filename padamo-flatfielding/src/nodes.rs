@@ -1,7 +1,7 @@
 use abi_stable::{rvec, std_types::{ROption::{self, RSome}, RResult, RString, RVec}};
 use padamo_api::{constants, ports, prelude::*};
 
-use crate::ops::{AddMap, DivideByMap, MultiplyByMap, PhysicalFFConstants, SubMap};
+use crate::ops::{PhysicalFFConstants, ApplyByMap};
 
 pub fn category() -> abi_stable::std_types::RVec<abi_stable::std_types::RString>where {
     rvec!["Flat fielding".into()]
@@ -11,6 +11,26 @@ pub fn old_id(name:&str)->ROption<RString>{
     RSome(format!("Flat fielding/{}",name).into())
 }
 
+fn fun_add(x:f64,y:f64)->f64{
+    x+y
+}
+
+fn fun_sub(x:f64,y:f64)->f64{
+    x-y
+}
+
+fn fun_mul(x:f64,y:f64)->f64{
+    x*y
+}
+
+fn fun_div(x:f64,y:f64)->f64{
+    if y==0.0{
+        0.0
+    }
+    else{
+        x/y
+    }
+}
 
 macro_rules! impl_operator {
     ($struct_name:ident, $identifier:expr, $name:expr, $operator:ident) => {
@@ -37,7 +57,8 @@ macro_rules! impl_operator {
                 }
 
                 //if test_data.shape.le
-                signal.0 = make_lao_box($operator::new(signal.0, coeffs));
+                // signal.0 = make_lao_box($operator::new(signal.0, coeffs));
+                signal.0 = make_lao_box(ApplyByMap::new(signal.0, coeffs, $operator));
                 args.outputs.set_value("Signal", signal.into())?;
                 Ok(())
             }
@@ -183,7 +204,7 @@ impl CalculationNode for PhysicalFFNode{
 }
 
 //crate::ops::MultiplyByMap
-impl_operator! (MapMultiplyNode, "padamoflatfielding.map_multiply", "Multiply by map", MultiplyByMap);
-impl_operator! (MapDivideNode, "padamoflatfielding.map_divide", "Divide by map", DivideByMap);
-impl_operator! (AddMapNode, "padamoflatfielding.map_add", "Add map", AddMap);
-impl_operator! (SubMapNode, "padamoflatfielding.map_sub", "Subtract map", SubMap);
+impl_operator! (MapMultiplyNode, "padamoflatfielding.map_multiply", "Multiply by map", fun_mul);
+impl_operator! (MapDivideNode, "padamoflatfielding.map_divide", "Divide by map", fun_div);
+impl_operator! (AddMapNode, "padamoflatfielding.map_add", "Add map", fun_add);
+impl_operator! (SubMapNode, "padamoflatfielding.map_sub", "Subtract map", fun_sub);

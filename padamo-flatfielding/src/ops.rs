@@ -1,6 +1,7 @@
 use std::{f64::consts::PI, sync::{Arc, Mutex}};
 
 use abi_stable::std_types::RVec;
+use atomic_float::AtomicF64;
 use rayon::prelude::*;
 use padamo_api::lazy_array_operations::{LazyArrayOperation,ArrayND, LazyDetectorSignal};
 use crate::lambert::lambertw0;
@@ -117,7 +118,10 @@ impl LazyArrayOperation<ArrayND<f64>> for PhysicalFF{
     #[allow(clippy::let_and_return)]
     fn request_range(&self,start:usize,end:usize,) -> ArrayND<f64>{
         let src_data = self.source.request_range(start,end);
-        let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
+        // let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
+        let tgt_flat_len:usize = src_data.shape.iter().map(|x|*x).product();
+        let mut tgt_flat:Vec<AtomicF64> = Vec::with_capacity(tgt_flat_len);
+        tgt_flat.resize_with(tgt_flat_len, || AtomicF64::new(0.0));
 
         let enumerator = src_data.enumerate();
 
@@ -141,27 +145,35 @@ impl LazyArrayOperation<ArrayND<f64>> for PhysicalFF{
             }
             else{0.0};
 
-            tgt.lock().unwrap()[&i] = v;
+            // tgt.lock().unwrap()[&i] = v;
+            let off = padamo_arraynd::calculate_offset(&src_data.shape,&i);
+            tgt_flat[off].fetch_add(v, std::sync::atomic::Ordering::Relaxed);
         });
-        let tgt = Arc::try_unwrap(tgt).unwrap();
-        tgt.into_inner().unwrap()
+
+
+        // let tgt = Arc::try_unwrap(tgt).unwrap();
+        // tgt.into_inner().unwrap()
+        let tgt = ArrayND {shape: src_data.shape.clone().into(), flat_data:tgt_flat.drain(..).map(|x| x.into_inner()).collect()};
+        tgt.assert_shape();
+        tgt
     }
 }
+
 
 #[derive(Clone,Debug)]
-pub struct MultiplyByMap{
+pub struct ApplyByMap{
     source:LazyDetectorSignal,
     coeffs:ArrayND<f64>,
+    operation: fn(f64,f64)->f64,
 }
 
-impl MultiplyByMap{
-    pub fn new(source:LazyDetectorSignal, coeffs:ArrayND<f64>)->Self{
-        Self { source, coeffs }
+impl ApplyByMap {
+    pub fn new(source: LazyDetectorSignal, coeffs: ArrayND<f64>, operation: fn(f64,f64)->f64) -> Self {
+        Self { source, coeffs, operation }
     }
 }
 
-
-impl LazyArrayOperation<ArrayND<f64>> for MultiplyByMap{
+impl LazyArrayOperation<ArrayND<f64>> for ApplyByMap{
     fn length(&self,) -> usize where {
         self.source.length()
     }
@@ -172,7 +184,10 @@ impl LazyArrayOperation<ArrayND<f64>> for MultiplyByMap{
 
     fn request_range(&self,start:usize,end:usize) -> ArrayND<f64>{
         let src_data = self.source.request_range(start,end);
-        let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
+        // let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
+        let tgt_flat_len:usize = src_data.shape.iter().map(|x|*x).product();
+        let mut tgt_flat:Vec<AtomicF64> = Vec::with_capacity(tgt_flat_len);
+        tgt_flat.resize_with(tgt_flat_len, || AtomicF64::new(0.0));
 
         let enumerator = src_data.enumerate();
 
@@ -182,147 +197,15 @@ impl LazyArrayOperation<ArrayND<f64>> for MultiplyByMap{
             pixel_index.drain(0..1);
             let x =src_data[&i];
             let coeff = coeffs[&pixel_index];
-            let v = x*coeff;
-            tgt.lock().unwrap()[&i] = v;
+            let v = (self.operation)(x,coeff);
+            // tgt.lock().unwrap()[&i] = v;
+            let off = padamo_arraynd::calculate_offset(&src_data.shape,&i);
+            tgt_flat[off].fetch_add(v, std::sync::atomic::Ordering::Relaxed);
         });
-        let tgt = Arc::try_unwrap(tgt).unwrap();
-        tgt.into_inner().unwrap()
+        // let tgt = Arc::try_unwrap(tgt).unwrap();
+        // tgt.into_inner().unwrap()
+        let tgt = ArrayND {shape: src_data.shape.clone().into(), flat_data:tgt_flat.drain(..).map(|x| x.into_inner()).collect()};
+        tgt.assert_shape();
+        tgt
     }
 }
-
-
-#[derive(Clone,Debug)]
-pub struct DivideByMap{
-    source:LazyDetectorSignal,
-    coeffs:ArrayND<f64>,
-}
-
-impl DivideByMap{
-    pub fn new(source:LazyDetectorSignal, coeffs:ArrayND<f64>)->Self{
-        Self { source, coeffs }
-    }
-}
-
-
-impl LazyArrayOperation<ArrayND<f64>> for DivideByMap{
-    fn length(&self,) -> usize where {
-        self.source.length()
-    }
-
-    fn calculate_overhead(&self,start:usize,end:usize) -> usize {
-        self.source.calculate_overhead(start,end)
-    }
-
-    fn request_range(&self,start:usize,end:usize) -> ArrayND<f64>{
-        let src_data = self.source.request_range(start,end);
-        let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
-
-        let enumerator = src_data.enumerate();
-
-        let coeffs = &self.coeffs;
-        enumerator.par_bridge().for_each(|i|{
-            let mut pixel_index = i.clone();
-            pixel_index.drain(0..1);
-            let x =src_data[&i];
-            let coeff = coeffs[&pixel_index];
-            let v = if coeff != 0.0{
-                x/coeff
-            }
-            else{
-                0.0
-            };
-
-            tgt.lock().unwrap()[&i] = v;
-        });
-        let tgt = Arc::try_unwrap(tgt).unwrap();
-        tgt.into_inner().unwrap()
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct AddMap{
-    source:LazyDetectorSignal,
-    coeffs:ArrayND<f64>,
-}
-
-impl AddMap{
-    pub fn new(source:LazyDetectorSignal, coeffs:ArrayND<f64>)->Self{
-        Self { source, coeffs }
-    }
-}
-
-
-impl LazyArrayOperation<ArrayND<f64>> for AddMap{
-    fn length(&self,) -> usize where {
-        self.source.length()
-    }
-
-    fn calculate_overhead(&self,start:usize,end:usize) -> usize {
-        self.source.calculate_overhead(start,end)
-    }
-
-    fn request_range(&self,start:usize,end:usize) -> ArrayND<f64>{
-        let src_data = self.source.request_range(start,end);
-        let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
-
-        let enumerator = src_data.enumerate();
-
-        let coeffs = &self.coeffs;
-        enumerator.par_bridge().for_each(|i|{
-            let mut pixel_index = i.clone();
-            pixel_index.drain(0..1);
-            let x =src_data[&i];
-            let coeff = coeffs[&pixel_index];
-
-            let v = x+coeff;
-
-            tgt.lock().unwrap()[&i] = v;
-        });
-        let tgt = Arc::try_unwrap(tgt).unwrap();
-        tgt.into_inner().unwrap()
-    }
-}
-
-#[derive(Clone,Debug)]
-pub struct SubMap{
-    source:LazyDetectorSignal,
-    coeffs:ArrayND<f64>,
-}
-
-impl SubMap{
-    pub fn new(source:LazyDetectorSignal, coeffs:ArrayND<f64>)->Self{
-        Self { source, coeffs }
-    }
-}
-
-
-impl LazyArrayOperation<ArrayND<f64>> for SubMap{
-    fn length(&self,) -> usize where {
-        self.source.length()
-    }
-
-    fn calculate_overhead(&self,start:usize,end:usize) -> usize {
-        self.source.calculate_overhead(start,end)
-    }
-
-    fn request_range(&self,start:usize,end:usize) -> ArrayND<f64>{
-        let src_data = self.source.request_range(start,end);
-        let tgt:Arc<Mutex<ArrayND<f64>>> = Arc::new(Mutex::new(ArrayND::new(src_data.shape.clone().into(), 0.0)));
-
-        let enumerator = src_data.enumerate();
-
-        let coeffs = &self.coeffs;
-        enumerator.par_bridge().for_each(|i|{
-            let mut pixel_index = i.clone();
-            pixel_index.drain(0..1);
-            let x =src_data[&i];
-            let coeff = coeffs[&pixel_index];
-            let v = x-coeff;
-
-            tgt.lock().unwrap()[&i] = v;
-        });
-        let tgt = Arc::try_unwrap(tgt).unwrap();
-        tgt.into_inner().unwrap()
-    }
-}
-
