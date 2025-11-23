@@ -1,6 +1,9 @@
 use abi_stable::{rvec, std_types::ROption::{self, RSome}};
 use padamo_api::{prelude::*, ports, constants};
 use abi_stable::std_types::{RResult,RVec,RString};
+use padamo_arraynd::ArrayND;
+use crate::ops::SignalMux;
+
 use super::ops::{LazySpaceConverter,LazyTimeConverter, TimeShift};
 use super::tempreduce_performance::LazySpaceConverterPerformant;
 use padamo_api::lazy_array_operations::LazyArrayOperationBox;
@@ -196,6 +199,70 @@ impl CalculationNode for TimeOffsetNode{
 
     #[allow(clippy::let_and_return)]
     #[doc = " Main calculation"]
+    fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
+        self.calculate(args).into()
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct SignalMultiplexerNode;
+
+impl SignalMultiplexerNode{
+    fn calculate(&self, args:CalculationNodeArguments) -> Result<(),ExecutionError>{
+        let mut signal_false = args.inputs.request_detectorfulldata("Negative")?;
+        let mut signal_true = args.inputs.request_detectorfulldata("Positive")?;
+        let mask = args.inputs.request_detectorsignal("Mask")?;
+        let mask:ArrayND<f64> = mask.request_range(0, mask.length());
+        let mask = ArrayND{shape:mask.shape, flat_data:mask.flat_data.iter().map(|x| * x!= 0.0).collect()};
+
+        let rest_mux = args.constants.request_boolean("primary")?;
+
+        let signal = if rest_mux{
+            signal_true.0 = make_lao_box(SignalMux::new(signal_false.0, signal_true.0, mask));
+            signal_true
+        }
+        else{
+            signal_false.0 = make_lao_box(SignalMux::new(signal_false.0, signal_true.0, mask));
+            signal_false
+        };
+
+        args.outputs.set_value("Signal", signal.into())
+    }
+}
+
+impl CalculationNode for SignalMultiplexerNode{
+    fn name(&self,) -> RString{
+        "Signal mask multiplexer".into()
+    }
+
+    fn category(&self,) -> RVec<RString>{
+        rvec!["Signal manipulation".into()]
+    }
+
+    fn identifier(&self,) -> RString{
+        "padamosignalmanipulation.signal_mask_multiplexer".into()
+    }
+
+    fn inputs(&self,) -> RVec<CalculationIO>{
+        ports![
+            ("Positive", ContentType::DetectorFullData),
+            ("Negative", ContentType::DetectorFullData),
+            ("Mask", ContentType::DetectorSignal),
+        ]
+    }
+
+    fn outputs(&self,) -> RVec<CalculationIO>{
+        ports![
+            ("Signal", ContentType::DetectorFullData),
+        ]
+    }
+
+    fn constants(&self,) -> RVec<CalculationConstant>where {
+        constants![
+            ("primary", "Time and trigger source", true)
+        ]
+    }
+
     fn calculate(&self,args:CalculationNodeArguments,) -> RResult<(),ExecutionError>where {
         self.calculate(args).into()
     }

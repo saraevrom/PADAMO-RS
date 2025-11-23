@@ -1,7 +1,11 @@
 use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
 
 use abi_stable::std_types::RVec;
+use atomic_float::AtomicF64;
 use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyArrayOperationBox, LazyDetectorSignal, LazyTimeSignal};
+use rayon::iter::ParallelBridge;
+use rayon::iter::ParallelIterator;
+
 
 pub fn free_threads(threads: &mut VecDeque<thread::JoinHandle<()>>, threadcount:usize){
     while threads.len()>=threadcount{
@@ -230,5 +234,59 @@ impl LazyArrayOperation<RVec<f64>> for TimeShift{
     #[allow(clippy::let_and_return)]
     fn calculate_overhead(&self,start:usize,end:usize,) -> usize {
         self.source.calculate_overhead(start,end)
+    }
+}
+
+#[derive(Clone,Debug)]
+pub struct SignalMux{
+    source_false:LazyDetectorSignal,
+    source_true:LazyDetectorSignal,
+    mask:ArrayND<bool>,
+}
+
+impl SignalMux {
+    pub fn new(source_false: LazyDetectorSignal, source_true: LazyDetectorSignal, mask: ArrayND<bool>) -> Self {
+        Self { source_false, source_true, mask }
+    }
+}
+
+impl LazyArrayOperation<ArrayND<f64>> for SignalMux{
+    fn length(&self,) -> usize where {
+        self.source_false.length()
+    }
+
+    fn calculate_overhead(&self,start:usize,end:usize,) -> usize {
+        self.source_false.calculate_overhead(start,end)+self.source_true.calculate_overhead(start,end)
+    }
+
+    fn request_range(&self,start:usize,end:usize,) -> ArrayND<f64> {
+        let signal_false = self.source_false.request_range(start,end);
+        let signal_true = self.source_true.request_range(start,end);
+
+        let tgt_flat_len:usize = signal_false.shape.iter().map(|x|*x).product();
+        let mut tgt_flat:Vec<AtomicF64> = Vec::with_capacity(tgt_flat_len);
+        tgt_flat.resize_with(tgt_flat_len, || AtomicF64::new(0.0));
+
+        let enumerator = signal_false.enumerate();
+
+        enumerator.par_bridge().for_each(|i|{
+            let mut pixel_index = i.clone();
+            pixel_index.drain(0..1);
+
+            let v = if self.mask[&pixel_index]{
+                signal_true[&i]
+            }
+            else{
+                signal_false[&i]
+            };
+
+            let off = padamo_arraynd::calculate_offset(&signal_false.shape,&i);
+            tgt_flat[off].fetch_add(v, std::sync::atomic::Ordering::Relaxed);
+        });
+        // let tgt = Arc::try_unwrap(tgt).unwrap();
+        // tgt.into_inner().unwrap()
+        let tgt = ArrayND {shape: signal_false.shape.clone().into(), flat_data:tgt_flat.drain(..).map(|x| x.into_inner()).collect()};
+        tgt.assert_shape();
+        tgt
     }
 }
