@@ -20,7 +20,7 @@ impl GaussianPSF{
             return Err(ExecutionError::OtherError("Gaussian sigma coefficient must be positive".into()));
         }
         let f:DoubleFunctionOperatorBox = (move |r:f64| {
-            e0*f64::exp(-r*r/(2.0*PI*sigma*sigma))
+            e0*f64::exp(-r*r/(2.0*sigma*sigma))/(2.0*PI*sigma*sigma)
         }).into();
         args.outputs.set_value("F", f.into())
     }
