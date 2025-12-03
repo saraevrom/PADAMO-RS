@@ -19,7 +19,7 @@ ndarray = "0.17.1"
 padamo-api = { path = "../padamo-api", features = ["ndarray"] } # Tough crate. HDF5 uses ndarray 0.15 but padamo api uses up to date version.
 
 
-hdf5 = { package = "hdf5-metno", version = "0.10.2", features = ["static", "zlib"]  }
+hdf5 = { package = "hdf5-metno", version = "0.11.0", features = ["static", "zlib"]  }
 
 
 #hdf5 = { git = "https://github.com/mulimoen/hdf5-rust", features = ["static", "zlib"] }
