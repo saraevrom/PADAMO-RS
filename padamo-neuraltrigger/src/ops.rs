@@ -172,6 +172,12 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
         // }
         // let cut_end = cut_end;
 
+        if cut_start>end{
+            println!("Request {}, {}", start,end);
+            println!("Cut {}, {}", cut_start,cut_end);
+            println!("No possible events on interval.");
+            return SparseTagArray::new();
+        }
         println!("Cut {}, {}", cut_start,cut_end);
 
         let mut source_data = self.source.request_range(cut_start,cut_end);
@@ -198,6 +204,11 @@ impl LazyArrayOperation<SparseTagArray> for LazyANNTrigger3D{
         let mut res = SparseTagArray::new();
 
         println!("Blocks {}, {}", blocks_w, blocks_h);
+
+        if src_time<self.size_hint.0{
+            println!("Additional safety check failed.");
+            return SparseTagArray::new();
+        }
 
         let windows_amount = (src_time-self.size_hint.0)/self.stride+1;
         let mut slided = Array::<f32,_>::zeros((windows_amount,self.size_hint.0,self.size_hint.1,self.size_hint.2));
