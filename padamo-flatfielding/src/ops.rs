@@ -1,4 +1,4 @@
-use std::{f64::consts::PI, sync::{Arc, Mutex}};
+use std::f64::consts::PI;
 
 use abi_stable::std_types::RVec;
 use atomic_float::AtomicF64;

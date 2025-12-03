@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Mutex}, thread};
+use std::{collections::VecDeque, fmt::Debug, sync::Arc, thread};
 
 use atomic_float::AtomicF64;
 use padamo_api::lazy_array_operations::{ndim_array::ArrayND, LazyArrayOperation, LazyDetectorSignal};

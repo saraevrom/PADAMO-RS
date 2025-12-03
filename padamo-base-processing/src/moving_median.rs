@@ -1,7 +1,7 @@
 use atomic_float::AtomicF64;
 use fast_mm::DoubleHeap;
 use padamo_api::lazy_array_operations::ArrayND;
-use std::sync::{Arc,Mutex};
+use std::sync::Arc;
 use std::collections::VecDeque;
 use std::thread;
 //use std::thread::available_parallelism;
