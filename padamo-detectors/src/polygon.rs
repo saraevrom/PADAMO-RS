@@ -385,6 +385,10 @@ impl DetectorContent{
         ColorIterator::new(self, alive_pixels)
     }
 
+    pub fn pixels_outlines<'a>(&'a self) -> PixelPathIterator<'a>{
+        PixelPathIterator::new(self)
+    }
+
     pub fn from_specs<'a>(i:&'a str)->Result<Self, nom::Err<nom::error::Error<&'a str>>>{
         parse_detector(i).map(|x| x.1)
     }
@@ -526,6 +530,73 @@ impl<'a> Iterator for ColorIterator<'a>{
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_index<self.detector.content.len(){
             let res = self.get_current_result();
+            self.current_index += 1;
+            Some(res)
+        }
+        else{
+            None
+        }
+    }
+}
+
+pub struct PixelPathIterator<'a>{
+    pub detector:&'a DetectorContent,
+    current_index:usize,
+}
+
+impl<'a> PixelPathIterator<'a> {
+    pub fn new(detector: &'a DetectorContent) -> Self {
+        Self { detector, current_index:0 }
+    }
+}
+
+impl<'a> Iterator for PixelPathIterator<'a>{
+    type Item = PathElement<(f64,f64)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_index<self.detector.content.len(){
+            let pixel = &self.detector.content[self.current_index];
+            let res = pixel.make_outline();
+            self.current_index += 1;
+            Some(res)
+        }
+        else{
+            None
+        }
+    }
+}
+
+
+pub struct ColoredPixelIterator<'a,T>
+where
+    T:Fn(&[usize])->RGBColor,
+{
+    pub detector:&'a DetectorContent,
+    current_index:usize,
+    color_getter:T,
+}
+
+impl<'a, T> ColoredPixelIterator<'a, T>
+where
+    T:Fn(&[usize])->RGBColor,
+{
+    pub fn new(detector: &'a DetectorContent, color_getter: T) -> Self {
+        Self { detector, current_index:0, color_getter }
+    }
+}
+
+impl<'a,T> Iterator for ColoredPixelIterator<'a,T>
+where
+    T:Fn(&[usize])->RGBColor,
+{
+    type Item = Polygon<(f64,f64)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_index<self.detector.content.len(){
+            let pixel = &self.detector.content[self.current_index];
+            let color = (self.color_getter)(&pixel.index);
+
+            let res = pixel.make_polygon(color);
             self.current_index += 1;
             Some(res)
         }
