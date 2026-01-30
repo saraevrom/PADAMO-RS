@@ -6,6 +6,7 @@ use plotters::prelude::*;
 use crate::{parser::parse_detector, scripted::parse_scripted};
 use rhai::{serde::from_dynamic, CustomType, EvalAltResult, TypeBuilder};
 use abi_stable::{rvec, StableAbi};
+use crate::diagrams::traits::ColorSource;
 
 //use super::colors::
 
@@ -569,7 +570,7 @@ impl<'a> Iterator for PixelPathIterator<'a>{
 
 pub struct ColoredPixelIterator<'a,T>
 where
-    T:Fn(&[usize])->RGBColor,
+    T:ColorSource,
 {
     pub detector:&'a DetectorContent,
     current_index:usize,
@@ -578,7 +579,7 @@ where
 
 impl<'a, T> ColoredPixelIterator<'a, T>
 where
-    T:Fn(&[usize])->RGBColor,
+    T:ColorSource,
 {
     pub fn new(detector: &'a DetectorContent, color_getter: T) -> Self {
         Self { detector, current_index:0, color_getter }
@@ -587,14 +588,14 @@ where
 
 impl<'a,T> Iterator for ColoredPixelIterator<'a,T>
 where
-    T:Fn(&[usize])->RGBColor,
+    T:ColorSource,
 {
     type Item = Polygon<(f64,f64)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.current_index<self.detector.content.len(){
             let pixel = &self.detector.content[self.current_index];
-            let color = (self.color_getter)(&pixel.index);
+            let color = self.color_getter.get_color(&pixel.index);
 
             let res = pixel.make_polygon(color);
             self.current_index += 1;
