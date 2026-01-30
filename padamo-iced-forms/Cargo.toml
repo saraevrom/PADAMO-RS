@@ -1,12 +1,12 @@
 [package]
 name = "padamo-iced-forms"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
 abi_stable = { version = "0.11.3", optional = true }
-iced = "0.13.1"
-iced_aw = "0.12.2"
+iced = "0.14"
+iced_aw = "0.13"
 padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive"}
 serde = { version = "1.0.228", optional = true }
 thiserror = "2.0.9"

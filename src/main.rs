@@ -19,7 +19,12 @@ fn main() -> iced::Result{
     //     antialiasing: true,
     //     ..Settings::default()
     // })
-    iced::application("PADAMO",application::Padamo::update, application::Padamo::view)
+    // iced::application("PADAMO",application::Padamo::update, application::Padamo::view)
+    //     .subscription(application::Padamo::subscription)
+    //     .exit_on_close_request(true)
+    //     .run()
+    iced::application(application::Padamo::default, application::Padamo::update, application::Padamo::view)
+        .title("PADAMO")
         .subscription(application::Padamo::subscription)
         .exit_on_close_request(true)
         .run()

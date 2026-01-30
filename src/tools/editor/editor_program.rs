@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
-use iced::mouse;
-use iced::widget::canvas::event::{self, Event};
+use iced::{Event, mouse};
+// use iced::widget::canvas::event::{self, Event};
 use iced::widget::canvas::{self, Geometry, Path};
 use iced::{Length, Point, Rectangle, Renderer, Theme};
 use iced::widget::scrollable;
@@ -66,18 +66,20 @@ impl EditorState{
                 let mut constant_row:iced::widget::Column<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Column::new().padding(10);
                 constant_row = constant_row.push(iced::widget::Text::new(format!("{}:",&c.display_name)));
 
-                let external_toggle:iced::widget::Checkbox<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Checkbox::new("External", c.use_external).on_toggle(NodeConstantMessage::external_toggle(key.into())).into();
+                let external_toggle:iced::widget::Checkbox<'_,super::nodes::constants::NodeConstantMessage> = iced::widget::Checkbox::new(c.use_external)
+                    .label("External")
+                    .on_toggle(NodeConstantMessage::external_toggle(key.into())).into();
                 constant_row = constant_row.push(external_toggle);
 
                 if !c.use_external{
                     let field:iced::Element<'_,super::nodes::constants::NodeConstantMessage> = match &c.buffer{
                         NodeConstantBuffer::Check(x) => {
-                            iced::widget::Checkbox::new("Value", *x).on_toggle(NodeConstantMessage::check(key.into())).into()
+                            iced::widget::Checkbox::new(*x).label("Value").on_toggle(NodeConstantMessage::check(key.into())).into()
                         },
                         NodeConstantBuffer::Text(x) => {
                             let mut label = iced::widget::Text::new("Value");
                             if !c.ok{
-                                label = label.style(|_| iced::widget::text::Style{color:Some(iced::Color::new(1.0, 0.0, 0.0, 1.0))});
+                                label = label.style(|_| iced::widget::text::Style{color:Some(iced::Color::from_rgba(1.0, 0.0, 0.0, 1.0))});
                             }
                             let editor = iced::widget::TextInput::new("", x).on_input(NodeConstantMessage::text(key.into()));
                             iced::widget::row!(
@@ -230,7 +232,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
     ) -> Vec<Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let background = Path::rectangle(Point::new(0., 0.), bounds.size());
-        frame.fill(&background, iced::Color::new(0.5, 0.5, 0.5, 1.0));
+        frame.fill(&background, iced::Color::from_rgba(0.5, 0.5, 0.5, 1.0));
         if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, size:_ , can_delete}=state{
             //let deletion_ghost = Path::rectangle(iced::Point::new(self.editor_state.scroll_offset.x, self.editor_state.scroll_offset.y),iced::Size::new(100., 100.));
             let rect= self.deletion_box();
@@ -238,12 +240,12 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
             let rect = Path::rectangle(rect.position(),rect.size());
             if *can_delete{
                 let label = iced::widget::canvas::Text{content:"Move here\nto delete".into(), position, ..Default::default()};
-                frame.fill(&rect, iced::Color::new(0.8, 0.4, 0.4, 1.0));
+                frame.fill(&rect, iced::Color::from_rgba(0.8, 0.4, 0.4, 1.0));
                 frame.fill_text(label);
             }
             else{
                 let label = iced::widget::canvas::Text{content:"Deletion safe".into(), position, ..Default::default()};
-                frame.fill(&rect, iced::Color::new(0.8, 0.8, 0.8, 1.0));
+                frame.fill(&rect, iced::Color::from_rgba(0.8, 0.8, 0.8, 1.0));
                 frame.fill_text(label);
             }
         }
@@ -257,7 +259,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                 EditorProgramState::Dragging { index: _, start_position,cursor_start_position, size, can_delete:_ }=>{
                     let ghost_pos:iced::Point = *start_position+(curpos-*cursor_start_position);
                     let ghost = Path::rectangle(ghost_pos,*size);
-                    frame.fill(&ghost, iced::Color::new(0.9, 0.9, 0.9, 1.0));
+                    frame.fill(&ghost, iced::Color::from_rgba(0.9, 0.9, 0.9, 1.0));
 
                 }
                 EditorProgramState::Linking { from, to }=>{
@@ -285,7 +287,7 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
                         let ghost_pos = node.borrow().position;
                         let ghost_size = node.borrow().size;
                         let ghost = Path::rectangle(ghost_pos+(curpos-buffer.offset),ghost_size);
-                        frame.fill(&ghost, iced::Color::new(0.9, 0.9, 0.9, 1.0));
+                        frame.fill(&ghost, iced::Color::from_rgba(0.9, 0.9, 0.9, 1.0));
                     }
                 }
             }
@@ -295,167 +297,331 @@ impl<'a> canvas::Program<EditorCanvasMessage> for EditorProgram<'a>{
         vec![frame.into_geometry()]
     }
 
-
-    fn update(&self, state: &mut Self::State, event: Event,
-            bounds: Rectangle,
-            cursor: mouse::Cursor,
-        )->(event::Status, Option<EditorCanvasMessage>){
-
-
-            if let EditorProgramState::Inserting{buffer:_} = state{
-                if self.editor_state.pending_paste.borrow().is_none(){
-                    *state = EditorProgramState::Idle;
-                    println!("Cancelled insert mode");
-                }
+    fn update(
+        &self,
+        state: &mut Self::State,
+        event: &iced::Event,
+        bounds: Rectangle,
+        cursor: iced::advanced::mouse::Cursor,
+    ) -> Option<canvas::Action<EditorCanvasMessage>> {
+        if let EditorProgramState::Inserting{buffer:_} = state{
+            if self.editor_state.pending_paste.borrow().is_none(){
+                *state = EditorProgramState::Idle;
+                println!("Cancelled insert mode");
             }
+        }
 
-            if let Some(buffer) = self.editor_state.pending_paste.borrow().as_ref(){
-                *state = EditorProgramState::Inserting { buffer:buffer.clone()}
-            }
+        if let Some(buffer) = self.editor_state.pending_paste.borrow().as_ref(){
+            *state = EditorProgramState::Inserting { buffer:buffer.clone()}
+        }
 
-            let mut msg:Option<EditorCanvasMessage> = None;
-            if let Some(curpos) = cursor.position(){
-                // if !bounds.contains(curpos){
-                //     return (event::Status::Ignored, None);
-                // }
-                let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
+        let mut msg:Option<EditorCanvasMessage> = None;
+        if let Some(curpos) = cursor.position(){
+            // if !bounds.contains(curpos){
+            //     return (event::Status::Ignored, None);
+            // }
+            let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
 
-                match event{
+            match event{
 
-                    // Event::Mouse(iced::mouse::Event::CursorLeft)=>{
-                    //     println!("Cursor left the area");
-                    // },
-                    Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>{
-                        if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, can_delete, size:_ } = state{
-                            if ! *can_delete{
-                                let deletion_rect = self.deletion_box();
-                                if !deletion_rect.contains(curpos){
-                                    *can_delete = true;
-                                }
+                // Event::Mouse(iced::mouse::Event::CursorLeft)=>{
+                //     println!("Cursor left the area");
+                // },
+                Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>{
+                    if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, can_delete, size:_ } = state{
+                        if ! *can_delete{
+                            let deletion_rect = self.deletion_box();
+                            if !deletion_rect.contains(curpos){
+                                *can_delete = true;
                             }
                         }
                     }
+                }
 
-                    Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
-                        if let Some((i,pos,size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
-                            msg = Some(EditorCanvasMessage::Select(i));
+                Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
+                    if let Some((i,pos,size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
+                        msg = Some(EditorCanvasMessage::Select(i));
 
-                            match mouse_status{
-                                super::nodes::NodeMouseHit::MainRect=>{
-                                    let deletion_rect = self.deletion_box();
-                                    let delete_enable = !deletion_rect.contains(curpos);
-                                    *state = EditorProgramState::Dragging { index: i, start_position: pos, cursor_start_position:curpos, size, can_delete:delete_enable };
-                                },
-                                super::nodes::NodeMouseHit::Output(port,center)=>{
-                                    let linkage = Some((i,center,port));
-                                    if let EditorProgramState::Linking{from,to:_} = state{
-                                        *from = linkage;
-                                    }
-                                    else{
-                                        *state = EditorProgramState::Linking { from: linkage, to: None };
-                                    }
-                                },
-                                super::nodes::NodeMouseHit::Input(port,center)=>{
-                                    let linkage = Some((i,center,port));
-                                    if let EditorProgramState::Linking{from:_,to} = state{
-                                        *to = linkage;
-                                    }
-                                    else{
-                                        *state = EditorProgramState::Linking { from: None, to: linkage };
-                                    }
-                                },
-                            }
-                            if let EditorProgramState::Linking{from:Some(from),to:Some(to)} = state{
-                                msg = Some(EditorCanvasMessage::LinkNode { from: from.0, output_port:from.2.clone() , to: to.0, input_port: to.2.clone() });
-                                *state = EditorProgramState::Idle;
-                            }
-                        }
-                        else{
-
-                            if let EditorProgramState::Inserting { buffer:_ } = state{
-                                *state = EditorProgramState::Idle;
-                                msg = Some(EditorCanvasMessage::CommitPaste(curpos));
-                                println!("Commiting paste...");
-                            }
-                            else{
-                                *state = EditorProgramState::Selecting { start_position: curpos };
-                            }
-                            // msg = Some(EditorCanvasMessage::Unselect);
-                            // *state = EditorProgramState::Idle
-                        }
-                    },
-                    Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right))=>{
-                        if let Some((i,_pos,_size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
-                            match mouse_status{
-                                super::nodes::NodeMouseHit::Input(port,_)=>{
-                                    msg = Some(EditorCanvasMessage::UnlinkInput { node: i, input_port: port })
-                                },
-                                super::nodes::NodeMouseHit::Output(port,_)=>{
-                                    msg = Some(EditorCanvasMessage::UnlinkOutput { node: i, output_port: port })
-                                },
-                                _=>{
-                                    return (event::Status::Ignored, None);
+                        match mouse_status{
+                            super::nodes::NodeMouseHit::MainRect=>{
+                                let deletion_rect = self.deletion_box();
+                                let delete_enable = !deletion_rect.contains(curpos);
+                                *state = EditorProgramState::Dragging { index: i, start_position: pos, cursor_start_position:curpos, size, can_delete:delete_enable };
+                            },
+                            super::nodes::NodeMouseHit::Output(port,center)=>{
+                                let linkage = Some((i,center,port));
+                                if let EditorProgramState::Linking{from,to:_} = state{
+                                    *from = linkage;
                                 }
-                            }
+                                else{
+                                    *state = EditorProgramState::Linking { from: linkage, to: None };
+                                }
+                            },
+                            super::nodes::NodeMouseHit::Input(port,center)=>{
+                                let linkage = Some((i,center,port));
+                                if let EditorProgramState::Linking{from:_,to} = state{
+                                    *to = linkage;
+                                }
+                                else{
+                                    *state = EditorProgramState::Linking { from: None, to: linkage };
+                                }
+                            },
                         }
-                        else{
-                            if let EditorProgramState::Inserting { buffer:_ } = state{
-                                *state = EditorProgramState::Idle;
-                                msg = Some(EditorCanvasMessage::CancelPaste);
-                                println!("Commiting paste...");
-                            }
-                        }
-                    },
-                    Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{
-                        if let EditorProgramState::Dragging { index, start_position,cursor_start_position, size: _, can_delete } = state{
-                            let delete_bounds = self.deletion_box();
-                            if delete_bounds.contains(curpos) && *can_delete{
-                                println!("Released LMB inside deleter");
-                                msg = Some(EditorCanvasMessage::DeleteSelectedNode)
-                            }
-                            else{
-                                msg = Some(EditorCanvasMessage::MoveNode { index:*index, position: *start_position+(curpos-*cursor_start_position) });
-                            }
-
+                        if let EditorProgramState::Linking{from:Some(from),to:Some(to)} = state{
+                            msg = Some(EditorCanvasMessage::LinkNode { from: from.0, output_port:from.2.clone() , to: to.0, input_port: to.2.clone() });
                             *state = EditorProgramState::Idle;
                         }
-                        else if let EditorProgramState::Selecting { start_position } = state{
-                            msg = Some(EditorCanvasMessage::SquareSelect(*start_position, curpos));
-                            *state = EditorProgramState::Idle
-                        }
-                    },
+                    }
+                    else{
 
-                    Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), ..})=>{
-                        match pressed_key{
-                            // This code turned out to be evil
-                            // iced::keyboard::key::Named::Delete=>{
-                            //     msg = Some(EditorCanvasMessage::DeleteSelectedNode)
-                            // }
-                            iced::keyboard::key::Named::Shift=>{
-                                msg = Some(EditorCanvasMessage::SetShift(true))
-                            }
-                            _=>{}
+                        if let EditorProgramState::Inserting { buffer:_ } = state{
+                            *state = EditorProgramState::Idle;
+                            msg = Some(EditorCanvasMessage::CommitPaste(curpos));
+                            println!("Commiting paste...");
                         }
-                       ;
-                    },
-                    Event::Keyboard(iced::keyboard::Event::KeyReleased { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_ })=>{
-                        match pressed_key{
-                            iced::keyboard::key::Named::Shift=>{
-                                msg = Some(EditorCanvasMessage::SetShift(false))
-                            }
-                            _=>{}
+                        else{
+                            *state = EditorProgramState::Selecting { start_position: curpos };
                         }
-                       ;
-                    },
-                    _=>{
-                        return (event::Status::Ignored, None);
-                    },
-                }
-                return (event::Status::Captured, msg);
-            }
-            else{
-                return (event::Status::Ignored, None);
-            }
+                        // msg = Some(EditorCanvasMessage::Unselect);
+                        // *state = EditorProgramState::Idle
+                    }
+                },
+                Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right))=>{
+                    if let Some((i,_pos,_size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
+                        match mouse_status{
+                            super::nodes::NodeMouseHit::Input(port,_)=>{
+                                msg = Some(EditorCanvasMessage::UnlinkInput { node: i, input_port: port })
+                            },
+                            super::nodes::NodeMouseHit::Output(port,_)=>{
+                                msg = Some(EditorCanvasMessage::UnlinkOutput { node: i, output_port: port })
+                            },
+                            _=>{
+                                return None;
+                            }
+                        }
+                    }
+                    else{
+                        if let EditorProgramState::Inserting { buffer:_ } = state{
+                            *state = EditorProgramState::Idle;
+                            msg = Some(EditorCanvasMessage::CancelPaste);
+                            println!("Commiting paste...");
+                        }
+                    }
+                },
+                Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{
+                    if let EditorProgramState::Dragging { index, start_position,cursor_start_position, size: _, can_delete } = state{
+                        let delete_bounds = self.deletion_box();
+                        if delete_bounds.contains(curpos) && *can_delete{
+                            println!("Released LMB inside deleter");
+                            msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+                        }
+                        else{
+                            msg = Some(EditorCanvasMessage::MoveNode { index:*index, position: *start_position+(curpos-*cursor_start_position) });
+                        }
 
+                        *state = EditorProgramState::Idle;
+                    }
+                    else if let EditorProgramState::Selecting { start_position } = state{
+                        msg = Some(EditorCanvasMessage::SquareSelect(*start_position, curpos));
+                        *state = EditorProgramState::Idle
+                    }
+                },
+
+                Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), ..})=>{
+                    match pressed_key{
+                        // This code turned out to be evil
+                        // iced::keyboard::key::Named::Delete=>{
+                        //     msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+                        // }
+                        iced::keyboard::key::Named::Shift=>{
+                            msg = Some(EditorCanvasMessage::SetShift(true))
+                        }
+                        _=>{}
+                    }
+                    ;
+                },
+                Event::Keyboard(iced::keyboard::Event::KeyReleased { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_, modified_key:_, physical_key:_ })=>{
+                    match pressed_key{
+                        iced::keyboard::key::Named::Shift=>{
+                            msg = Some(EditorCanvasMessage::SetShift(false))
+                        }
+                        _=>{}
+                    }
+                    ;
+                },
+                _=>{
+                    return None;
+                },
+            }
+            return msg.map(|x| canvas::Action::publish(x).and_capture());
         }
+        else{
+            return None;
+        }
+
+    }
+
+
+    // fn update(&self, state: &mut Self::State, event: Event,
+    //         bounds: Rectangle,
+    //         cursor: mouse::Cursor,
+    //     )->(event::Status, Option<EditorCanvasMessage>){
+    //
+    //
+    //         if let EditorProgramState::Inserting{buffer:_} = state{
+    //             if self.editor_state.pending_paste.borrow().is_none(){
+    //                 *state = EditorProgramState::Idle;
+    //                 println!("Cancelled insert mode");
+    //             }
+    //         }
+    //
+    //         if let Some(buffer) = self.editor_state.pending_paste.borrow().as_ref(){
+    //             *state = EditorProgramState::Inserting { buffer:buffer.clone()}
+    //         }
+    //
+    //         let mut msg:Option<EditorCanvasMessage> = None;
+    //         if let Some(curpos) = cursor.position(){
+    //             // if !bounds.contains(curpos){
+    //             //     return (event::Status::Ignored, None);
+    //             // }
+    //             let curpos = iced::Point::new(curpos.x-bounds.x,curpos.y-bounds.y);
+    //
+    //             match event{
+    //
+    //                 // Event::Mouse(iced::mouse::Event::CursorLeft)=>{
+    //                 //     println!("Cursor left the area");
+    //                 // },
+    //                 Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>{
+    //                     if let EditorProgramState::Dragging { index:_, start_position:_, cursor_start_position:_, can_delete, size:_ } = state{
+    //                         if ! *can_delete{
+    //                             let deletion_rect = self.deletion_box();
+    //                             if !deletion_rect.contains(curpos){
+    //                                 *can_delete = true;
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //
+    //                 Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
+    //                     if let Some((i,pos,size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
+    //                         msg = Some(EditorCanvasMessage::Select(i));
+    //
+    //                         match mouse_status{
+    //                             super::nodes::NodeMouseHit::MainRect=>{
+    //                                 let deletion_rect = self.deletion_box();
+    //                                 let delete_enable = !deletion_rect.contains(curpos);
+    //                                 *state = EditorProgramState::Dragging { index: i, start_position: pos, cursor_start_position:curpos, size, can_delete:delete_enable };
+    //                             },
+    //                             super::nodes::NodeMouseHit::Output(port,center)=>{
+    //                                 let linkage = Some((i,center,port));
+    //                                 if let EditorProgramState::Linking{from,to:_} = state{
+    //                                     *from = linkage;
+    //                                 }
+    //                                 else{
+    //                                     *state = EditorProgramState::Linking { from: linkage, to: None };
+    //                                 }
+    //                             },
+    //                             super::nodes::NodeMouseHit::Input(port,center)=>{
+    //                                 let linkage = Some((i,center,port));
+    //                                 if let EditorProgramState::Linking{from:_,to} = state{
+    //                                     *to = linkage;
+    //                                 }
+    //                                 else{
+    //                                     *state = EditorProgramState::Linking { from: None, to: linkage };
+    //                                 }
+    //                             },
+    //                         }
+    //                         if let EditorProgramState::Linking{from:Some(from),to:Some(to)} = state{
+    //                             msg = Some(EditorCanvasMessage::LinkNode { from: from.0, output_port:from.2.clone() , to: to.0, input_port: to.2.clone() });
+    //                             *state = EditorProgramState::Idle;
+    //                         }
+    //                     }
+    //                     else{
+    //
+    //                         if let EditorProgramState::Inserting { buffer:_ } = state{
+    //                             *state = EditorProgramState::Idle;
+    //                             msg = Some(EditorCanvasMessage::CommitPaste(curpos));
+    //                             println!("Commiting paste...");
+    //                         }
+    //                         else{
+    //                             *state = EditorProgramState::Selecting { start_position: curpos };
+    //                         }
+    //                         // msg = Some(EditorCanvasMessage::Unselect);
+    //                         // *state = EditorProgramState::Idle
+    //                     }
+    //                 },
+    //                 Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right))=>{
+    //                     if let Some((i,_pos,_size,mouse_status)) = self.editor_state.nodes.get_node_data(curpos){
+    //                         match mouse_status{
+    //                             super::nodes::NodeMouseHit::Input(port,_)=>{
+    //                                 msg = Some(EditorCanvasMessage::UnlinkInput { node: i, input_port: port })
+    //                             },
+    //                             super::nodes::NodeMouseHit::Output(port,_)=>{
+    //                                 msg = Some(EditorCanvasMessage::UnlinkOutput { node: i, output_port: port })
+    //                             },
+    //                             _=>{
+    //                                 return (event::Status::Ignored, None);
+    //                             }
+    //                         }
+    //                     }
+    //                     else{
+    //                         if let EditorProgramState::Inserting { buffer:_ } = state{
+    //                             *state = EditorProgramState::Idle;
+    //                             msg = Some(EditorCanvasMessage::CancelPaste);
+    //                             println!("Commiting paste...");
+    //                         }
+    //                     }
+    //                 },
+    //                 Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{
+    //                     if let EditorProgramState::Dragging { index, start_position,cursor_start_position, size: _, can_delete } = state{
+    //                         let delete_bounds = self.deletion_box();
+    //                         if delete_bounds.contains(curpos) && *can_delete{
+    //                             println!("Released LMB inside deleter");
+    //                             msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+    //                         }
+    //                         else{
+    //                             msg = Some(EditorCanvasMessage::MoveNode { index:*index, position: *start_position+(curpos-*cursor_start_position) });
+    //                         }
+    //
+    //                         *state = EditorProgramState::Idle;
+    //                     }
+    //                     else if let EditorProgramState::Selecting { start_position } = state{
+    //                         msg = Some(EditorCanvasMessage::SquareSelect(*start_position, curpos));
+    //                         *state = EditorProgramState::Idle
+    //                     }
+    //                 },
+    //
+    //                 Event::Keyboard(iced::keyboard::Event::KeyPressed { key:iced::keyboard::Key::Named(pressed_key), ..})=>{
+    //                     match pressed_key{
+    //                         // This code turned out to be evil
+    //                         // iced::keyboard::key::Named::Delete=>{
+    //                         //     msg = Some(EditorCanvasMessage::DeleteSelectedNode)
+    //                         // }
+    //                         iced::keyboard::key::Named::Shift=>{
+    //                             msg = Some(EditorCanvasMessage::SetShift(true))
+    //                         }
+    //                         _=>{}
+    //                     }
+    //                    ;
+    //                 },
+    //                 Event::Keyboard(iced::keyboard::Event::KeyReleased { key:iced::keyboard::Key::Named(pressed_key), location:_, modifiers:_, modified_key:_, physical_key:_ })=>{
+    //                     match pressed_key{
+    //                         iced::keyboard::key::Named::Shift=>{
+    //                             msg = Some(EditorCanvasMessage::SetShift(false))
+    //                         }
+    //                         _=>{}
+    //                     }
+    //                    ;
+    //                 },
+    //                 _=>{
+    //                     return (event::Status::Ignored, None);
+    //                 },
+    //             }
+    //             return (event::Status::Captured, msg);
+    //         }
+    //         else{
+    //             return (event::Status::Ignored, None);
+    //         }
+    //
+    //     }
 }

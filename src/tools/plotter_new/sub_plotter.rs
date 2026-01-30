@@ -239,7 +239,7 @@ impl Subplotter{
                 iced::widget::container(
                     iced::widget::row![
                         iced::widget::button("Clear").on_press(SubplotterMessage::Clear),
-                        iced::widget::Space::new(10,10).width(iced::Length::Fill),
+                        iced::widget::Space::new().width(iced::Length::Fill),
                         transformer.map(SubplotterMessage::Transform),
                     ]
                 ).center_x(iced::Length::Fill)
@@ -348,7 +348,7 @@ impl Chart<SubplotterMessage> for Subplotter{
     fn update(
         &self,
         _state: &mut Self::State,
-        event: iced::widget::canvas::Event,
+        event: &iced::widget::canvas::Event,
         bounds: iced::Rectangle,
         cursor: iced::mouse::Cursor,
     ) -> (iced::event::Status, Option<SubplotterMessage>) {

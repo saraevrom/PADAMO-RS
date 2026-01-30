@@ -125,7 +125,7 @@ impl LoadedDetectors{
         if let (Some(prim_det),Some(prim)) = (self.get_primary(),self.get_primary_buffer()){
             res = res.push(iced::widget::text(format!("Primary: {}",prim_det.detector.cells.name)));
             res = res.push(prim.view(None).map(|x| LoadedDetectorsMessage::EntryForm(0, x)));
-            res = res.push(iced::widget::horizontal_rule(3));
+            res = res.push(iced::widget::rule::horizontal(3));
             for (i,d) in self.iter_aux_detectors().enumerate(){
                 res = res.push(iced::widget::row![
                     iced::widget::button("S").on_press(LoadedDetectorsMessage::SetPrimary(i+1)),

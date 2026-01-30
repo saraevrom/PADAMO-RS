@@ -84,7 +84,7 @@ impl IcedFormBuffer for BoolBuffer{
 
     fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,ActionOrUpdate<Self::Message>> {
         let t = title.unwrap_or("");
-        iced::widget::checkbox(t,self.inner).on_toggle(|x| ActionOrUpdate::Update(SetFlag(x))).into()
+        iced::widget::checkbox(self.inner).label(t).on_toggle(|x| ActionOrUpdate::Update(SetFlag(x))).into()
     }
 
     fn update(&mut self, message:SetFlag) {

@@ -7,7 +7,7 @@ use crate::custom_widgets::timeline::TimeLine;
 use crate::detector_muxer::get_signal_var;
 
 use iced::widget::text::Catalog;
-use iced_font_awesome::{fa_icon_solid, FaIcon};
+use iced_font_awesome::{fa_icon_solid, Icon};
 
 use super::PlayState;
 
@@ -55,7 +55,7 @@ pub enum CrossProgressMessage{
     FocusOn(usize,usize),
 }
 
-pub fn get_icon<Theme:Catalog>(icon:&'static str)->FaIcon<'static,Theme>{
+pub fn get_icon<Theme:Catalog>(icon:&'static str)->Icon<'static,Theme>{
     fa_icon_solid(icon).size(20.0).color(iced::color![255,255,255])
 }
 

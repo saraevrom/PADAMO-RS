@@ -105,7 +105,7 @@ impl SpoilerStatus{
                     if let Some(v) = title{
                         let mut inner_collumn = iced::widget::column![
                             iced::widget::text(v),
-                            iced::widget::checkbox("Show",self.visible).on_toggle(|x| padamo_iced_forms::ActionOrUpdate::Update(#message_name::SetVisible(x))),
+                            iced::widget::checkbox(self.visible).label("Show").on_toggle(|x| padamo_iced_forms::ActionOrUpdate::Update(#message_name::SetVisible(x))),
                             //container
                         ];
                         if self.visible{

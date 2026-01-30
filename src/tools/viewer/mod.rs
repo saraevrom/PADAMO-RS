@@ -578,10 +578,10 @@ impl PadamoTool for PadamoViewer{
         let settings_column:iced::Element<'_,ViewerMessage> = column![
 
             row![iced::widget::text("Animation status:"),iced::widget::text(&self.animation_status)],
-            iced::widget::rule::Rule::horizontal(10),
+            iced::widget::rule::horizontal(10),
 
             row![iced::widget::text("Export status:"),iced::widget::text(&self.export_status)],
-            iced::widget::rule::Rule::horizontal(10),
+            iced::widget::rule::horizontal(10),
 
             self.form.view(None).map(ViewerMessage::EditForm),
         ].into();
@@ -671,7 +671,7 @@ impl PadamoTool for PadamoViewer{
                                 a1,
                                 mesh_info,
                              ),
-            iced::widget::rule::Rule::vertical(10),
+            iced::widget::rule::vertical(10),
             iced::widget::scrollable(settings_column.map(PadamoAppMessage::ViewerMessage)).width(300),
         ];
 

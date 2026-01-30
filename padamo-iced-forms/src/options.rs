@@ -59,7 +59,7 @@ impl <T:IcedFormBuffer> IcedFormBuffer for OptionBuffer<T>{
 
     fn view<'a>(&'a self,title:Option<&'a str>)->iced::Element<'a,ActionOrUpdate<Self::Message>> {
         let title = title.unwrap_or_default();
-        let header_check = iced::widget::checkbox(title, self.stash.is_active())
+        let header_check = iced::widget::checkbox(self.stash.is_active()).label(title)
             .on_toggle(|x| ActionOrUpdate::Update(OptionMessage::SetEnable(x)));
         let bottom_view = if let OptionStash::Some(v) = &self.stash{
             v.view_untitled()

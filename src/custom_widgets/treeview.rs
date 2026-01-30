@@ -139,8 +139,8 @@ impl<T:std::fmt::Debug+Clone> TreeNode<T>{
             line_height: iced::advanced::text::LineHeight::Absolute(iced::Pixels(HEIGHT)),
             // //color: iced::Color::BLACK,
             font: renderer.default_font(),
-            horizontal_alignment: iced::alignment::Horizontal::Left,
-            vertical_alignment: iced::alignment::Vertical::Top,
+            align_x: iced::alignment::Horizontal::Left.into(),
+            align_y: iced::alignment::Vertical::Top,
             shaping: Default::default(),
 
         };
@@ -354,7 +354,7 @@ where
     }
 
     fn layout(
-        &self,
+        &mut self,
         _tree: &mut iced::advanced::widget::Tree,
         _renderer: &Renderer,
         limits: &iced::advanced::layout::Limits,
@@ -386,19 +386,17 @@ where
         // *self.last_height.borrow_mut() = y;
     }
 
-    fn on_event(
+    fn update(
         &mut self,
-        _state: &mut iced::advanced::widget::Tree,
-        event: iced::Event,
+        _tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
         _layout: iced::advanced::Layout<'_>,
         cursor: iced::advanced::mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn iced::advanced::Clipboard,
         shell: &mut iced::advanced::Shell<'_, Message>,
         _viewport: &iced::Rectangle,
-    ) -> iced::event::Status {
-        
-
+    ) {
         if let iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) = event{
             for node in self.tree.nodes.iter(){
                 if let Some(pos) = cursor.position(){
@@ -414,11 +412,11 @@ where
                                     }
                                 }
                                 //println!("{}",node_ref.path());
-                                return iced::event::Status::Captured;
+                                return;
                             }
                             else if !is_searching{
                                 node_ref.visible = !node_ref.visible;
-                                return iced::event::Status::Captured;
+                                return;
                             }
                         }
                     }
@@ -428,6 +426,50 @@ where
             }
 
         }
-        iced::event::Status::Ignored
     }
+
+//     fn on_event(
+//         &mut self,
+//         _state: &mut iced::advanced::widget::Tree,
+//         event: iced::Event,
+//         _layout: iced::advanced::Layout<'_>,
+//         cursor: iced::advanced::mouse::Cursor,
+//         _renderer: &Renderer,
+//         _clipboard: &mut dyn iced::advanced::Clipboard,
+//         shell: &mut iced::advanced::Shell<'_, Message>,
+//         _viewport: &iced::Rectangle,
+//     ) -> iced::event::Status {
+//
+//
+//         if let iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) = event{
+//             for node in self.tree.nodes.iter(){
+//                 if let Some(pos) = cursor.position(){
+//                     let mut node_ref = node.borrow_mut();
+//                     if node_ref.contains_point(pos){
+//                         let is_searching = !self.search.is_empty();
+//                         if node_ref.is_active() || is_searching{
+//                             if node_ref.is_final(){
+//                                 if let Some(action) = &self.action{
+//                                     println!("{:?}",node_ref.metadata);
+//                                     if let Some(m) = node_ref.metadata.clone(){
+//                                         shell.publish(action(m));
+//                                     }
+//                                 }
+//                                 //println!("{}",node_ref.path());
+//                                 return iced::event::Status::Captured;
+//                             }
+//                             else if !is_searching{
+//                                 node_ref.visible = !node_ref.visible;
+//                                 return iced::event::Status::Captured;
+//                             }
+//                         }
+//                     }
+//
+//
+//                 }
+//             }
+//
+//         }
+//         iced::event::Status::Ignored
+//     }
 }

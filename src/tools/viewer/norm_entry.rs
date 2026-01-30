@@ -72,7 +72,7 @@ impl NormEntryState{
 
     pub fn view(&self)->iced::Element<'_,NormEntryMessage>{
         iced::widget::row![
-            iced::widget::checkbox("Autoscale",self.is_autoscale).on_toggle(NormEntryMessage::SetAutoscale),
+            iced::widget::checkbox(self.is_autoscale).label("Autoscale").on_toggle(NormEntryMessage::SetAutoscale),
             iced::widget::TextInput::new("Min signal", &self.min_signal_entry).width(100).on_input(NormEntryMessage::SetMinSignal),
             iced::widget::text("-").align_x(iced::alignment::Horizontal::Center).width(20),
             iced::widget::TextInput::new("Max signal", &self.max_signal_entry).width(100).on_input(NormEntryMessage::SetMaxSignal),
@@ -120,8 +120,8 @@ impl MultiEntry{
             iced::widget::text("---No normalization---").into()
         };
         iced::widget::row![
-            iced::widget::checkbox("Lock", self.lock.is_some()).on_toggle(MultiEntryMessage::SetLock),
-            iced::widget::Space::new(10,10),
+            iced::widget::checkbox(self.lock.is_some()).label("Lock").on_toggle(MultiEntryMessage::SetLock),
+            iced::widget::Space::new(),
             norm,
         ].into()
     }

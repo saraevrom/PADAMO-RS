@@ -6,12 +6,13 @@ pub struct TimeLine <Message>{
     pointer: usize,
     start:usize,
     end:usize,
-    click_message:Option<fn(usize)->Message>
+    click_message:Option<fn(usize)->Message>,
+    state:TimeLineState
 }
 
 impl<Message> TimeLine<Message>{
     pub fn new(length:usize, pointer:usize, start:usize, end:usize, click_message:Option<fn(usize)->Message>)->Self{
-        Self{length, pointer, start, end, click_message}
+        Self{length, pointer, start, end, click_message, state:Default::default()}
     }
 
     pub fn x_position(&self, pos:usize, bounds:iced::Rectangle)->f32{
@@ -43,7 +44,7 @@ where
     }
 
     fn layout(
-        &self,
+        &mut self,
         _tree:&mut iced::advanced::widget::Tree,
         _renderer: &Renderer,
         limits: &iced::advanced::layout::Limits,
@@ -69,7 +70,11 @@ where
         let borderstyle = iced::Border { color: iced::Color::BLACK, width: 1.0 , radius: 0.0.into() };
         let no_borderstyle = iced::Border { color: iced::Color::BLACK, width: 0.0 , radius: 0.0.into() };
         //renderer.fill_quad(Quad{bounds, border_radius:0.0.into(), border_width:1.0, border_color:iced::Color::BLACK}, iced::Color::WHITE);
-        renderer.fill_quad(Quad { bounds, border: borderstyle, shadow: Default::default() }, iced::Color::WHITE);
+        renderer.fill_quad(Quad {
+            bounds, border: borderstyle,
+            // shadow: Default::default()
+            ..Default::default()
+        }, iced::Color::WHITE);
 
         let x1 = self.x_position(self.start, bounds);
         let x2 = self.x_position(self.end, bounds);
@@ -81,8 +86,10 @@ where
         //     border_color: iced::Color::BLACK
         //
         // }, iced::Color::new(0.7, 0.7, 0.7, 1.0));
-        renderer.fill_quad(Quad { bounds: iced::Rectangle { x: x1, y: bounds.y, width: x2-x1, height: bounds.height },
-                           border: borderstyle, shadow: Default::default() }, iced::Color::new(0.7, 0.7, 0.7, 1.0));
+        renderer.fill_quad(Quad {
+                           bounds: iced::Rectangle { x: x1, y: bounds.y, width: x2-x1, height: bounds.height },
+                           border: borderstyle,
+                           ..Default::default()}, iced::Color::from_rgba(0.7, 0.7, 0.7, 1.0));
 
         let pointer_pos = self.x_position(self.pointer, bounds);
         // renderer.fill_quad(Quad {
@@ -93,8 +100,10 @@ where
         //
         // }, iced::Color::new(1.0, 0.0, 0.0, 1.0));
 
-        renderer.fill_quad(Quad { bounds: iced::Rectangle { x: pointer_pos-1.0, y: bounds.y, width: 2.0, height: bounds.height },
-                           border: no_borderstyle, shadow: Default::default() }, iced::Color::new(1.0, 0.0, 0.0, 1.0));
+        renderer.fill_quad(Quad {
+                           bounds: iced::Rectangle { x: pointer_pos-1.0, y: bounds.y, width: 2.0, height: bounds.height },
+                           border: no_borderstyle,
+                           ..Default::default() }, iced::Color::from_rgba(1.0, 0.0, 0.0, 1.0));
 
         if let Some(pos) = cursor.position(){
             if bounds.contains(pos){
@@ -108,60 +117,63 @@ where
                 //     border_color: iced::Color::WHITE
                 //
                 // }, iced::Color::BLACK);
-                renderer.fill_quad(Quad { bounds: iced::Rectangle { x: cur_x-1.0, y: bounds.y, width: 2.0, height: bounds.height },
-                                   border: iced::Border { color: iced::Color::WHITE, width: 0.0, radius: 0.0.into()}, shadow: Default::default()}, iced::Color::BLACK);
+                renderer.fill_quad(Quad {
+                                   bounds: iced::Rectangle { x: cur_x-1.0, y: bounds.y, width: 2.0, height: bounds.height },
+                                   border: iced::Border { color: iced::Color::WHITE, width: 0.0, radius: 0.0.into()},
+                                   ..Default::default()
+                                   }, iced::Color::BLACK);
             }
         }
     }
 
-    fn on_event(
+    fn update(
         &mut self,
-        state: &mut iced::advanced::widget::Tree,
-        event: iced::Event,
+        _tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
         layout: iced::advanced::Layout<'_>,
         cursor: iced::advanced::mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn iced::advanced::Clipboard,
         shell: &mut iced::advanced::Shell<'_, Message>,
         _viewport: &iced::Rectangle,
-    ) -> iced::event::Status {
-        let bounds = layout.bounds();
-        let tl_state = state.state.downcast_mut::<TimeLineState>();
-        if let Some(pos) = cursor.position(){
-            if bounds.contains(pos){
-                let pos = pos - bounds.position();
-                match event {
-                    iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{ tl_state.is_dragging = true;}
-                    iced::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{ tl_state.is_dragging = false;}
-                    iced::Event::Mouse(iced::mouse::Event::CursorLeft)=>{tl_state.is_dragging = false;}
-                    iced::Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>(),
-                    _=>{return iced::event::Status::Ignored}
-                }
-                if tl_state.is_dragging{
-                    let new_x:usize = (pos.x/bounds.width*(self.length as f32)).round() as usize;
-                    if let Some(creator) = self.click_message{
-                        shell.publish(creator(new_x));
-                        return iced::event::Status::Captured;
+    ) {
+            let bounds = layout.bounds();
+            let tl_state = &mut self.state;
+            if let Some(pos) = cursor.position(){
+                if bounds.contains(pos){
+                    let pos = pos - bounds.position();
+                    match event {
+                        iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{ tl_state.is_dragging = true;}
+                        iced::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{ tl_state.is_dragging = false;}
+                        iced::Event::Mouse(iced::mouse::Event::CursorLeft)=>{tl_state.is_dragging = false;}
+                        iced::Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>(),
+                        _=>{},
+                    }
+                    if tl_state.is_dragging{
+                        let new_x:usize = (pos.x/bounds.width*(self.length as f32)).round() as usize;
+                        if let Some(creator) = self.click_message{
+                            shell.publish(creator(new_x));
+                        }
                     }
                 }
+                else{
+                    tl_state.is_dragging = false;
+                }
             }
-            else{
-                tl_state.is_dragging = false;
-            }
-        }
-        // if let Some(pos) = cursor.position(){
-        //     let pos = pos - bounds.position();
-        //     if let iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) = event{
-        //         let new_x:usize = (pos.x/bounds.width*(self.length as f32)) as usize;
-        //         if let Some(creator) = self.click_message{
-        //             shell.publish(creator(new_x))
-        //         }
-        //         return iced::event::Status::Captured;
-        //     }
-        //
-        // }
-        iced::event::Status::Ignored
+            // if let Some(pos) = cursor.position(){
+            //     let pos = pos - bounds.position();
+            //     if let iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left)) = event{
+            //         let new_x:usize = (pos.x/bounds.width*(self.length as f32)) as usize;
+            //         if let Some(creator) = self.click_message{
+            //             shell.publish(creator(new_x))
+            //         }
+            //         return iced::event::Status::Captured;
+            //     }
+            //
+            // }
+            // iced::event::Status::Ignored
     }
+
 }
 
 #[derive(Default)]

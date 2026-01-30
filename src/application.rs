@@ -479,25 +479,49 @@ impl Padamo{
             iced::time::every(std::time::Duration::from_millis(33+self.state.add_delay_ms)).map(|_| {
                 PadamoAppMessage::Tick
             }),
-            iced::keyboard::on_key_press(|key,modifiers|{
-                if modifiers.control(){
-                    match key {
-                        iced::keyboard::key::Key::Character(c)=>{
-                            match c.as_str(){
-                                "s"=>Some(PadamoAppMessage::Save),
-                                "o"=>Some(PadamoAppMessage::Open),
-                                "c"=>Some(PadamoAppMessage::Copy),
-                                "v"=>Some(PadamoAppMessage::Paste),
-                                "a"=>Some(PadamoAppMessage::SelectAll),
-                                _=>None
-                            }
-                        },
-                        _=>None
+            iced::keyboard::listen().map(|event|{
+                // if modifiers.control(){
+                if let iced::keyboard::Event::KeyPressed{ key, modified_key:_, physical_key:_, location:_, modifiers, text:_, repeat:_ } = event{
+                    if modifiers.control(){
+                        match key {
+                            iced::keyboard::key::Key::Character(c)=>{
+                                match c.as_str(){
+                                    "s"=>PadamoAppMessage::Save,
+                                    "o"=>PadamoAppMessage::Open,
+                                    "c"=>PadamoAppMessage::Copy,
+                                    "v"=>PadamoAppMessage::Paste,
+                                    "a"=>PadamoAppMessage::SelectAll,
+                                    _=>PadamoAppMessage::Noop,
+                                }
+                            },
+                            _=>PadamoAppMessage::Noop,
+                        }
+                    }
+                    else{
+                        PadamoAppMessage::Noop
                     }
                 }
                 else{
-                    None
+                    PadamoAppMessage::Noop
                 }
+                    // let key = event.
+                    // match event {
+                    //     iced::keyboard::key::Key::Character(c)=>{
+                    //         match c.as_str(){
+                    //             "s"=>PadamoAppMessage::Save,
+                    //             "o"=>PadamoAppMessage::Open,
+                    //             "c"=>PadamoAppMessage::Copy,
+                    //             "v"=>PadamoAppMessage::Paste,
+                    //             "a"=>PadamoAppMessage::SelectAll,
+                    //             _=>PadamoAppMessage::Noop,
+                    //         }
+                    //     },
+                    //     _=>PadamoAppMessage::Noop,
+                    // }
+                // }
+                // else{
+                //     None
+                // }
 
             })
         ])

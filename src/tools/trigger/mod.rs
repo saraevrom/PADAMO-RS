@@ -305,7 +305,7 @@ impl PadamoTool for PadamoTrigger{
                 widget::text(&self.export_status),
 
                 widget::column![
-                    widget::rule::Rule::horizontal(10),
+                    widget::rule::horizontal(10),
                     widget::text("Settings"),
                     self.trigger_form_buffer.view(None).map(TriggerMessage::SettingsMessage),
                 ]

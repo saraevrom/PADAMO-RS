@@ -132,7 +132,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         let transform:iced::Element<'_, _> = self.view_transform.view().into();
         let footer:iced::Element<'_, _> = row![
             self.scale_state.view(self.detector_id).map(SingleDetectorDisplayMessage::NormEntryMessage),
-            iced::widget::horizontal_space(),
+            iced::widget::Space::new(),
             transform.map(SingleDetectorDisplayMessage::PlotZoomMessage),
             // iced::widget::Space::new(10,10).width(iced::Length::Fill),
         ].height(iced::Length::Shrink).into();
@@ -162,7 +162,7 @@ impl<T:Clone> SingleDetectorDisplay<T>{
 
         let top = row![
             detector_view,
-            iced::widget::Space::new(10,10).width(iced::Length::Fill),
+            iced::widget::Space::new().width(iced::Length::Fill),
             left_btn,
             right_btn,
             iced::widget::button("Reset mask").on_press(SingleDetectorDisplayMessage::ResetMask)

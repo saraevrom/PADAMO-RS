@@ -52,7 +52,7 @@ where
     fn update(
         &self,
         state: &mut Self::State,
-        event: iced::widget::canvas::Event,
+        event: &iced::widget::canvas::Event,
         bounds: iced::Rectangle,
         cursor: iced::mouse::Cursor,
     ) -> (iced::event::Status, Option<Msg>) {

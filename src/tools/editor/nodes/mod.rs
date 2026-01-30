@@ -430,7 +430,7 @@ impl GraphNode{
             let port_rect = Path::rectangle(pos, port_size);
             frame.stroke(&port_rect, canvas::Stroke::default().with_width(2.0).with_color(iced::Color::BLACK));
             frame.fill(&port_rect, make_iced_color(port_data.port_type.get_color()));
-            let label = Text{content:port_data.display_name.clone(), position:pos,horizontal_alignment:iced::alignment::Horizontal::Right, ..Default::default()};
+            let label = Text{content:port_data.display_name.clone(), position:pos,align_x:iced::alignment::Horizontal::Right.into(), ..Default::default()};
             frame.fill_text(label);
         }
     }
