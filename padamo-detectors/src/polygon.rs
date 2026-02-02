@@ -28,6 +28,29 @@ fn do_vecs_match<T: PartialEq>(a: &[T], b: &[T]) -> bool {
     matching == a.len() && matching == b.len()
 }
 
+fn segment_intestects_rect(mut start:(f64,f64), mut end:(f64,f64), left:f64, right:f64, top:f64, bottom:f64)->bool{
+    if start.0>end.0{
+        (start.0, end.0) = (end.0, start.0);
+    }
+
+    if start.1>end.1{
+        (start.1, end.1) = (end.1, start.1);
+    }
+
+
+    // Test if horizontal part if *NOT* intersected
+    if start.0>right || end.0<left{
+        return false;
+    }
+
+    // Test if vertical part is *NOT* intersected too
+    if start.1>top || end.1<bottom{
+        return false;
+    }
+
+    true
+}
+
 #[derive(Debug,Clone, PartialEq, CustomType, StableAbi)]
 #[rhai_type(extra = Self::build_extra)]
 #[repr(C)]
@@ -182,6 +205,23 @@ impl DetectorPixel{
 
         }
         true
+    }
+
+    pub fn intersects_or_inside_rectangle(&self, mut left:f64, mut right:f64, mut top:f64, mut bottom:f64)->bool{
+        if left>right{
+            (left, right) = (right, left);
+        }
+        if bottom>top{
+            (bottom, top) = (top, bottom);
+        }
+
+        for (start, end) in self.vertices.iter().zip(self.vertices.iter().skip(1).cycle()){
+            if segment_intestects_rect(start.into_tuple(), end.into_tuple(), left, right, top, bottom){
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn rectangle(index:Vec<usize>, start:(f64,f64), size:(f64,f64))->Self{
@@ -352,6 +392,16 @@ impl DetectorContent{
             }
         }
         None
+    }
+
+    pub fn select_indices_in_rectangle(&self, left:f64, right:f64, top:f64, bottom:f64) -> Vec<&[usize]>{
+        let mut res = Vec::new();
+        for pix in self.content.iter(){
+            if pix.intersects_or_inside_rectangle(left,right,top,bottom){
+                res.push(pix.index.as_ref());
+            }
+        }
+        res
     }
 
     pub fn default_vtl()->Self{

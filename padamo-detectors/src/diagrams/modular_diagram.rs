@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use crate::polygon::DetectorContent;
 use super::traits::ColorValueSource;
 use crate::transformer::Transform;
-use plotters::{coord::types::RangedCoordf64, prelude::*};
+use plotters::{coord::{ReverseCoordTranslate, types::RangedCoordf64}, prelude::*};
 use plotters_layout::{ChartLayout, centering_ranges};
 
 struct TransformedMesh{
@@ -14,6 +14,7 @@ struct TransformedMesh{
 
 #[derive(Default)]
 pub struct PadamoDetectorDiagramState{
+    pub click_state: super::auxiliary::ClickTracker,
     pub pos: (f64,f64),
     pub unmapped: (i32, i32),
     pub spec: RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
@@ -27,9 +28,9 @@ where
     detector: &'a DetectorContent,
     color_source: Box<dyn ColorValueSource>,
     title:Option<String>,
-    lmb_action:Option<Box<dyn 'a + Fn(Vec<usize>)->Msg>>,
-    rmb_action:Option<Box<dyn 'a + Fn(Vec<usize>)->Msg>>,
-    multiselect_action:Option<Box<dyn 'a + Fn(Vec<Vec<usize>>, bool)->Msg>>,
+    lmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
+    rmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
+    multiselect_action:Option<Box<dyn 'static + Fn(Vec<&'a [usize]>, iced::mouse::Button)->Msg>>,
     transform: Transform,
     mesh:Option<TransformedMesh>,
 }
@@ -49,17 +50,25 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
         }
     }
 
-    pub fn on_left_click<F:'a + Fn(Vec<usize>)->Msg>(mut self, action:F) -> Self{
+    pub fn on_left_click<F:'static + Fn(Vec<usize>)->Msg>(mut self, action:F) -> Self{
         self.lmb_action = Some(Box::new(action));
         self
     }
 
-    pub fn on_right_click<F:'a + Fn(Vec<usize>)->Msg>(mut self, action:F) -> Self{
+    pub fn on_right_click<F:'static + Fn(Vec<usize>)->Msg>(mut self, action:F) -> Self{
         self.rmb_action = Some(Box::new(action));
         self
     }
 
-    pub fn on_multiselect<F:'a + Fn(Vec<Vec<usize>>, bool)->Msg>(mut self, action:F) -> Self{
+    fn get_click_event(&self, btn:iced::mouse::Button)->Option<&Box<dyn 'static + Fn(Vec<usize>)->Msg>>{
+        match btn{
+            iced::mouse::Button::Left => self.lmb_action.as_ref(),
+            iced::mouse::Button::Right => self.rmb_action.as_ref(),
+            _=>None,
+        }
+    }
+
+    pub fn on_multiselect<F:'static + Fn(Vec<&'a[usize]>, iced::mouse::Button)->Msg>(mut self, action:F) -> Self{
         self.multiselect_action = Some(Box::new(action));
         self
     }
@@ -188,5 +197,97 @@ impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Mess
     fn draw_chart<DB: DrawingBackend>(&self, state: &Self::State, root: DrawingArea<DB, plotters::coord::Shift>) {
         self.build_chart_generic(&root, Some(state));
         //self.detector_plotter.build_chart_generic(&self.detector, &root, &self.source,self.scale,self.transform,state, self.mesh_info);
+    }
+
+    fn update(
+        &self,
+        state: &mut Self::State,
+        event: &iced::Event,
+        bounds: iced::Rectangle,
+        cursor: iced::mouse::Cursor,
+    ) -> (iced::event::Status, Option<Message>) {
+        if let iced::mouse::Cursor::Available(point) = cursor {
+            if bounds.contains(point){
+                if let iced::widget::canvas::Event::Mouse(evt) = event{
+                    let p_origin = bounds.position();
+                    let p = point - p_origin;
+
+                    if let Some(spec) = state.spec.borrow().as_ref(){
+                        if let Some(inpoint) = spec.reverse_translate((p.x as i32,p.y as i32)){
+                            state.pos = inpoint;
+                            state.unmapped = (p.x as i32,p.y as i32);
+
+                            if let Some(index) = self.detector.position_index(inpoint){
+                                match evt{
+                                    iced::mouse::Event::ButtonPressed(btn)=>{
+                                        if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
+                                            state.click_state.click(*btn, inpoint);
+                                            if let Some(caller) = self.get_click_event(*btn){
+                                                let msg = Some(caller(index.into()));
+                                                return (iced::event::Status::Captured, msg);
+                                            }
+                                        }
+                                    }
+                                    iced::mouse::Event::ButtonReleased(btn)=>{
+                                        if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
+                                            if let Some(pos1) = state.click_state.release(*btn){
+                                                if let Some(caller) = &self.multiselect_action{
+                                                    let (left, top) = pos1;
+                                                    let (right, bottom) = inpoint;
+                                                    let indices = self.detector.select_indices_in_rectangle(left, right, top, bottom);
+                                                    let msg = Some(caller(indices, *btn));
+                                                    return (iced::event::Status::Captured, msg);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    iced::mouse::Event::CursorLeft=>{
+                                        state.click_state.reset();
+                                    }
+                                    _=>(),
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+            // match event {
+            //     iced::widget::canvas::Event::Mouse(evt) if bounds.contains(point) => {
+            //         let p_origin = bounds.position();
+            //         let p = point - p_origin;
+            //         if let Some(spec) = self.detector_plotter.spec.borrow().as_ref(){
+            //             if let Some(inpoint) = spec.reverse_translate((p.x as i32,p.y as i32)){
+            //                 //println!("{:?}",inpoint);
+            //                 *state = Some((inpoint,(p.x as i32,p.y as i32)));
+            //                 let mut msg = None;
+            //                 if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right) = evt{
+            //                     if let Some(caller) = &self.rclick_event{
+            //                         if let Some(index) = self.detector.cells.position_index(inpoint){
+            //                             msg = Some(caller(index.into()));
+            //                         }
+            //                     }
+            //                 }
+            //                 else if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left) = evt{
+            //                     if let Some(caller) = &self.lclick_event{
+            //                         if let Some(index) = self.detector.cells.position_index(inpoint){
+            //                             msg = Some(caller(index.into()));
+            //                         }
+            //                     }
+            //                 }
+            //
+            //                 return (
+            //                     iced::event::Status::Captured,
+            //                     msg,
+            //                 );
+            //             }
+            //         }
+            //
+            //     }
+            //     _ => {}
+            // }
+        }
+        // *state = None;
+        (iced::event::Status::Ignored, None)
     }
 }
