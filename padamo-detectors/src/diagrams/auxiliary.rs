@@ -52,6 +52,10 @@ impl ClickTracker{
         }
     }
 
+    pub fn get_state(&self)->Option<(iced::mouse::Button, (f64,f64))>{
+        self.state
+    }
+
     pub fn reset(&mut self){
         self.state = None;
     }

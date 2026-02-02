@@ -68,6 +68,14 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
         }
     }
 
+    fn get_selection_color(&self, btn:iced::mouse::Button)->plotters::prelude::ShapeStyle{
+        match btn{
+            iced::mouse::Button::Left => plotters::prelude::RGBAColor (85,170,0,0.5),
+            iced::mouse::Button::Right => plotters::prelude::RGBAColor (255,0,0,0.5),
+            _=> plotters::prelude::RGBAColor (128,128,128,0.5),
+        }.filled()
+    }
+
     pub fn on_multiselect<F:'static + Fn(Vec<&'a[usize]>, iced::mouse::Button)->Msg>(mut self, action:F) -> Self{
         self.multiselect_action = Some(Box::new(action));
         self
@@ -147,6 +155,13 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
         if let Some(s) = state{
             *s.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
             super::auxiliary::display_pixel_id(self.detector, root, self.color_source.as_ref(), s);
+
+            if let Some((btn,p1)) = s.click_state.get_state(){
+                let p2 = s.pos;
+                let coords = [p1,p2];
+                let rect = plotters::prelude::Rectangle::new(coords, self.get_selection_color(btn));
+                chart.draw_series(std::iter::once(rect)).unwrap();
+            }
         }
 
     }
@@ -221,7 +236,9 @@ impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Mess
                                 match evt{
                                     iced::mouse::Event::ButtonPressed(btn)=>{
                                         if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
-                                            state.click_state.click(*btn, inpoint);
+                                            if self.multiselect_action.is_some(){
+                                                state.click_state.click(*btn, inpoint);
+                                            }
                                             if let Some(caller) = self.get_click_event(*btn){
                                                 let msg = Some(caller(index.into()));
                                                 return (iced::event::Status::Captured, msg);
