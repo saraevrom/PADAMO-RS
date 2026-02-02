@@ -1,0 +1,47 @@
+use plotters::prelude::*;
+
+pub const COLORBAR_SEGMENTS:usize = 256;
+
+pub const COLORBAR_WIDTH:f64 = 1.0;
+
+
+pub struct ColorbarRects{
+    pub min:f64,
+    pub max:f64,
+    index:usize,
+}
+
+impl ColorbarRects{
+    pub fn new(min:f64, max:f64)->Self{
+        let max = if max>min {max} else {min+0.1};
+        Self { min, max, index: 0 }
+    }
+}
+
+impl Iterator for ColorbarRects{
+    type Item = Rectangle<(f64,f64)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index>=COLORBAR_SEGMENTS{
+            return None;
+        }
+
+        let step = (self.max - self.min)/(COLORBAR_SEGMENTS as f64);
+        let start_y = step * (self.index as f64)+self.min;
+        let end_y = start_y+step;
+        let mid_y = start_y+step*0.5;
+
+        let s_coords = (0.0,start_y);
+        let e_coords = (COLORBAR_WIDTH,end_y);
+
+
+        let color = plotters::style::colors::colormaps::ViridisRGB::get_color_normalized(mid_y,self.min, self.max).filled();
+
+        self.index += 1;
+        Some(Rectangle::new(
+            [s_coords, e_coords],
+            color
+        ))
+    }
+
+}

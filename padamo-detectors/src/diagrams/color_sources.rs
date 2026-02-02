@@ -1,7 +1,6 @@
 use padamo_arraynd::ArrayND;
-use crate::polygon::DetectorContent;
 
-use super::traits::ColorSource;
+use super::traits::ColorValueSource;
 use plotters::prelude::*;
 use super::scaling::Scaling;
 
@@ -56,12 +55,11 @@ impl<'a> MatrixSource<'a>
 
 
 
-impl<'a> ColorSource for MatrixSource<'a>
+impl<'a> ColorValueSource for MatrixSource<'a>
 {
     fn get_color(&self, pixel:&[usize]) -> ShapeStyle {
         if self.mask.try_get(pixel).map(|x| *x).unwrap_or(false){
-            let (min_, mut max_) = self.scale.get_bounds(self.data,self.mask);
-            max_ = if max_>min_ {max_} else {min_+0.1};
+            let (min_, max_) = self.get_norm().unwrap();
             //println!("COORDS {},{}",self.i,self.j);
             if let Some(v) = self.data.try_get(&pixel){
                 if !(v.is_nan() || min_.is_nan() || max_.is_nan()){
@@ -79,8 +77,16 @@ impl<'a> ColorSource for MatrixSource<'a>
         else{
             self.masked_color.filled()
         }
+    }
 
+    fn get_norm(&self) -> Option<(f64, f64)> {
+        let (min_, mut max_) = self.scale.get_bounds(self.data,self.mask);
+        max_ = if max_>min_ {max_} else {min_+0.1};
+        Some((min_, max_))
+    }
 
+    fn get_value(&self, pixel:&[usize]) -> Option<f64> {
+        Some(self.data.try_get(pixel).map(|x|*x).unwrap_or(f64::NAN))
     }
 }
 
@@ -89,7 +95,7 @@ pub struct ColoredMaskSource<'a>
     mask:&'a ArrayND<bool>,
 }
 
-impl<'a> ColorSource for ColoredMaskSource<'a>{
+impl<'a> ColorValueSource for ColoredMaskSource<'a>{
     fn get_color(&self, pixel:&[usize]) -> ShapeStyle {
         if self.mask.try_get(pixel).map(|x| *x).unwrap_or(false){
             let (r,g,b) = crate::colors::get_color_indexed(pixel);
@@ -102,4 +108,9 @@ impl<'a> ColorSource for ColoredMaskSource<'a>{
             WHITE.filled()
         }
     }
+
+    fn has_outline(&self) -> bool {
+        true
+    }
 }
+

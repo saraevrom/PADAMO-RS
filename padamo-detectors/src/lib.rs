@@ -325,7 +325,7 @@ impl<Message> DetectorPlotter<Message>{
         display_pixel_id(detector, root, pixels, *state);
 
         if let Some((mesh, matrix, sty)) = mesh{
-            mesh.draw(matrix, sty, chart);
+            mesh.draw(matrix, sty, &mut chart);
         }
 
         let cmap_builder = ChartLayout::new()

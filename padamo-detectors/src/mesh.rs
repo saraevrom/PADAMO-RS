@@ -119,7 +119,7 @@ impl Mesh{
         self.lines.push(ids.into());
     }
 
-    pub fn draw<'a, DB:DrawingBackend>(&'a self, matrix:Matrix4<f64>, style:ShapeStyle, mut target:ChartContext<'a,DB,Cartesian2d<RangedCoordf64, RangedCoordf64>>){
+    pub fn draw<'a, DB:DrawingBackend>(&'a self, matrix:Matrix4<f64>, style:ShapeStyle, target:&mut ChartContext<'a,DB,Cartesian2d<RangedCoordf64, RangedCoordf64>>){
         // Drawing markers
         target.draw_series(self.vertices.iter()
             .filter_map(|x| x.as_drawn_vertex(matrix, style))
