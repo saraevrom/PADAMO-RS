@@ -13,5 +13,5 @@ pub enum NewPlotterMessage{
     FormMessage(ActionOrUpdate<super::form::PlotterFormMessage>),
     PrimarySubplotterMessage(SubplotterMessage),
     SecondarySubplotterMessage(SubplotterMessage),
-    SyncData{start:usize, end:usize, pointer:Option<usize>, poked_pixel:Option<PokedPixel>}
+    SyncData{start:usize, end:usize, pointer:Option<usize>, poked_pixel:Option<PokedPixel>},
 }

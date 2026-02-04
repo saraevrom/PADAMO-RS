@@ -759,57 +759,40 @@ impl PadamoTool for PadamoViewer{
     }
 
     fn late_update(&mut self, msg: std::rc::Rc<crate::messages::PadamoAppMessage>, padamo:crate::application::PadamoStateRef)->Option<PadamoAppMessage> {
-        if let crate::messages::PadamoAppMessage::Run = msg.as_ref(){
-            if let Some(v) = self.rerun(padamo){
-                return Some(v);
+        match msg.as_ref() {
+            crate::messages::PadamoAppMessage::Run => self.rerun(padamo),
+            crate::messages::PadamoAppMessage::RerollRun => self.rerun(padamo),
+            PadamoAppMessage::Tick => {
+                let mut will_stop = false;
+                if let Some(anim) = &self.animator{
+                            if anim.is_finished(){
+                                will_stop = true;
+                            }
+                            let pip = &anim.feedback;
+                            while let Ok(v) = pip.try_recv(){
+                                self.animation_status = v;
+                            }
+                        }
+                if will_stop{
+                            self.stop_animator();
+                        }
+                let mut will_stop = false;
+                if let Some(exp) = &self.exporter{
+                            if exp.is_finished(){
+                                will_stop = true;
+                            }
+                            let pip = &exp.feedback;
+                            while let Ok(v) = pip.try_recv(){
+                                self.export_status = v;
+                            }
+                        }
+                if will_stop{
+                            self.stop_exporter();
+                        }
+                self.playbar_state.get_sync_message(true)
             }
-        }
-
-        if let crate::messages::PadamoAppMessage::RerollRun = msg.as_ref(){
-            if let Some(v) = self.rerun(padamo){
-                return Some(v);
-            }
-        }
-
-
-        if let PadamoAppMessage::Tick = msg.as_ref(){
-            let mut will_stop = false;
-            if let Some(anim) = &self.animator{
-                if anim.is_finished(){
-                    will_stop = true;
-                }
-                let pip = &anim.feedback;
-                while let Ok(v) = pip.try_recv(){
-                    self.animation_status = v;
-                }
-            }
-            if will_stop{
-                self.stop_animator();
-            }
-
-            let mut will_stop = false;
-            if let Some(exp) = &self.exporter{
-                if exp.is_finished(){
-                    will_stop = true;
-                }
-                let pip = &exp.feedback;
-                while let Ok(v) = pip.try_recv(){
-                    self.export_status = v;
-                }
-            }
-            if will_stop{
-                self.stop_exporter();
-            }
-
-            self.playbar_state.get_sync_message(true)
-        }
-
-        else if let PadamoAppMessage::ViewerMessage(_) = msg.as_ref(){
-
-            self.playbar_state.get_sync_message(false)
-        }
-        else {
-            None
+            PadamoAppMessage::ViewerMessage(_) => self.playbar_state.get_sync_message(false),
+            _ => None,
         }
     }
 

@@ -193,6 +193,7 @@ impl PadamoTool for PlotterNew{
                         if pix.detector_id==0{
                             if let Some(d) = padamo.detectors.get_primary_mut(){
                                 d.selection.set(&pix.pixel_id, true);
+                                self.primary_plotter.clear_cache();
                             }
                             // self.primary_plotter.set_pixel(&pix.pixel_id, true);
                         }
@@ -200,10 +201,10 @@ impl PadamoTool for PlotterNew{
                             if pix.detector_id==aux{
                                 if let Some(d) = padamo.detectors.get_mut(aux){
                                     d.selection.set(&pix.pixel_id, true);
+                                    self.primary_plotter.clear_cache();
                                 }
                             }
                         }
-
 
                     }
                     if let Some(p) = pointer{
