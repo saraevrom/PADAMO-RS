@@ -180,7 +180,7 @@ impl PadamoTool for PlotterNew{
                     self.secondary_plotter.update(subplotter_message.clone(), padamo);
                     padamo.persistent_state.serialize("plotter_secondary", &self.secondary_plotter.get_mutable_detector_info());
                 },
-                messages::NewPlotterMessage::SyncData{start, end, pointer, poked_pixel} => {
+                messages::NewPlotterMessage::SyncData{start, end, pointer} => {
                     let order = SyncDataRequest {
                         start: *start,
                         end: *end,
@@ -189,30 +189,32 @@ impl PadamoTool for PlotterNew{
                     // println!("{:?} {:?}", self.last_request, order);
                     self.start_data_reload_if_changed(&padamo, order);
 
-                    if let Some(pix) = poked_pixel{
-                        if pix.detector_id==0{
-                            if let Some(d) = padamo.detectors.get_primary_mut(){
-                                d.selection.set(&pix.pixel_id, true);
-                                self.primary_plotter.clear_cache();
-                            }
-                            // self.primary_plotter.set_pixel(&pix.pixel_id, true);
-                        }
-                        if let Some(aux) = self.form.display_settings.get_aux_id(){
-                            if pix.detector_id==aux{
-                                if let Some(d) = padamo.detectors.get_mut(aux){
-                                    d.selection.set(&pix.pixel_id, true);
-                                    self.primary_plotter.clear_cache();
-                                }
-                            }
-                        }
-
-                    }
+                    // if let Some(pixs) = poked_pixels{
+                    //     if pix.detector_id==0{
+                    //         if let Some(d) = padamo.detectors.get_primary_mut(){
+                    //             d.selection.set(&pix.pixel_id, true);
+                    //             self.primary_plotter.clear_cache();
+                    //         }
+                    //         // self.primary_plotter.set_pixel(&pix.pixel_id, true);
+                    //     }
+                    //     if let Some(aux) = self.form.display_settings.get_aux_id(){
+                    //         if pix.detector_id==aux{
+                    //             if let Some(d) = padamo.detectors.get_mut(aux){
+                    //                 d.selection.set(&pix.pixel_id, true);
+                    //                 self.primary_plotter.clear_cache();
+                    //             }
+                    //         }
+                    //     }
+                    //
+                    // }
                     if let Some(p) = pointer{
                         //self.primary_plotter.set_pointer();
                         //let x = if self.primary_plotter.
                         self.primary_plotter.set_pointer(Some(*p));
                         self.secondary_plotter.set_pointer_unixtime(self.primary_plotter.get_pointer_unixtime());
                     }
+                    self.primary_plotter.clear_cache();
+                    self.secondary_plotter.clear_cache();
                 },
             }
         }

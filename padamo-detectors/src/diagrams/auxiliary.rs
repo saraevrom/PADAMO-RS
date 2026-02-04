@@ -56,6 +56,10 @@ impl ClickTracker{
         self.state
     }
 
+    pub fn is_active(&self)->bool{
+        self.state.is_some()
+    }
+
     pub fn reset(&mut self){
         self.state = None;
     }

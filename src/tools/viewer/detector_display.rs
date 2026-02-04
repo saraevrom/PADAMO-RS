@@ -5,9 +5,8 @@ use padamo_api::{lazy_array_operations::{ArrayND, LazyTriSignal}, prelude::{Cont
 use padamo_detectors::mesh::Mesh;
 use plotters::style::Color;
 
-use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
+use crate::{application::PadamoState, detector_muxer::get_signal_var, messages::PadamoAppMessage, transform_widget::{TransformMessage, TransformState}};
 use super::norm_entry::{MultiEntry, MultiEntryMessage};
-use padamo_detectors::diagrams::color_sources::Contourable;
 
 #[derive(Clone, Debug)]
 pub enum SingleDetectorDisplayMessage{
@@ -18,6 +17,7 @@ pub enum SingleDetectorDisplayMessage{
     NormEntryMessage(MultiEntryMessage),
     PlotZoomMessage(TransformMessage),
     TogglePixel(Vec<usize>),
+    MultipixelSelect(Vec<Vec<usize>>, iced::mouse::Button),
     ResetMask,
 }
 
@@ -76,7 +76,7 @@ impl SingleDetectorDisplay{
 
     }
 
-    pub fn update(&mut self, msg:SingleDetectorDisplayMessage, padamo: &mut PadamoState)->bool{
+    pub fn update(&mut self, msg:SingleDetectorDisplayMessage, padamo: &mut PadamoState, selection_mode:super::form::SelectionMode)->bool{
         match msg{
             SingleDetectorDisplayMessage::SetDetectorID(id)=> {
                 self.detector_id = id;
@@ -99,6 +99,26 @@ impl SingleDetectorDisplay{
                     self.update_pixels(padamo, true);
                 }
             },
+            SingleDetectorDisplayMessage::MultipixelSelect(sel,btn)=>{
+                if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
+                    let (target_buffer,lmb_selection) = match selection_mode{
+                        super::form::SelectionMode::Mask => (&mut detector_info.mask, false),
+                        super::form::SelectionMode::Display => (&mut detector_info.selection,true),
+                    };
+                    let value = if let iced::mouse::Button::Left = btn{
+                        lmb_selection
+                    }
+                    else{
+                        !lmb_selection
+                    };
+
+                    for target_id in sel.iter(){
+                        target_buffer.set(&target_id, value);
+                    }
+
+                    self.update_pixels(padamo, true);
+                }
+            },
             SingleDetectorDisplayMessage::ResetMask=>{
                 if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
                     detector_info.mask = ArrayND::new(detector_info.detector.shape().to_vec(), true);
@@ -109,14 +129,35 @@ impl SingleDetectorDisplay{
         false
     }
 
-    pub fn view<'a, T:Clone+'a, F,F1>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>, mesh_data:Option<(&'a Mesh, nalgebra::Matrix4<f64>)>)->iced::Element<'a, T>
+
+    pub fn get_late_update_message(&self, padamo: &mut PadamoState, msg:&SingleDetectorDisplayMessage, playbar_state:&super::cross_progress::CrossProgress)->Option<PadamoAppMessage>{
+        if let Some((a,b)) = playbar_state.get_interval(padamo, 0){
+            if let SingleDetectorDisplayMessage::MultipixelSelect(_,_) = msg {
+                Some(PadamoAppMessage::NewPlotterMessage(crate::tools::plotter_new::messages::NewPlotterMessage::SyncData {
+                    start: a,
+                    end: b+1,
+                    pointer: None,
+                    // poked_pixel: Some(crate::tools::plotter_new::messages::PokedPixel {
+                    //                 detector_id: self.get_id(), pixel_id: x
+                    //             })
+                }))
+            }
+            else{
+                None
+            }
+        }
+        else{
+            None
+        }
+    }
+
+    pub fn view<'a, T:Clone+'a, F>(&'a self, padamo:&'a PadamoState, wrapper:F, mesh_data:Option<(&'a Mesh, nalgebra::Matrix4<f64>)>)->iced::Element<'a, T>
     where
         F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
-        F1:'static+Fn(Vec<usize>)->T,
     {
         let detector_entry = padamo.detectors.get(self.detector_id);
 
-        let a2 = move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x));
+        // let a2 = move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x));
 
         let mut color_source = padamo_detectors::diagrams::autoselect_source(detector_entry.map(|x| &x.mask), self.buffer.as_ref().map(|x| &x.0), self.get_scale());
         if let Some(sel)=detector_entry.map(|x| &x.selection){
@@ -124,11 +165,12 @@ impl SingleDetectorDisplay{
         }
         let mut detector_frame = padamo_detectors::diagrams::PadamoDetectorDiagram::new(detector_entry.map(|x| &x.detector), color_source)
             .transformed(self.view_transform.transform())
-            .on_right_click(a2);
+            // .on_right_click(a2)
+            .on_multiselect(move |x,y| wrapper(SingleDetectorDisplayMessage::MultipixelSelect(x,y)));
 
-        if let Some(a) = a1{
-            detector_frame = detector_frame.on_left_click(a);
-        }
+        // if let Some(a) = a1{
+        //     detector_frame = detector_frame.on_left_click(a);
+        // }
 
         if let Some(m) = mesh_data{
             detector_frame = detector_frame.with_mesh(m.0, m.1, plotters::prelude::RED.filled());

@@ -497,7 +497,7 @@ impl PadamoViewer{
                 start: rep.start,
                 end: rep.end+1,
                 pointer: Some(rep.pointer),
-                poked_pixel: None,
+                // poked_pixel: None,
             }))
             // Some(PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::SyncData {
             //     start: rep.start,
@@ -585,21 +585,24 @@ impl PadamoTool for PadamoViewer{
         ].into();
 
         // let a1 = if self.window_view.is_primary(){
-        let id = self.window_view.get_id();
-        let a1 = if let Some((a,b)) = self.playbar_state.get_interval(padamo, 0){
-            //Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(a, b, x)))
-            Some(move |x| PadamoAppMessage::NewPlotterMessage(super::plotter_new::messages::NewPlotterMessage::SyncData {
-                start: a,
-                end: b+1,
-                pointer: None,
-                poked_pixel: Some(crate::tools::plotter_new::messages::PokedPixel {
-                    detector_id: id, pixel_id: x
-                }),
-            }))
-        }
-        else{
-            None
-        };
+
+        // let id = self.window_view.get_id();
+
+        // let a1 = if let Some((a,b)) = self.playbar_state.get_interval(padamo, 0){
+        //     //Some(move |x| PadamoAppMessage::PlotterMessage(super::plotter::messages::PlotterMessage::PlotPixel(a, b, x)))
+        //     Some(move |x| PadamoAppMessage::NewPlotterMessage(super::plotter_new::messages::NewPlotterMessage::SyncData {
+        //         start: a,
+        //         end: b+1,
+        //         pointer: None,
+        //         poked_pixel: Some(crate::tools::plotter_new::messages::PokedPixel {
+        //             detector_id: id, pixel_id: x
+        //         }),
+        //     }))
+        // }
+        // else{
+        //     None
+        // };
+
         // }
         // else{
         //     None
@@ -666,7 +669,6 @@ impl PadamoTool for PadamoViewer{
 
 
             self.window_view.view(padamo, |x| PadamoAppMessage::ViewerMessage(ViewerMessage::WindowView(x)),
-                                a1,
                                 mesh_info,
                              ),
             iced::widget::rule::vertical(10),
@@ -735,7 +737,7 @@ impl PadamoTool for PadamoViewer{
                 //     }
                 // }
                 ViewerMessage::WindowView(msg)=>{
-                    self.window_view.update(msg.to_owned(), padamo);
+                    self.window_view.update(msg.to_owned(), padamo, self.form_instance.selection_mode);
                 },
                 ViewerMessage::TimeLine(msg)=>{
                     self.playbar_state.update(msg.to_owned(), padamo);
@@ -791,7 +793,15 @@ impl PadamoTool for PadamoViewer{
                         }
                 self.playbar_state.get_sync_message(true)
             }
-            PadamoAppMessage::ViewerMessage(_) => self.playbar_state.get_sync_message(false),
+            PadamoAppMessage::ViewerMessage(smsg) => {
+                let res = self.playbar_state.get_sync_message(false);
+                if let messages::ViewerMessage::WindowView(vmsg) = smsg{
+                    res.or_else(|| self.window_view.get_late_update_message(padamo, vmsg, &self.playbar_state))
+                }
+                else{
+                    res
+                }
+            },
             _ => None,
         }
     }

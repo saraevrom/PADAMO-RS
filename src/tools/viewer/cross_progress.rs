@@ -455,7 +455,7 @@ impl CrossProgress{
             start: self.start,
             end: self.end+1,
             pointer:Some(self.pointer),
-            poked_pixel:None,
+            // poked_pixel:None,
         }))
     }
 }

@@ -39,9 +39,16 @@ pub struct FrameParameters{
     #[field_name("Height [pix]")] pub height:u32,
 }
 
+#[derive(Clone, Copy, Debug, IcedForm, Default, Serialize, Deserialize)]
+pub enum SelectionMode{
+    #[default] #[field_name("Mask")] Mask,
+    #[field_name("Display")] Display,
+}
+
 #[derive(Clone,Debug,IcedForm, Default, Serialize, Deserialize)]
 pub struct ViewerForm{
     //#[field_name("Stop on trigger")] pub stop_on_trigger:bool,
+    #[field_name("Selection mode")] pub selection_mode:SelectionMode,
     #[field_name("Animation")] pub animation:AnimationParameters,
     #[field_name("Export")] pub export:ExportParameters,
     #[field_name("Single Frame")] pub single_frame:FrameParameters,

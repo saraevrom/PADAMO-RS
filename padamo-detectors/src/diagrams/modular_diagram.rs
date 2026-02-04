@@ -255,9 +255,10 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
         cursor: iced::mouse::Cursor,
     ) -> (iced::event::Status, Option<Message>) {
         let detector = if let Some(d) = self.detector {d} else {return (iced::event::Status::Ignored, None);};
-        if let iced::mouse::Cursor::Available(point) = cursor {
-            if bounds.contains(point){
-                if let iced::widget::canvas::Event::Mouse(evt) = event{
+
+        if let iced::widget::canvas::Event::Mouse(evt) = event{
+            if let iced::mouse::Cursor::Available(point) = cursor {
+                if bounds.contains(point){
                     let p_origin = bounds.position();
                     let p = point - p_origin;
 
@@ -266,43 +267,47 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
                             state.pos = inpoint;
                             state.unmapped = (p.x as i32,p.y as i32);
 
-                            if let Some(index) = detector.position_index(inpoint){
-                                match evt{
-                                    iced::mouse::Event::ButtonPressed(btn)=>{
-                                        if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
-                                            if self.multiselect_action.is_some(){
-                                                state.click_state.click(*btn, inpoint);
-                                            }
-                                            if let Some(caller) = self.get_click_event(*btn){
+
+                            match evt{
+                                iced::mouse::Event::ButtonPressed(btn)=>{
+                                    if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
+                                        if self.multiselect_action.is_some(){
+                                            state.click_state.click(*btn, inpoint);
+                                        }
+                                        if let Some(caller) = self.get_click_event(*btn){
+                                            if let Some(index) = detector.position_index(inpoint){
                                                 let msg = Some(caller(index.into()));
                                                 return (iced::event::Status::Captured, msg);
                                             }
                                         }
                                     }
-                                    iced::mouse::Event::ButtonReleased(btn)=>{
-                                        if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
-                                            if let Some(pos1) = state.click_state.release(*btn){
-                                                if let Some(caller) = &self.multiselect_action{
-                                                    let (left, top) = pos1;
-                                                    let (right, bottom) = inpoint;
-                                                    let indices = detector.select_indices_in_rectangle(left, right, top, bottom);
-                                                    let msg = Some(caller(indices, *btn));
-                                                    return (iced::event::Status::Captured, msg);
-                                                }
+                                }
+                                iced::mouse::Event::ButtonReleased(btn)=>{
+                                    if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
+                                        if let Some(pos1) = state.click_state.release(*btn){
+                                            if let Some(caller) = &self.multiselect_action{
+                                                let (left, top) = pos1;
+                                                let (right, bottom) = inpoint;
+                                                let indices = detector.select_indices_in_rectangle(left, right, top, bottom);
+                                                let msg = Some(caller(indices, *btn));
+                                                return (iced::event::Status::Captured, msg);
                                             }
                                         }
                                     }
-                                    iced::mouse::Event::CursorLeft=>{
-                                        state.click_state.reset();
-                                    }
-                                    _=>(),
                                 }
+                                _=>(),
                             }
 
                         }
                     }
                 }
+                else if state.click_state.is_active(){
+                    // println!("Cursor left diagram");
+                    state.click_state.reset();
+                }
             }
+
+
         }
         // *state = None;
         (iced::event::Status::Ignored, None)
