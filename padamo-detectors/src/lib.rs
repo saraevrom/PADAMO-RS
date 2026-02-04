@@ -1,9 +1,3 @@
-use std::{marker::PhantomData, cell::RefCell};
-
-use iced::Length;
-use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate}, element::BackendCoordOnly, prelude::*};
-use plotters_iced::{Chart, ChartWidget};
-use plotters_layout::{centering_ranges, ChartLayout};
 use padamo_arraynd::ArrayND;
 
 
@@ -11,8 +5,8 @@ pub mod polygon;
 pub mod parser;
 pub mod scripted;
 pub mod colors;
-pub mod selector_chart;
-pub mod selector_chart_simple;
+// pub mod selector_chart;
+// pub mod selector_chart_simple;
 pub mod transformer;
 pub mod loaded_detectors_storage;
 pub mod mesh;
@@ -21,7 +15,7 @@ pub mod diagrams;
 
 pub use transformer::Transform;
 // pub use transform_widget::TransformState;
-pub use selector_chart::DetectorChartMap;
+// pub use selector_chart::DetectorChartMap;
 
 use crate::mesh::Mesh;
 
@@ -31,9 +25,9 @@ use crate::mesh::Mesh;
 pub use diagrams::scaling::Scaling;
 
 
-const COLORBAR_SEGMENTS:usize = 256;
+// const COLORBAR_SEGMENTS:usize = 256;
 
-const COLORBAR_WIDTH:f64 = 1.0;
+// const COLORBAR_WIDTH:f64 = 1.0;
 
 #[derive(Clone, Copy)]
 pub struct Margins{
@@ -85,7 +79,7 @@ impl DetectorAndMask {
         Self::from_cells(polygon::DetectorContent::default_vtl())
     }
 }
-
+/*
 #[derive(Clone)]
 pub struct DetectorPlotter<Message>{
     // pub cells:polygon::DetectorContent,
@@ -406,8 +400,8 @@ impl<Message> DetectorPlotter<Message>{
             container.into()
         }
     }
-}
-
+}*/
+/*
 fn display_pixel_id<DB:DrawingBackend>(detector: &DetectorAndMask, root: &DrawingArea<DB, plotters::coord::Shift>, pixels: &Option<(&ArrayND<f64>, f64)>, state: Option<((f64, f64), (i32, i32))>) {
     if let Some((pos,unmapped)) = state{
         if let Some(index) = detector.cells.position_index(pos){
@@ -427,9 +421,9 @@ fn display_pixel_id<DB:DrawingBackend>(detector: &DetectorAndMask, root: &Drawin
             root.draw_text(&txt, &(("sans-serif", 15).into()), unmapped_pos).unwrap();
         }
     }
-}
+}*/
 
-
+/*
 pub struct DetectorChart<'a,Msg,F1,F2>
 where
     F1:'static + Fn(Vec<usize>)->Msg,
@@ -521,13 +515,13 @@ where
         *state = None;
         (iced::event::Status::Ignored, None)
     }
-}
+}*/
 
 
 
 
 
-
+/*
 struct ColorbarRects{
     pub min:f64,
     pub max:f64,
@@ -567,4 +561,4 @@ impl Iterator for ColorbarRects{
         ))
     }
 
-}
+}*/
