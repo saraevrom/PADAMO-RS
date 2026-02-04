@@ -71,6 +71,7 @@ impl PlotterNew{
         if let (Some(s), Some(id)) = workon.get_mutable_mask_info(){
             if let Some(mask) = padamo.detectors.get_mut(*id).map(|x| &mut x.selection){
                 self.form.selector.modify_mask(mask, &s.signals);
+                padamo.save_detectors();
             }
 
         }

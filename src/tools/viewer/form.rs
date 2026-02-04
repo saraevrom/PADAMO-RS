@@ -3,6 +3,13 @@ use padamo_iced_forms::make_action;
 use padamo_iced_forms::Action;
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone,Copy,Debug,IcedForm, Serialize, Deserialize,Default)]
+pub enum AnimationLC{
+    #[default]#[field_name("Off")] None,
+    #[field_name("All")] All,
+    #[field_name("Selected")] Selected,
+}
+
 #[derive(Clone,Debug,IcedForm, Serialize, Deserialize)]
 #[spoiler_hidden]
 pub struct AnimationParameters{
@@ -11,7 +18,7 @@ pub struct AnimationParameters{
     #[field_name("Width [pix]")] pub width:u32,
     #[field_name("Height [pix]")] pub height:u32,
     #[field_name("Frame delay [ms]")] pub framedelay:u32,
-    #[field_name("Display LC")] pub displaylc:bool,
+    #[field_name("Display LC")] pub displaylc:AnimationLC,
     #[field_name("LC height[pix]")] pub lcheight:u32,
     //#[field_name("Display LC")] displaylc:bool,
 }
@@ -100,7 +107,7 @@ impl Default for AnimationParameters{
             width: 1024,
             height: 1024,
             framedelay:200,
-            displaylc:false,
+            displaylc:Default::default(),
             lcheight: 200,
             _start:Default::default(),
             _stop:Default::default(),
@@ -120,6 +127,26 @@ impl Default for ExportParameters{
             chunk:16,
             _start:Default::default(),
             _stop:Default::default(),
+        }
+    }
+}
+
+impl AnimationLC{
+    pub fn is_enabled(&self)->bool{
+        if let Self::None = self{
+            false
+        }
+        else{
+            true
+        }
+    }
+
+    pub fn is_filtering(&self)->bool{
+        if let Self::Selected = self{
+            true
+        }
+        else{
+            false
         }
     }
 }

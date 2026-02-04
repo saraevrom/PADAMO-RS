@@ -327,7 +327,7 @@ impl PadamoViewer{
                 let start = start;
                 let end = end+1;
                 let plot_scale = self.window_view.get_scale();
-                let height = if animation_parameters.displaylc {animation_parameters.height+animation_parameters.lcheight} else {animation_parameters.height};
+                let height = if animation_parameters.displaylc.is_enabled() {animation_parameters.height+animation_parameters.lcheight} else {animation_parameters.height};
                 let f:&std::path::Path = filename.as_ref();
                 self.animator = if let Some(ext) = f.extension(){
                     if let Some(ext_str) = ext.to_str(){

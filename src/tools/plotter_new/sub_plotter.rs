@@ -306,6 +306,7 @@ impl Subplotter{
                         for id in ids.iter(){
                             entry.selection.set(&id, value);
                         }
+                        padamo.save_detectors();
                     }
                 }
             }

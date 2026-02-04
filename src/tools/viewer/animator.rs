@@ -58,16 +58,30 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
         // else{
         //     (root,None)
         // };
-        let lc_pair = if animation_parameters.displaylc{
+        let lc_pair = if animation_parameters.displaylc.is_enabled(){
+            println!("LC animation is enabled");
             //let (a,b) = root.split_vertically(height);
             let space_out = spatial.request_range(start,end);
             let mut lc:Vec<f64> = Vec::with_capacity(end-start);
             lc.resize(end-start, 0.0);
-            let pixel_count = (space_out.flat_data.len()/(end-start)) as f64;
+            let mut pixel_count:usize = 0;//(space_out.flat_data.len()/(end-start)) as f64;
+
 
             for index in space_out.enumerate(){
-                lc[index[0]] += space_out[&index]/pixel_count;
+                let index_id:Vec<usize> = index.iter().map(|x|*x).skip(1).collect();
+                if !animation_parameters.displaylc.is_filtering() || detector_entry.selection.try_get(&index_id).map(|x|*x).unwrap_or(false){
+                    lc[index[0]] += space_out[&index];
+                    pixel_count += 1;
+                }
             }
+
+            if pixel_count>0{
+                lc.iter_mut().for_each(|x| *x = *x/(pixel_count as f64));
+            }
+
+
+            println!("{} pixels are participating", pixel_count);
+
             let llc = lc.iter().min_by(|a, b| a.partial_cmp(b).unwrap());
             let mlc = lc.iter().max_by(|a, b| a.partial_cmp(b).unwrap());
             match (llc,mlc) {
