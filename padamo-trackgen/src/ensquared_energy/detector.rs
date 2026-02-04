@@ -1,4 +1,4 @@
-use padamo_detectors::polygon::{DetectorContent,DetectorPixel};
+use padamo_detectors::polygon::{Detector,DetectorPixel};
 
 
 #[derive(Clone,Debug)]
@@ -26,7 +26,7 @@ impl Into<DetectorPixelWireframe> for &DetectorPixel{
     }
 }
 
-pub fn wireframe(detector:DetectorContent)->DetectorWireframe{
+pub fn wireframe(detector:Detector)->DetectorWireframe{
     let triangles = detector.content.iter().map(|x| x.into()).collect();
     let shape = detector.compat_shape;
     let res = DetectorWireframe { triangles, shape: shape.into() };

@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use iced::widget::{button, container};
 use iced::Length;
-use padamo_detectors::polygon::DetectorContent;
+use padamo_detectors::polygon::Detector;
 use crate::loaded_detectors_storage::LoadedDetectors;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
@@ -142,7 +142,7 @@ impl Padamo{
     //     let msg = PadamoAppMessage::SetDetector(detector);
     //     self.update_tools_loop(Rc::new(msg));
     // }
-    fn set_detector(&mut self, s:String, save_state:bool)->Option<DetectorContent>{
+    fn set_detector(&mut self, s:String, save_state:bool)->Option<Detector>{
         let detector = serde_json::from_str(&s);
 
         let detector = match detector{
@@ -281,7 +281,7 @@ impl Padamo{
 
         let mut compute_graph = padamo_api::calculation_nodes::graph::CalculationSequenceStorage::new();
 
-        let det = serde_json::to_string(&padamo_detectors::polygon::DetectorContent::default_vtl()).unwrap();
+        let det = serde_json::to_string(&padamo_detectors::polygon::Detector::default_vtl()).unwrap();
         compute_graph.environment.0.insert("detector".into(), padamo_api::calculation_nodes::content::Content::String(det.into()));
 
         let state = PadamoState{
@@ -343,7 +343,7 @@ impl Padamo{
             PadamoAppMessage::SetEditLoadedDetectors(v)=>self.state.is_editing_detectors = v,
             PadamoAppMessage::ClearState=>{
                 self.state.persistent_state.clear();
-                let vtl = serde_json::to_string(&DetectorContent::default_vtl()).unwrap();
+                let vtl = serde_json::to_string(&Detector::default_vtl()).unwrap();
                 self.set_detector(vtl, false);
                 self.update_tools_loop(Rc::new(PadamoAppMessage::ClearState));
             }

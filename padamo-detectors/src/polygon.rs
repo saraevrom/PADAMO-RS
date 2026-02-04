@@ -330,13 +330,13 @@ impl DetectorPixel{
 #[derive(Clone,Debug,Serialize,Deserialize,PartialEq, CustomType, StableAbi)]
 #[rhai_type(extra = Self::build_extra)]
 #[repr(C)]
-pub struct DetectorContent{
+pub struct Detector{
     pub compat_shape:RVec<usize>,
     pub content:RVec<DetectorPixel>,
     pub name:RString,
 }
 
-impl DetectorContent{
+impl Detector{
     pub fn new(compat_shape:RVec<usize>,name:RString)->Self{
         let capacity = compat_shape.iter().fold(1, |a,b| a*b);
         Self { compat_shape, content: RVec::with_capacity(capacity), name}
@@ -473,7 +473,7 @@ impl DetectorContent{
 }
 
 
-impl Default for DetectorContent{
+impl Default for Detector{
     fn default() -> Self {
         Self::new(rvec![1], "untitled".into())
     }
@@ -481,7 +481,7 @@ impl Default for DetectorContent{
 
 /// Iterator for signal display value
 pub struct RectIterator<'a>{
-    pub detector:&'a DetectorContent,
+    pub detector:&'a Detector,
     pub alive_pixels:&'a ArrayND<bool>,
     current_index:usize,
     source:&'a Option<(&'a ArrayND<f64>,f64)>,
@@ -489,7 +489,7 @@ pub struct RectIterator<'a>{
 }
 
 impl<'a> RectIterator<'a>{
-    pub fn new(detector:&'a DetectorContent, alive_pixels: &'a ArrayND<bool>,source:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->Self{
+    pub fn new(detector:&'a Detector, alive_pixels: &'a ArrayND<bool>,source:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->Self{
         Self{detector, current_index:0, source, scale, alive_pixels}
     }
 
@@ -548,13 +548,13 @@ impl<'a> Iterator for RectIterator<'a>{
 
 /// Iterator for colored pixelmaps
 pub struct ColorIterator<'a>{
-    pub detector:&'a DetectorContent,
+    pub detector:&'a Detector,
     current_index:usize,
     pixel_map:&'a ArrayND<bool>,
 }
 
 impl<'a> ColorIterator<'a>{
-    pub fn new(detector:&'a DetectorContent, pixel_map:&'a ArrayND<bool>)->Self{
+    pub fn new(detector:&'a Detector, pixel_map:&'a ArrayND<bool>)->Self{
         Self{detector, current_index:0, pixel_map}
     }
 
@@ -595,12 +595,12 @@ impl<'a> Iterator for ColorIterator<'a>{
 }
 
 pub struct PixelPathIterator<'a>{
-    pub detector:&'a DetectorContent,
+    pub detector:&'a Detector,
     current_index:usize,
 }
 
 impl<'a> PixelPathIterator<'a> {
-    pub fn new(detector: &'a DetectorContent) -> Self {
+    pub fn new(detector: &'a Detector) -> Self {
         Self { detector, current_index:0 }
     }
 }
@@ -627,7 +627,7 @@ pub struct ColoredPixelIterator<'a,T>
 where
     T:ColorValueSource,
 {
-    pub detector:&'a DetectorContent,
+    pub detector:&'a Detector,
     current_index:usize,
     color_getter:T,
 }
@@ -636,7 +636,7 @@ impl<'a, T> ColoredPixelIterator<'a, T>
 where
     T:ColorValueSource,
 {
-    pub fn new(detector: &'a DetectorContent, color_getter: T) -> Self {
+    pub fn new(detector: &'a Detector, color_getter: T) -> Self {
         Self { detector, current_index:0, color_getter }
     }
 }

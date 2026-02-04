@@ -52,7 +52,7 @@ impl BasicLinearTrackGeneratorNodeOld{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
         let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector: padamo_detectors::polygon::Detector = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let detector = crate::ensquared_energy::detector::wireframe(detector);
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
@@ -159,7 +159,7 @@ impl AnyLCLinearTrackGeneratorNodeOld{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
         let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector: padamo_detectors::polygon::Detector = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let detector = crate::ensquared_energy::detector::wireframe(detector);
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
@@ -264,7 +264,7 @@ impl AnyLCLinearTrackGeneratorDynamicGaussNodeOld{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
         let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector: padamo_detectors::polygon::Detector = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let detector = crate::ensquared_energy::detector::wireframe(detector);
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
@@ -369,7 +369,7 @@ impl AnyLCLinearTrackGeneratorDynamicMoffatNodeOld{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
         let detector_content = args.environment.request_string("detector")?.to_string();
-        let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
+        let detector: padamo_detectors::polygon::Detector = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let detector = crate::ensquared_energy::detector::wireframe(detector);
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;

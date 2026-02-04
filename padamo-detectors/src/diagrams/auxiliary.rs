@@ -1,9 +1,9 @@
 use plotters::prelude::*;
 
-use crate::polygon::DetectorContent;
+use crate::polygon::Detector;
 
 pub fn display_pixel_id<DB:DrawingBackend>(
-    detector: &DetectorContent,
+    detector: &Detector,
     root: &DrawingArea<DB, plotters::coord::Shift>,
     value_source:&dyn super::traits::ColorValueSource,
     state: &super::modular_diagram::PadamoDetectorDiagramState

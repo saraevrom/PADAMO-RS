@@ -1,5 +1,5 @@
 use padamo_api::lazy_array_operations::ArrayND;
-use padamo_detectors::polygon::DetectorContent;
+use padamo_detectors::polygon::Detector;
 
 use std::f64::consts::PI;
 
@@ -13,7 +13,7 @@ pub fn load_detector(path:&str)->Option<detector::DetectorWireframe>{
         Err(_)=> {return None;}
     };
     let d= serde_json::from_str(&s);
-    let d:DetectorContent = match d{
+    let d:Detector = match d{
         Ok(v)=>{v},
         Err(_)=> {return None;}
     };

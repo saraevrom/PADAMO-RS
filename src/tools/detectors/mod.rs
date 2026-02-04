@@ -7,7 +7,7 @@ use iced::widget;
 pub mod messages;
 use padamo_detectors::diagrams::color_sources::Contourable;
 use padamo_detectors::{DetectorAndMask};
-use padamo_detectors::polygon::DetectorContent;
+use padamo_detectors::polygon::Detector;
 use iced::widget::pane_grid;
 
 use messages::DetectorManagerMessage;
@@ -119,7 +119,7 @@ impl PadamoTool for PadamoDetectorManager{
                         self.panes.resize(*split, *ratio);
                     }
                     DetectorManagerMessage::RebuildMarkup=>{
-                        match DetectorContent::from_specs(&self.source.text()) {
+                        match Detector::from_specs(&self.source.text()) {
                             Ok(detector)=>{
                                 self.detector= DetectorAndMask::from_cells(detector);
                             }
@@ -129,7 +129,7 @@ impl PadamoTool for PadamoDetectorManager{
                         }
                     },
                     DetectorManagerMessage::RebuildScript=>{
-                        match DetectorContent::from_script(&self.source.text()) {
+                        match Detector::from_script(&self.source.text()) {
                             Ok(detector)=>{
                                 self.detector = DetectorAndMask::from_cells(detector);
                             }

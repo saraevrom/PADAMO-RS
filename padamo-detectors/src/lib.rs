@@ -41,16 +41,16 @@ pub struct Margins{
 #[derive(abi_stable::StableAbi)]
 #[repr(C)]
 pub struct DetectorAndMask{
-    pub cells:polygon::DetectorContent,
+    pub cells:polygon::Detector,
     pub alive_pixels:ArrayND<bool>,
 }
 
 impl DetectorAndMask {
-    pub fn new(cells: polygon::DetectorContent, alive_pixels: ArrayND<bool>) -> Self {
+    pub fn new(cells: polygon::Detector, alive_pixels: ArrayND<bool>) -> Self {
         Self { cells, alive_pixels }
     }
 
-    pub fn from_cells(cells:polygon::DetectorContent)->Self{
+    pub fn from_cells(cells:polygon::Detector)->Self{
         let alive_pixels = ArrayND::new(cells.compat_shape.to_vec(), true) ;
         DetectorAndMask::new(cells, alive_pixels)
     }
@@ -76,6 +76,6 @@ impl DetectorAndMask {
     }
 
     pub fn default_vtl()->Self{
-        Self::from_cells(polygon::DetectorContent::default_vtl())
+        Self::from_cells(polygon::Detector::default_vtl())
     }
 }

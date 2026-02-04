@@ -1,4 +1,4 @@
-use crate::polygon::DetectorContent;
+use crate::polygon::Detector;
 
 pub mod traits;
 pub mod color_sources;
@@ -16,12 +16,12 @@ pub struct PolyIterator<'a>
 {
     source:&'a dyn traits::ColorValueSource,
     current_index:usize,
-    detector:&'a DetectorContent
+    detector:&'a Detector
 }
 
 impl<'a> PolyIterator<'a>
 {
-    pub fn new(source: &'a dyn traits::ColorValueSource, detector: &'a DetectorContent) -> Self {
+    pub fn new(source: &'a dyn traits::ColorValueSource, detector: &'a Detector) -> Self {
         Self { source, current_index:0, detector }
     }
 }

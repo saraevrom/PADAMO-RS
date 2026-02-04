@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::polygon::DetectorContent;
+use crate::polygon::Detector;
 use super::traits::ColorValueSource;
 use crate::transformer::Transform;
 use iced::Length;
@@ -27,7 +27,7 @@ where
     // F1:'static + Fn(Vec<usize>)->Msg,
     // F2:'static + Fn(Vec<usize>)->Msg,
 {
-    detector: Option<&'a DetectorContent>,
+    detector: Option<&'a Detector>,
     color_source: Box<dyn ColorValueSource+'a>,
     title:Option<String>,
     lmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
@@ -39,7 +39,7 @@ where
 
 impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
 {
-    pub fn new(detector: Option<&'a DetectorContent>, color_source: Box<dyn ColorValueSource+'a>) -> Self {
+    pub fn new(detector: Option<&'a Detector>, color_source: Box<dyn ColorValueSource+'a>) -> Self {
         Self {
             detector,
             color_source: color_source,
@@ -52,7 +52,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
         }
     }
 
-    pub fn from_detector_and_source<C:ColorValueSource+'a>(detector: Option<&'a DetectorContent>, color_source: C) -> Self {
+    pub fn from_detector_and_source<C:ColorValueSource+'a>(detector: Option<&'a Detector>, color_source: C) -> Self {
         Self::new(detector, Box::new(color_source))
     }
 

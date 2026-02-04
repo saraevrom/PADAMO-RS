@@ -9,7 +9,7 @@ use nom::branch::alt;
 
 use self::shape_constructors::sp_sep;
 use base_parsers::sp;
-use crate::polygon::{DetectorPixel,DetectorContent};
+use crate::polygon::{DetectorPixel,Detector};
 
 pub mod base_parsers;
 pub mod shape_constructors;
@@ -49,7 +49,7 @@ fn parse_instruction<'a>(i:&'a str)-> IResult<&'a str, DetectorDataMod, nom::err
     alt((parse_pixelable,parse_name,parse_compat_shape)).parse(i)
 }
 
-pub fn parse_detector<'a>(i:&'a str)-> IResult<&'a str, DetectorContent, nom::error::Error<&'a str>>{
+pub fn parse_detector<'a>(i:&'a str)-> IResult<&'a str, Detector, nom::error::Error<&'a str>>{
     let splitted = separated_list0(sp_sep, parse_instruction);
     let pre = preceded(sp, splitted);
     let mut detector_parser = pre.map(|x|{
@@ -67,7 +67,7 @@ pub fn parse_detector<'a>(i:&'a str)-> IResult<&'a str, DetectorContent, nom::er
                 DetectorDataMod::CompatShape(s)=>{compat_shape = s},
             }
         }
-        DetectorContent{compat_shape: compat_shape.into(),name: name.into(),content:pixels.into()}
+        Detector{compat_shape: compat_shape.into(),name: name.into(),content:pixels.into()}
     });
     detector_parser.parse(i)
 }
@@ -86,7 +86,7 @@ mod parser_tests{
     #[test]
     fn test_vtl(){
         //Let's generate Tuloma source and parse it back
-        let vtl = DetectorContent::default_vtl();
+        let vtl = Detector::default_vtl();
         let src = vtl.into_src(None);
         let detector = parse_detector(&src).unwrap().1;
         assert_eq!(vtl,detector)
