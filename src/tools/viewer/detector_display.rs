@@ -91,7 +91,7 @@ impl SingleDetectorDisplay{
             SingleDetectorDisplayMessage::MultipixelSelect(sel,btn)=>{
                 if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
                     let (target_buffer,lmb_selection) = match selection_mode{
-                        super::form::SelectionMode::Mask => (&mut detector_info.mask, false),
+                        super::form::SelectionMode::Mask => (&mut detector_info.mask, true),
                         super::form::SelectionMode::Display => (&mut detector_info.selection,true),
                     };
                     let value = if let iced::mouse::Button::Left = btn{
