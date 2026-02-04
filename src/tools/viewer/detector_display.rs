@@ -112,7 +112,7 @@ impl SingleDetectorDisplay{
 
         let a2 = move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x));
 
-        let color_source = padamo_detectors::diagrams::autoselect_source(detector, self.buffer.as_ref().map(|x| &x.0));
+        let color_source = padamo_detectors::diagrams::autoselect_source(detector, self.buffer.as_ref().map(|x| &x.0), self.get_scale());
         let mut detector_frame = padamo_detectors::diagrams::PadamoDetectorDiagram::new(detector.map(|x| &x.cells), color_source)
             .transformed(self.view_transform.transform())
             .on_right_click(a2);

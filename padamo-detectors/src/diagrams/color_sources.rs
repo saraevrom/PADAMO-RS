@@ -152,10 +152,10 @@ impl<'a> ColorValueSource for DualColoredMaskSource<'a>{
 
 }
 
-pub fn autoselect_source<'a>(detector:Option<&'a DetectorAndMask>, buffer:Option<&'a ArrayND<f64>>)->Box<dyn ColorValueSource+'a>{
+pub fn autoselect_source<'a>(detector:Option<&'a DetectorAndMask>, buffer:Option<&'a ArrayND<f64>>, scaling:Scaling)->Box<dyn ColorValueSource+'a>{
     if let Some(det) = detector{
         if let Some(buf) = buffer{
-            Box::new(MatrixSource::new(&buf, &det.alive_pixels))
+            Box::new(MatrixSource::new(&buf, &det.alive_pixels).with_scaling(scaling))
         }
         else{
             Box::new(DualColoredMaskSource::new(&det.alive_pixels, plotters::prelude::BLUE, plotters::prelude::BLACK))

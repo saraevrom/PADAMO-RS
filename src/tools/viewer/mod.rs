@@ -7,7 +7,6 @@ pub mod test_objects;
 mod norm_entry;
 
 use super::PadamoTool;
-use padamo_detectors::DetectorPlotter;
 use plotters_video::VideoBackend;
 use crate::application::PadamoState;
 use crate::detector_muxer::get_signal_var;
@@ -307,7 +306,7 @@ impl PadamoViewer{
             let animation_parameters = self.form_instance.animation.clone();
 
             println!("Animation parameters: {:?}",animation_parameters);
-            let chart = DetectorPlotter::new();
+            // let chart = DetectorPlotter::new();
 
             //TODO: Make proper multidetector
             //let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
@@ -336,7 +335,7 @@ impl PadamoViewer{
                             "gif"=>{
                                 let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -348,7 +347,7 @@ impl PadamoViewer{
                                 let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
                                                                 plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, chart, detector.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -430,19 +429,18 @@ impl PadamoViewer{
                 let temporal:padamo_api::lazy_array_operations::LazyTimeSignal = signal_ref.1.clone();
                 let width = self.form_instance.single_frame.width;
                 let height = self.form_instance.single_frame.height;
-                let chart = DetectorPlotter::new();
                 if let Some(ext) = path.extension(){
                     if let Some(ext_str) = ext.to_str(){
                         match ext_str {
                             "png" | "jpg" => {
                                 let backend = BitMapBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, &detector.detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector.detector, plot_scale);
                             },
                             "svg" => {
                                 let backend = SVGBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &chart, &detector.detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector.detector, plot_scale);
                             },
                             ue=>{
                                 padamo.show_error(format!("Unsupported extension {}",ue));

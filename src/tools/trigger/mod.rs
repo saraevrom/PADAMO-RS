@@ -252,7 +252,7 @@ impl PadamoTool for PadamoTrigger{
 
         let mut detector_view: PadamoDetectorDiagram<'_, TriggerMessage> = padamo_detectors::diagrams::PadamoDetectorDiagram::new(
             detector.map(|x| &x.cells),
-            padamo_detectors::diagrams::autoselect_source(detector, self.data.as_ref().map(|x| &x.1))
+            padamo_detectors::diagrams::autoselect_source(detector, self.data.as_ref().map(|x| &x.1), padamo_detectors::Scaling::Autoscale)
         )
             .transformed(self.view_transform.transform());
 

@@ -1,15 +1,15 @@
 use std::{sync::mpsc, thread};
-use crate::messages::PadamoAppMessage;
 
 use super::{AnimationParameters, Worker};
-use padamo_detectors::{DetectorAndMask, DetectorPlotter, Scaling};
+use padamo_detectors::diagrams::PadamoDetectorDiagram;
+use padamo_detectors::{DetectorAndMask, Scaling};
 use plotters::coord::Shift;
 use plotters::prelude::*;
 
 
 pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a DrawingArea<T,Shift>,spatial:&'a padamo_api::lazy_array_operations::LazyDetectorSignal,
                temporal:&'a padamo_api::lazy_array_operations::LazyTimeSignal,
-               temporal_primary:&'a padamo_api::lazy_array_operations::LazyTimeSignal, current_frame:usize, chart:&DetectorPlotter<PadamoAppMessage>, detector:&DetectorAndMask,plot_scale:Scaling){
+               temporal_primary:&'a padamo_api::lazy_array_operations::LazyTimeSignal, current_frame:usize, detector:&DetectorAndMask,plot_scale:Scaling){
 
     let unixtime = temporal_primary.request_range(current_frame,current_frame+1)[0];
     let remapped_frame = temporal.find_unixtime(unixtime);
@@ -20,7 +20,12 @@ pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a D
     root.fill(&WHITE).unwrap();
 
     //TODO provide test object
-    chart.build_chart_generic(detector,root,&Some((&frame,tim)),plot_scale,Default::default(),&None, None);
+    // chart.build_chart_generic(detector,root,&Some((&frame,tim)),plot_scale,Default::default(),&None, None);
+
+    let color_source = padamo_detectors::diagrams::autoselect_source(Some(&detector), Some(&frame),plot_scale);
+    let chart:PadamoDetectorDiagram<()> = padamo_detectors::diagrams::PadamoDetectorDiagram::new(Some(&detector.cells),color_source)
+        .with_title_unixtime(tim);
+    chart.build_chart_generic(root, None);
 }
 
 pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spatial:padamo_api::lazy_array_operations::LazyDetectorSignal,
@@ -28,8 +33,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
                temporal_main:padamo_api::lazy_array_operations::LazyTimeSignal,
                start:usize,
                end:usize,
-               animation_parameters:AnimationParameters,
-               chart:DetectorPlotter<PadamoAppMessage>, detector:DetectorAndMask, plot_scale:Scaling)->Worker<String>{
+               animation_parameters:AnimationParameters, detector:DetectorAndMask, plot_scale:Scaling)->Worker<String>{
     //let signal = signal_ref.clone();
 
     let (tx,rx) = mpsc::channel::<bool>();
@@ -92,7 +96,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
                 let (a,b) = root.split_vertically(animation_parameters.height);
                 //a.fill(&WHITE).unwrap();
                 // chart.build_chart_generic(&a,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                make_frame(&a, &spatial, &temporal, &temporal_main, i, &chart, &detector, plot_scale);
+                make_frame(&a, &spatial, &temporal, &temporal_main, i, &detector, plot_scale);
 
                 //b.fill(&WHITE).unwrap();
                 let mut chart = ChartBuilder::on(&b)
@@ -109,7 +113,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
             }
             else{
                 //chart.build_chart_generic(&root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                make_frame(&root, &spatial, &temporal, &temporal_main, i, &chart, &detector, plot_scale);
+                make_frame(&root, &spatial, &temporal, &temporal_main, i, &detector, plot_scale);
             }
 
 
