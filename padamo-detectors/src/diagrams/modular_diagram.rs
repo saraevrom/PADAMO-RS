@@ -158,11 +158,11 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
             .disable_mesh()
             .draw().unwrap();
 
-            let rects = super::PolyIterator::new(self.color_source.as_ref(), det);
+            let rects = super::PolyIterator::new(self.color_source.as_ref(), det, self.rotation_angle);
             chart.draw_series(rects).unwrap();
 
             // if self.color_source.has_outline(){
-            let polys = det.pixels_outlines(self.color_source.as_ref());
+            let polys = super::PixelPathIterator::new(det, self.color_source.as_ref(), self.rotation_angle);
             chart.draw_series(polys).unwrap();
             // }
 

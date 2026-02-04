@@ -244,6 +244,8 @@ impl Subplotter{
             let color_source = ColoredMaskSource::new(pix);
             let plotter = PadamoDetectorDiagram::from_detector_and_source(detector_entry.map(|x| &x.detector), color_source)
                 .transformed(self.transform.transform())
+
+                .with_rotation(detector_entry.map(|x| x.detector_info.rotation).unwrap_or(0.0))
                 .on_multiselect(SubplotterMessage::MultiSelect);
 
             iced::widget::column![

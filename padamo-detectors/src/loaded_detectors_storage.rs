@@ -18,13 +18,15 @@ pub enum LoadedDetectorsMessage{
 pub struct ProvidedDetectorInfo{
     #[field_name("Focal distance")] pub focal_distance: f64,
     #[field_name("Nickname")] pub nickname: ROption<RString>,
+    #[field_name("Rotation [°]")] pub rotation:f64,
 }
 
 impl Default for ProvidedDetectorInfo{
     fn default() -> Self {
         Self {
             focal_distance: 100.0,
-            nickname: ROption::RNone
+            nickname: ROption::RNone,
+            rotation:0.0,
         }
     }
 }

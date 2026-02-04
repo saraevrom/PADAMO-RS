@@ -5,7 +5,6 @@ use plotters::prelude::*;
 use crate::{parser::parse_detector, scripted::parse_scripted};
 use rhai::{serde::from_dynamic, CustomType, EvalAltResult, TypeBuilder};
 use abi_stable::{rvec, StableAbi};
-use crate::diagrams::traits::ColorValueSource;
 
 //use super::colors::
 
@@ -119,6 +118,14 @@ fn convert_array<'a,T:serde::Deserialize<'a>>(arr_in:&'a rhai::Array)->Result<RV
         arr_out.push(from_dynamic(x)?);
     };
     Ok(arr_out)
+}
+
+fn rotate(xy:(f64,f64), angle:f64)->(f64,f64){
+    let angle = angle*std::f64::consts::PI/180.0;
+    (
+        xy.0*angle.cos()-xy.1*angle.sin(),
+        xy.0*angle.sin()+xy.1*angle.cos(),
+    )
 }
 
 impl DetectorPixel{
@@ -270,12 +277,12 @@ impl DetectorPixel{
             .with_fn("clear_color", Self::clear_color);
     }
 
-    pub fn make_polygon<S:Into<ShapeStyle>>(&self,color:S) -> Polygon<(f64,f64)>{
-        Polygon::new(self.vertices.iter().map(|x| x.into_tuple()).collect::<Vec<(f64,f64)>>(), color)
+    pub fn make_polygon<S:Into<ShapeStyle>>(&self,color:S, rotation:f64) -> Polygon<(f64,f64)>{
+        Polygon::new(self.vertices.iter().map(|x| x.into_tuple()).map(|x| rotate(x,rotation)).collect::<Vec<(f64,f64)>>(), color)
     }
 
-    pub fn make_outline(&self)->PathElement<(f64,f64)>{
-        let mut verts = self.vertices.iter().map(|x| x.into_tuple()).collect::<Vec<(f64,f64)>>();
+    pub fn make_outline(&self, rotation:f64)->PathElement<(f64,f64)>{
+        let mut verts = self.vertices.iter().map(|x| x.into_tuple()).map(|x| rotate(x,rotation)).collect::<Vec<(f64,f64)>>();
         if let Some(x) = verts.get(0){
             verts.push(*x); // To make a closed loop
         }
@@ -433,10 +440,6 @@ impl Detector{
 
 
 
-    pub fn pixels_outlines<'a>(&'a self, color_source:&'a dyn ColorValueSource) -> PixelPathIterator<'a>{
-        PixelPathIterator::new(self, color_source)
-    }
-
     pub fn from_specs<'a>(i:&'a str)->Result<Self, nom::Err<nom::error::Error<&'a str>>>{
         parse_detector(i).map(|x| x.1)
     }
@@ -477,75 +480,3 @@ impl Default for Detector{
 //pub type StableColorMatrix = ArrayND<abi_stable::std_types::Tuple3<u8,u8,u8>>;
 
 
-pub struct PixelPathIterator<'a>{
-    pub detector:&'a Detector,
-    current_index:usize,
-    color_source:&'a dyn ColorValueSource,
-}
-
-impl<'a> PixelPathIterator<'a> {
-    pub fn new(detector: &'a Detector, color_source:&'a dyn ColorValueSource) -> Self {
-        Self { detector, current_index:0, color_source }
-    }
-}
-
-impl<'a> Iterator for PixelPathIterator<'a>{
-    type Item = PathElement<(f64,f64)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let len = self.detector.content.len();
-        //skipping unactives
-        while self.current_index<len && !self.color_source.has_outline(&self.detector.content[self.current_index].index){
-            self.current_index += 1;
-        }
-        if self.current_index<len{
-            let pixel = &self.detector.content[self.current_index];
-            let res = pixel.make_outline();
-            self.current_index += 1;
-            Some(res)
-        }
-        else{
-            None
-        }
-    }
-}
-
-
-pub struct ColoredPixelIterator<'a,T>
-where
-    T:ColorValueSource,
-{
-    pub detector:&'a Detector,
-    current_index:usize,
-    color_getter:T,
-}
-
-impl<'a, T> ColoredPixelIterator<'a, T>
-where
-    T:ColorValueSource,
-{
-    pub fn new(detector: &'a Detector, color_getter: T) -> Self {
-        Self { detector, current_index:0, color_getter }
-    }
-}
-
-impl<'a,T> Iterator for ColoredPixelIterator<'a,T>
-where
-    T:ColorValueSource,
-{
-    type Item = Polygon<(f64,f64)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current_index<self.detector.content.len(){
-            let pixel = &self.detector.content[self.current_index];
-            let color = self.color_getter.get_color(&pixel.index);
-
-            let res = pixel.make_polygon(color);
-            self.current_index += 1;
-            Some(res)
-        }
-        else{
-            None
-        }
-    }
-}

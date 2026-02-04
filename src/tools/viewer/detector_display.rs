@@ -155,6 +155,7 @@ impl SingleDetectorDisplay{
         let mut detector_frame = padamo_detectors::diagrams::PadamoDetectorDiagram::new(detector_entry.map(|x| &x.detector), color_source)
             .transformed(self.view_transform.transform())
             // .on_right_click(a2)
+            .with_rotation(detector_entry.map(|x| x.detector_info.rotation).unwrap_or(0.0))
             .on_multiselect(move |x,y| wrapper(SingleDetectorDisplayMessage::MultipixelSelect(x,y)));
 
         // if let Some(a) = a1{

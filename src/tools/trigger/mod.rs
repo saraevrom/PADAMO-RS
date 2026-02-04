@@ -254,6 +254,7 @@ impl PadamoTool for PadamoTrigger{
             detector_entry.map(|x| &x.detector),
             padamo_detectors::diagrams::autoselect_source(detector_entry.map(|x|&x.mask), self.data.as_ref().map(|x| &x.1), padamo_detectors::Scaling::Autoscale)
         )
+            .with_rotation(detector_entry.map(|x| x.detector_info.rotation).unwrap_or(0.0))
             .transformed(self.view_transform.transform());
 
         if let Some(time) = self.data.as_ref().map(|x| &x.0.primary.time[0]){
