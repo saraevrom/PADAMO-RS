@@ -151,10 +151,6 @@ impl Subplotter{
         &mut self.last_detector_id
     }
 
-    pub fn get_last_detector_id(&self)->Option<usize>{
-        self.last_detector_id
-    }
-
     pub fn get_mutable_mask_info<'a>(&'a mut self)-> (&'a Option<super::loader::StoredSignal>, &'a mut Option<usize>){
         (&self.displaying_signal, &mut self.last_detector_id)
     }

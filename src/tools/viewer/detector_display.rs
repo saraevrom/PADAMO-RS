@@ -15,7 +15,6 @@ pub enum SingleDetectorDisplayMessage{
     // SetAutoscale(bool),
     NormEntryMessage(MultiEntryMessage),
     PlotZoomMessage(TransformMessage),
-    TogglePixel(Vec<usize>),
     MultipixelSelect(Vec<Vec<usize>>, iced::mouse::Button),
     ResetMask,
 }
@@ -88,15 +87,6 @@ impl SingleDetectorDisplay{
             },
             SingleDetectorDisplayMessage::PlotZoomMessage(msg)=>{
                 self.view_transform.update(msg.clone());
-            },
-            SingleDetectorDisplayMessage::TogglePixel(pix_id)=>{
-                if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
-                    //detector_info.detector.toggle_pixel(&pix_id);
-                    if let Some(v) = detector_info.mask.try_get(&pix_id){
-                        detector_info.mask.set(&pix_id, !v);
-                    }
-                    self.update_pixels(padamo, true);
-                }
             },
             SingleDetectorDisplayMessage::MultipixelSelect(sel,btn)=>{
                 if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){

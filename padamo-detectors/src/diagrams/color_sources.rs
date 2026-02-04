@@ -1,6 +1,5 @@
 use padamo_arraynd::ArrayND;
 
-use crate::{Detector, DetectorAndMask};
 
 use super::traits::ColorValueSource;
 use plotters::prelude::*;
