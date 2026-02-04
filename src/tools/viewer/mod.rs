@@ -310,7 +310,7 @@ impl PadamoViewer{
 
             //TODO: Make proper multidetector
             //let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
-            let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){&det.detector} else {return;};
+            let detector_entry = if let Some(det) = padamo.detectors.get(self.window_view.get_id()){det} else {return;};
 
             let primary = padamo.compute_graph.environment.0.get(get_signal_var(0).as_str());
             let time_primary = if let Some(padamo_api::prelude::Content::DetectorFullData(signal_p)) = primary{
@@ -335,7 +335,7 @@ impl PadamoViewer{
                             "gif"=>{
                                 let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector_entry.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -347,7 +347,7 @@ impl PadamoViewer{
                                 let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
                                                                 plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector_entry.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -410,7 +410,7 @@ impl PadamoViewer{
 
         //TODO: Make proper multidetector
         // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
-        let detector = if let Some(det) = padamo.detectors.get(self.window_view.get_id()) {det} else {return;};
+        let detector_entry = if let Some(det) = padamo.detectors.get(self.window_view.get_id()) {det} else {return;};
         let pointer = if let Some(v) = self.playbar_state.get_frame(&padamo, 0) {v} else {return;};
 
         let primary = padamo.compute_graph.environment.0.get(get_signal_var(0).as_str());
@@ -435,12 +435,12 @@ impl PadamoViewer{
                             "png" | "jpg" => {
                                 let backend = BitMapBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector.detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector_entry, plot_scale);
                             },
                             "svg" => {
                                 let backend = SVGBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector.detector, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector_entry, plot_scale);
                             },
                             ue=>{
                                 padamo.show_error(format!("Unsupported extension {}",ue));

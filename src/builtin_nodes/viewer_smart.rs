@@ -37,7 +37,7 @@ impl SmartMaskNode{
             ExecutionError::OtherError(format!("Cannot find detector {}", detector_name).into())
         )?;
 
-        let mask = detector.detector.alive_pixels.clone();
+        let mask = detector.mask.clone();
         let mask = make_lao_box(mask.cast::<f64>());
 
         // let mask= args.environment.request_detectorsignal(&get_mask_var_by_name(&detector))?;

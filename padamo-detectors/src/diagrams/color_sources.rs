@@ -1,6 +1,6 @@
 use padamo_arraynd::ArrayND;
 
-use crate::{DetectorAndMask};
+use crate::{Detector, DetectorAndMask};
 
 use super::traits::ColorValueSource;
 use plotters::prelude::*;
@@ -122,7 +122,7 @@ impl<'a> ColorValueSource for ColoredMaskSource<'a>{
         }
     }
 
-    fn has_outline(&self) -> bool {
+    fn has_outline(&self, _pixel:&[usize]) -> bool {
         true
     }
 }
@@ -152,13 +152,13 @@ impl<'a> ColorValueSource for DualColoredMaskSource<'a>{
 
 }
 
-pub fn autoselect_source<'a>(detector:Option<&'a DetectorAndMask>, buffer:Option<&'a ArrayND<f64>>, scaling:Scaling)->Box<dyn ColorValueSource+'a>{
-    if let Some(det) = detector{
+pub fn autoselect_source<'a>(mask:Option<&'a ArrayND<bool>>, buffer:Option<&'a ArrayND<f64>>, scaling:Scaling)->Box<dyn ColorValueSource+'a>{
+    if let Some(msk) = mask{
         if let Some(buf) = buffer{
-            Box::new(MatrixSource::new(&buf, &det.alive_pixels).with_scaling(scaling))
+            Box::new(MatrixSource::new(&buf, msk).with_scaling(scaling))
         }
         else{
-            Box::new(DualColoredMaskSource::new(&det.alive_pixels, plotters::prelude::BLUE, plotters::prelude::BLACK))
+            Box::new(DualColoredMaskSource::new(msk, plotters::prelude::BLUE, plotters::prelude::BLACK))
         }
     }
     else{
@@ -189,8 +189,37 @@ impl<T:ColorValueSource> ColorValueSource for Contoured<T>{
         self.source.get_bar()
     }
 
-    fn has_outline(&self)->bool{
+    fn has_outline(&self, _pixel:&[usize])->bool{
         true
+    }
+}
+
+pub struct ContourMask<'a>{
+    pub source: Box<dyn ColorValueSource+'a>,
+    pub mask:&'a ArrayND<bool>
+}
+
+impl<'a> ContourMask<'a> {
+    pub fn new(source: Box<dyn ColorValueSource+'a>, mask:&'a ArrayND<bool>) -> Self {
+        Self { source, mask}
+    }
+}
+
+impl<'b> ColorValueSource for ContourMask<'b>{
+    fn get_color(&self, pixel:&[usize]) -> ShapeStyle {
+        self.source.get_color(pixel)
+    }
+
+    fn get_value(&self, pixel:&[usize]) -> Option<f64> {
+        self.source.get_value(pixel)
+    }
+
+    fn get_bar<'a>(&'a self) -> Option<((f64, f64),&'a dyn ColorMap<RGBColor, f64>)> {
+        self.source.get_bar()
+    }
+
+    fn has_outline(&self, pixel:&[usize])->bool{
+        self.mask.try_get(pixel).map(|x|*x).unwrap_or(false)
     }
 }
 
@@ -198,6 +227,10 @@ pub trait Contourable: ColorValueSource+Sized{
     fn contoured(self)->Contoured<Self>{
         Contoured::new(self)
     }
+
+    // fn masked_contours(self, mask: &'a ArrayND<bool>)->ContourMask<'a>{
+    //     ContourMask::new(Box::new(self), mask)
+    // }
 }
 
 impl<T:ColorValueSource> Contourable for T{

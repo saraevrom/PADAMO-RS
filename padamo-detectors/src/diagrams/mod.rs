@@ -11,6 +11,7 @@ use plotters::prelude::Polygon;
 
 pub use modular_diagram::PadamoDetectorDiagram;
 pub use color_sources::{ColoredMaskSource, MatrixSource, DualColoredMaskSource, autoselect_source};
+pub use color_sources::{ContourMask, Contoured};
 
 pub struct PolyIterator<'a>
 {

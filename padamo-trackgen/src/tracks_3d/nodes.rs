@@ -23,7 +23,7 @@ impl MeteorTrackNode{
         let detector = find_detector(&args, detector_name.as_str()).ok_or(ExecutionError::OtherError(format!("Detector {} is not found", detector_name).into()))?;
         let detector_info = detector.detector_info.clone();
         // let (detector,detector_info) = detector
-        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.clone());
         let mut data = args.inputs.request_detectorfulldata("Background")?;
         if data.0.length()==0{
             return Err(ExecutionError::OtherError("No background data".into()));

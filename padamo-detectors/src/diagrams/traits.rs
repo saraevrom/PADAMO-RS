@@ -4,7 +4,7 @@ pub trait ColorValueSource{
     fn get_color(&self, pixel:&[usize]) -> ShapeStyle;
     fn get_value(&self, _pixel:&[usize]) -> Option<f64>{None}
     fn get_bar<'a>(&'a self) -> Option<((f64, f64),&'a dyn ColorMap<RGBColor, f64>)>{None}
-    fn has_outline(&self) -> bool {false}
+    fn has_outline(&self, _pixel:&[usize]) -> bool {false}
 }
 
 // impl<T:Fn(&[usize]) -> RGBColor> ColorValueSource for T {
@@ -30,5 +30,4 @@ impl ColorValueSource for ShapeStyle{
         *self
     }
 }
-
 

@@ -49,7 +49,7 @@ impl AnyLCLinearTrackGeneratorDynamicGaussNode{
         // let detector_content = args.environment.request_string("detector")?.to_string();
         // let detector: padamo_detectors::polygon::DetectorContent = serde_json::from_str(&detector_content).map_err(|x| ExecutionError::OtherError(format!("{:?}",x).into()))?;
         let detector = find_primary_detector(&args).ok_or(ExecutionError::OtherError("No primary detector is found".into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.clone());
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
         let pivot_frame = request_nonnegative("pivot_frame", &args.constants)?;
@@ -146,7 +146,7 @@ impl AnyLCLinearTrackGeneratorDynamicMoffatNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError> {
 
         let detector = find_primary_detector(&args).ok_or(ExecutionError::OtherError("No primary detector is found".into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.clone());
 
         //let detector = crate::ensquared_energy::load_detector(&detector_path).ok_or_else(|| ExecutionError::OtherError("Could not load detector for track generator".into()))?;
         let pivot_frame = request_nonnegative("pivot_frame", &args.constants)?;

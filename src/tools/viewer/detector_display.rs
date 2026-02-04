@@ -1,10 +1,13 @@
+use std::ops::Deref;
+
 use iced::widget::{column, row};
-use padamo_api::{lazy_array_operations::LazyTriSignal, prelude::{make_lao_box, Content}};
+use padamo_api::{lazy_array_operations::{ArrayND, LazyTriSignal}, prelude::{Content, make_lao_box}};
 use padamo_detectors::mesh::Mesh;
 use plotters::style::Color;
 
 use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
 use super::norm_entry::{MultiEntry, MultiEntryMessage};
+use padamo_detectors::diagrams::color_sources::Contourable;
 
 #[derive(Clone, Debug)]
 pub enum SingleDetectorDisplayMessage{
@@ -64,7 +67,7 @@ impl SingleDetectorDisplay{
     pub fn update_pixels(&self, padamo :&mut PadamoState, save:bool){
         // let detector = if let Some(det) = self.get_detector(padamo){det} else {return;};
         let detector_entry = if let Some(det) = padamo.detectors.get(self.get_id()){det} else {return;};
-        let mask = detector_entry.detector.alive_pixels_mask();
+        let mask:ArrayND<f64> = detector_entry.mask.clone().cast();
         if save{
             padamo.save_detectors();
         }
@@ -89,13 +92,16 @@ impl SingleDetectorDisplay{
             },
             SingleDetectorDisplayMessage::TogglePixel(pix_id)=>{
                 if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
-                    detector_info.detector.toggle_pixel(&pix_id);
+                    //detector_info.detector.toggle_pixel(&pix_id);
+                    if let Some(v) = detector_info.mask.try_get(&pix_id){
+                        detector_info.mask.set(&pix_id, !v);
+                    }
                     self.update_pixels(padamo, true);
                 }
             },
             SingleDetectorDisplayMessage::ResetMask=>{
                 if let Some(detector_info) = padamo.detectors.get_mut(self.detector_id){
-                    detector_info.detector.reset_mask();
+                    detector_info.mask = ArrayND::new(detector_info.detector.shape().to_vec(), true);
                     self.update_pixels(padamo, true);
                 }
             }
@@ -108,12 +114,15 @@ impl SingleDetectorDisplay{
         F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
         F1:'static+Fn(Vec<usize>)->T,
     {
-        let detector = padamo.detectors.get(self.detector_id).map(|x| &x.detector);
+        let detector_entry = padamo.detectors.get(self.detector_id);
 
         let a2 = move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x));
 
-        let color_source = padamo_detectors::diagrams::autoselect_source(detector, self.buffer.as_ref().map(|x| &x.0), self.get_scale());
-        let mut detector_frame = padamo_detectors::diagrams::PadamoDetectorDiagram::new(detector.map(|x| &x.cells), color_source)
+        let mut color_source = padamo_detectors::diagrams::autoselect_source(detector_entry.map(|x| &x.mask), self.buffer.as_ref().map(|x| &x.0), self.get_scale());
+        if let Some(sel)=detector_entry.map(|x| &x.selection){
+            color_source = Box::new(padamo_detectors::diagrams::ContourMask::new(color_source,sel));
+        }
+        let mut detector_frame = padamo_detectors::diagrams::PadamoDetectorDiagram::new(detector_entry.map(|x| &x.detector), color_source)
             .transformed(self.view_transform.transform())
             .on_right_click(a2);
 
@@ -141,10 +150,10 @@ impl SingleDetectorDisplay{
 
         let detector_view = if let Some(det) = padamo.detectors.get(self.detector_id){
             if self.detector_id==0{
-                iced::widget::text(format!("Primary detector: {}", det.detector.cells.name))
+                iced::widget::text(format!("Primary detector: {}", det.detector.name))
             }
             else{
-                iced::widget::text(format!("Aux detector {}: {}", self.detector_id, det.detector.cells.name))
+                iced::widget::text(format!("Aux detector {}: {}", self.detector_id, det.detector.name))
             }
         }
         else{
@@ -192,10 +201,12 @@ impl SingleDetectorDisplay{
         //         self.max_signal_entry = max.to_string();
         //     }
         // }
-        let detector = if let Some(det) = padamo.detectors.get(self.detector_id){&det.detector} else {return;};
-        if let Some(frame) = &self.buffer{
-            self.scale_state.get_entry_mut(self.detector_id).fill_strings(padamo, &frame.0, &detector.alive_pixels);
+        if let Some(detector_entry) = padamo.detectors.get(self.detector_id){
+            if let Some(frame) = &self.buffer{
+                self.scale_state.get_entry_mut(self.detector_id).fill_strings(padamo, &frame.0, &detector_entry.mask);
+            }
         }
+
 
 
     }

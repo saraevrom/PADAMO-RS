@@ -62,15 +62,22 @@ impl PlotterNew{
         padamo.persistent_state.serialize("plotter_form", &self.form);
     }
 
-    fn action_select(&mut self){
+    fn action_select(&mut self, padamo:&mut PadamoState){
         println!("Selecting pixels");
         let workon = match self.form.selector.detector{
             bulk_selector::DetectorSelection::Primary=> &mut self.primary_plotter,
             bulk_selector::DetectorSelection::Secondary=> &mut self.secondary_plotter,
         };
-        if let (Some(s), Some(m)) = workon.get_mutable_mask_info(){
-            self.form.selector.modify_mask(m, &s.signals);
+        if let (Some(s), Some(id)) = workon.get_mutable_mask_info(){
+            if let Some(mask) = padamo.detectors.get_mut(*id).map(|x| &mut x.selection){
+                self.form.selector.modify_mask(mask, &s.signals);
+            }
+
         }
+//         if let Some(s) = &workon.displaying_signal{
+//
+//         }
+
         workon.clear_cache();
     }
 }
@@ -81,7 +88,7 @@ impl PadamoTool for PlotterNew{
         "Signal plotter".into()
     }
 
-    fn view<'a>(&'a self, _padamo:&'a crate::application::PadamoState)->iced::Element<'a, PadamoAppMessage> {
+    fn view<'a>(&'a self, padamo:&'a crate::application::PadamoState)->iced::Element<'a, PadamoAppMessage> {
         let form_view: iced::Element<'a, _>= self.form_buffer.view(None).into();
 
         let mut plots_column = iced::widget::column![];
@@ -95,17 +102,17 @@ impl PadamoTool for PlotterNew{
                     plots_column = plots_column.push(iced::widget::container(iced::widget::text("Too long to load")).center(iced::Length::Fill));
                 }
                 else{
-                    plots_column =  plots_column.push(self.primary_plotter.view().map(messages::NewPlotterMessage::PrimarySubplotterMessage));
+                    plots_column =  plots_column.push(self.primary_plotter.view(padamo).map(messages::NewPlotterMessage::PrimarySubplotterMessage));
                     if self.secondary_plotter.has_data(){
-                        plots_column = plots_column.push(self.secondary_plotter.view().map(messages::NewPlotterMessage::SecondarySubplotterMessage))
+                        plots_column = plots_column.push(self.secondary_plotter.view(padamo).map(messages::NewPlotterMessage::SecondarySubplotterMessage))
                     }
                 }
             },
             form::CurrentView::ChoosingPrimary=>{
-                plots_column = plots_column.push(self.primary_plotter.view_mask().map(messages::NewPlotterMessage::PrimarySubplotterMessage));
+                plots_column = plots_column.push(self.primary_plotter.view_mask(padamo).map(messages::NewPlotterMessage::PrimarySubplotterMessage));
             },
             form::CurrentView::ChoosingSecondary=>{
-                plots_column = plots_column.push(self.secondary_plotter.view_mask().map(messages::NewPlotterMessage::SecondarySubplotterMessage));
+                plots_column = plots_column.push(self.secondary_plotter.view_mask(padamo).map(messages::NewPlotterMessage::SecondarySubplotterMessage));
             },
         }
 
@@ -153,7 +160,7 @@ impl PadamoTool for PlotterNew{
                             if let Some(selector_action) = action.downcast_ref::<bulk_selector::SelectorActions>(){
                                 match selector_action {
                                     bulk_selector::SelectorActions::Select=>{
-                                        self.action_select();
+                                        self.action_select(padamo);
                                     },
                                     // There may be more actions in future
                                 }
@@ -167,7 +174,7 @@ impl PadamoTool for PlotterNew{
                 },
                 messages::NewPlotterMessage::PrimarySubplotterMessage(subplotter_message) => {
                     self.primary_plotter.update(subplotter_message.clone(), padamo);
-                    padamo.persistent_state.serialize("plotter_primary", &self.primary_plotter.get_mutable_detector_info());
+                    // padamo.persistent_state.serialize("plotter_primary", &self.primary_plotter.get_mutable_detector_info());
                 },
                 messages::NewPlotterMessage::SecondarySubplotterMessage(subplotter_message) => {
                     self.secondary_plotter.update(subplotter_message.clone(), padamo);
@@ -184,11 +191,16 @@ impl PadamoTool for PlotterNew{
 
                     if let Some(pix) = poked_pixel{
                         if pix.detector_id==0{
-                            self.primary_plotter.set_pixel(&pix.pixel_id, true);
+                            if let Some(d) = padamo.detectors.get_primary_mut(){
+                                d.selection.set(&pix.pixel_id, true);
+                            }
+                            // self.primary_plotter.set_pixel(&pix.pixel_id, true);
                         }
                         if let Some(aux) = self.form.display_settings.get_aux_id(){
                             if pix.detector_id==aux{
-                                self.secondary_plotter.set_pixel(&pix.pixel_id, true);
+                                if let Some(d) = padamo.detectors.get_mut(aux){
+                                    d.selection.set(&pix.pixel_id, true);
+                                }
                             }
                         }
 
@@ -206,9 +218,9 @@ impl PadamoTool for PlotterNew{
 
         self.state.update_state();
         if let Some((data, request)) = self.state.get_data_if_loaded(){
-            self.primary_plotter.set_data(Some(data.primary), padamo.detectors.get_primary().map(|x| x.detector.clone()));
+            self.primary_plotter.set_data(Some(data.primary), Some(0));
             if let Some(aux) = request.aux_detector_id{
-                self.secondary_plotter.set_data(data.secondary, padamo.detectors.get(aux).map(|x| x.detector.clone()));
+                self.secondary_plotter.set_data(data.secondary, Some(aux));
             }
             else{
                 self.secondary_plotter.set_data(None, None);
@@ -217,7 +229,7 @@ impl PadamoTool for PlotterNew{
             self.secondary_plotter.set_override_range(self.primary_plotter.get_override_range_master());
 
             self.last_request = Some(request);
-            padamo.persistent_state.serialize("plotter_primary", &self.primary_plotter.get_mutable_detector_info());
+            // padamo.persistent_state.serialize("plotter_primary", &self.primary_plotter.get_mutable_detector_info());
             padamo.persistent_state.serialize("plotter_secondary", &self.secondary_plotter.get_mutable_detector_info());
         }
     }
@@ -248,15 +260,15 @@ impl PadamoTool for PlotterNew{
             self.form = form;
             self.propagate_form(&padamo);
             self.form_buffer.set(self.form.clone());
-            if let Some((new_det,new_mask)) = padamo.persistent_state.deserialize("plotter_primary"){
-                let (a,b) = self.primary_plotter.get_mutable_detector_info();
+            // if let Some((new_det,)) = padamo.persistent_state.deserialize("plotter_primary"){
+            //     let (a,) = self.primary_plotter.get_mutable_detector_info();
+            //     *a = new_det;
+            //     // *b = new_mask;
+            // }
+            if let Some(new_det) = padamo.persistent_state.deserialize("plotter_secondary"){
+                let a = self.secondary_plotter.get_mutable_detector_info();
                 *a = new_det;
-                *b = new_mask;
-            }
-            if let Some((new_det,new_mask)) = padamo.persistent_state.deserialize("plotter_secondary"){
-                let (a,b) = self.secondary_plotter.get_mutable_detector_info();
-                *a = new_det;
-                *b = new_mask;
+                // *b = new_mask;
             }
         }
     }

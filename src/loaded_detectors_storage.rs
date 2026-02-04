@@ -1,4 +1,5 @@
 use abi_stable::std_types::RVec;
+use padamo_detectors::Detector;
 use padamo_detectors::DetectorAndMask;
 pub use padamo_detectors::loaded_detectors_storage::{DetectorEntry, LoadedDetectorsMessage, ProvidedDetectorInfoBuffer};
 use padamo_iced_forms::ActionOrUpdate;
@@ -49,7 +50,7 @@ impl LoadedDetectors{
         }
     }
 
-    pub fn add_detector(&mut self, detector:DetectorAndMask){
+    pub fn add_detector(&mut self, detector:Detector){
         let det = DetectorEntry::from_detector(detector);
         self.buffers.push(ProvidedDetectorInfoBuffer::from_value(det.detector_info.clone()));
         self.detectors.push(det);
@@ -99,7 +100,7 @@ impl LoadedDetectors{
                 if let Some(path) = workspace.workspace("detectors").open_dialog(vec![("Detector",vec!["json"])]){
                     let s = std::fs::read_to_string(path)?;
                     let det = serde_json::from_str(&s)?;
-                    self.add_detector(DetectorAndMask::from_cells(det));
+                    self.add_detector(det);
                 }
             },
             LoadedDetectorsMessage::SetPrimary(id) => self.set_primary_detector_by_index(id),
@@ -123,13 +124,13 @@ impl LoadedDetectors{
     pub fn view(&self)->iced::Element<'_, LoadedDetectorsMessage>{
         let mut res = iced::widget::column!();
         if let (Some(prim_det),Some(prim)) = (self.get_primary(),self.get_primary_buffer()){
-            res = res.push(iced::widget::text(format!("Primary: {}",prim_det.detector.cells.name)));
+            res = res.push(iced::widget::text(format!("Primary: {}",prim_det.detector.name)));
             res = res.push(prim.view(None).map(|x| LoadedDetectorsMessage::EntryForm(0, x)));
             res = res.push(iced::widget::rule::horizontal(3));
             for (i,d) in self.iter_aux_detectors().enumerate(){
                 res = res.push(iced::widget::row![
                     iced::widget::button("S").on_press(LoadedDetectorsMessage::SetPrimary(i+1)),
-                               iced::widget::text(format!("{}: {}",i+1,d.detector.cells.name)),
+                               iced::widget::text(format!("{}: {}",i+1,d.detector.name)),
                 ]);
                 res = res.push(self.buffers[i+1].view(None).map(move |x| LoadedDetectorsMessage::EntryForm(i+1, x)));
             }

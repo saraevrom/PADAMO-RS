@@ -153,10 +153,10 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
             let rects = super::PolyIterator::new(self.color_source.as_ref(), det);
             chart.draw_series(rects).unwrap();
 
-            if self.color_source.has_outline(){
-                let polys = det.pixels_outlines();
-                chart.draw_series(polys).unwrap();
-            }
+            // if self.color_source.has_outline(){
+            let polys = det.pixels_outlines(self.color_source.as_ref());
+            chart.draw_series(polys).unwrap();
+            // }
 
             if let Some(m) = &self.mesh{
                 m.mesh.draw(m.transformation_matrix, m.style, &mut chart);

@@ -440,8 +440,8 @@ impl Detector{
         ColorIterator::new(self, alive_pixels)
     }
 
-    pub fn pixels_outlines<'a>(&'a self) -> PixelPathIterator<'a>{
-        PixelPathIterator::new(self)
+    pub fn pixels_outlines<'a>(&'a self, color_source:&'a dyn ColorValueSource) -> PixelPathIterator<'a>{
+        PixelPathIterator::new(self, color_source)
     }
 
     pub fn from_specs<'a>(i:&'a str)->Result<Self, nom::Err<nom::error::Error<&'a str>>>{
@@ -597,11 +597,12 @@ impl<'a> Iterator for ColorIterator<'a>{
 pub struct PixelPathIterator<'a>{
     pub detector:&'a Detector,
     current_index:usize,
+    color_source:&'a dyn ColorValueSource,
 }
 
 impl<'a> PixelPathIterator<'a> {
-    pub fn new(detector: &'a Detector) -> Self {
-        Self { detector, current_index:0 }
+    pub fn new(detector: &'a Detector, color_source:&'a dyn ColorValueSource) -> Self {
+        Self { detector, current_index:0, color_source }
     }
 }
 
@@ -610,6 +611,10 @@ impl<'a> Iterator for PixelPathIterator<'a>{
 
     fn next(&mut self) -> Option<Self::Item> {
         let len = self.detector.content.len();
+        //skipping unactives
+        while self.current_index<len && !self.color_source.has_outline(&self.detector.content[self.current_index].index){
+            self.current_index += 1;
+        }
         if self.current_index<len{
             let pixel = &self.detector.content[self.current_index];
             let res = pixel.make_outline();

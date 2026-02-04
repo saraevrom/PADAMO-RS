@@ -13,7 +13,7 @@ impl GaussPSFMeteorTrackNode{
     fn calculate(&self,args:CalculationNodeArguments) -> Result<(),ExecutionError>{
 
         let detector = find_primary_detector(&args).ok_or(ExecutionError::OtherError("No primary detector is found".into()))?;
-        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.cells.clone());
+        let detector = crate::ensquared_energy::detector::wireframe(detector.detector.clone());
 
         let mut data = args.inputs.request_detectorfulldata("Background")?;
         let lc = args.inputs.request_function("Lightcurve")?;

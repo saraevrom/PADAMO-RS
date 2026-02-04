@@ -1,5 +1,6 @@
-use crate::DetectorAndMask;
+use crate::Detector;
 use abi_stable::std_types::{ROption, RString};
+use padamo_arraynd::ArrayND;
 use padamo_iced_forms::{ActionOrUpdate, IcedForm, IcedFormBuffer};
 
 #[derive(Clone,Debug)]
@@ -33,19 +34,24 @@ impl Default for ProvidedDetectorInfo{
 #[repr(C)]
 pub struct DetectorEntry{
     pub detector_info: ProvidedDetectorInfo,
-    pub detector: DetectorAndMask,
+    pub detector: Detector,
+    pub mask:ArrayND<bool>,
+    pub selection:ArrayND<bool>,
     // #[serde(skip_serializing, skip_deserializing)]
     // pub buffer:ProvidedDetectorInfoBuffer,
 }
 
 impl DetectorEntry {
-    pub fn new(detector_info: ProvidedDetectorInfo, detector: DetectorAndMask) -> Self {
+    pub fn new(detector_info: ProvidedDetectorInfo, detector: Detector) -> Self {
         // let mut buffer = ProvidedDetectorInfoBuffer::default();
         // buffer.set(detector_info.clone());
-        Self { detector_info, detector}
+        let mask = ArrayND::new(detector.shape().to_vec(), true);
+        let selection = ArrayND::new(detector.shape().to_vec(), false);
+        // let selection =
+        Self { detector_info, detector, mask, selection}
     }
 
-    pub fn from_detector(detector: DetectorAndMask) -> Self {
+    pub fn from_detector(detector: Detector) -> Self {
         Self::new(Default::default(), detector)
     }
 
@@ -65,7 +71,7 @@ impl DetectorEntry {
             v
         }
         else{
-            &self.detector.cells.name
+            &self.detector.name
         }
     }
 }

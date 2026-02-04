@@ -25,6 +25,8 @@ use crate::mesh::Mesh;
 pub use diagrams::scaling::Scaling;
 
 
+pub use polygon::Detector;
+
 // const COLORBAR_SEGMENTS:usize = 256;
 
 // const COLORBAR_WIDTH:f64 = 1.0;

@@ -7,7 +7,7 @@ use self::sparse_intervals::{IntervalStorage, Interval};
 use super::PadamoTool;
 use iced::{widget, Font};
 use padamo_api::{lazy_array_operations::ArrayND, trigger_operations::{sparse_event_storage::SparseTag, SparseTagArray}};
-use padamo_detectors::{DetectorAndMask, diagrams::PadamoDetectorDiagram};
+use padamo_detectors::{DetectorAndMask, diagrams::PadamoDetectorDiagram, loaded_detectors_storage::DetectorEntry};
 pub mod messages;
 use messages::TriggerMessage;
 //use padamo_iced_forms::IcedForm;
@@ -180,8 +180,8 @@ impl PadamoTrigger{
         // self.negative_strings = self.negative_intervals.container.iter().map(|x| format!("{}",x)).collect();
     }
 
-    fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorAndMask>{
-        padamo.detectors.get_primary().map(|x| &x.detector)
+    fn get_detector<'a>(&'a self, padamo:&'a PadamoState)->Option<&'a DetectorEntry>{
+        padamo.detectors.get_primary()
     }
 
     fn select_event(&mut self, padamo:&PadamoState){
@@ -248,11 +248,11 @@ impl PadamoTool for PadamoTrigger{
 
         let view_transform:iced::Element<'_,_> = self.view_transform.view().width(iced::Length::Fill).into();
 
-        let detector = self.get_detector(padamo);
+        let detector_entry = self.get_detector(padamo);
 
         let mut detector_view: PadamoDetectorDiagram<'_, TriggerMessage> = padamo_detectors::diagrams::PadamoDetectorDiagram::new(
-            detector.map(|x| &x.cells),
-            padamo_detectors::diagrams::autoselect_source(detector, self.data.as_ref().map(|x| &x.1), padamo_detectors::Scaling::Autoscale)
+            detector_entry.map(|x| &x.detector),
+            padamo_detectors::diagrams::autoselect_source(detector_entry.map(|x|&x.mask), self.data.as_ref().map(|x| &x.1), padamo_detectors::Scaling::Autoscale)
         )
             .transformed(self.view_transform.transform());
 

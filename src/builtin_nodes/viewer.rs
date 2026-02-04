@@ -113,7 +113,7 @@ impl ViewerMaskNode{
             ExecutionError::OtherError("No detectors present".into())
         )?;
 
-        let mask = detector.detector.alive_pixels.clone();
+        let mask = detector.mask.clone();
         let mask = make_lao_box(mask.cast::<f64>());
 
         // let mask= args.environment.request_detectorsignal(&get_mask_var(0))?;
@@ -211,7 +211,7 @@ impl AuxViewerMaskNode{
             ExecutionError::OtherError(format!("Cannot find detector with id {}", detector_id).into())
         )?;
 
-        let mask = detector.detector.alive_pixels.clone();
+        let mask = detector.mask.clone();
         let mask = make_lao_box(mask.cast::<f64>());
 
         // let mask = args.environment.request_detectorsignal(&get_mask_var(detector_id))?;
