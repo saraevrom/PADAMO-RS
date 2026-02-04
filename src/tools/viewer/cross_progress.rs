@@ -268,11 +268,18 @@ impl CrossProgress{
                 if self.pointer>0{
                     self.pointer-=1;
                 }
+                if self.start>self.pointer{
+                    self.start = self.pointer;
+                }
             },
             CrossProgressMessage::StepFwd => {
                 self.playstate = PlayState::Stop;
                 if self.pointer<self.length{
                     self.pointer+= 1;
+                }
+
+                if self.end<self.pointer{
+                    self.end= self.pointer;
                 }
             },
             CrossProgressMessage::Forward => {
