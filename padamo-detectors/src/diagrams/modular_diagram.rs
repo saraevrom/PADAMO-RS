@@ -34,6 +34,7 @@ where
     rmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
     multiselect_action:Option<Box<dyn 'static + Fn(Vec<Vec<usize>>, iced::mouse::Button)->Msg>>,
     transform: Transform,
+    rotation_angle:f64,
     mesh:Option<TransformedMesh<'a>>,
 }
 
@@ -49,6 +50,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
             title:None,
             transform: Transform::new(1.0, 0.0, 0.0),
             mesh:None,
+            rotation_angle:0.0,
         }
     }
 
@@ -89,6 +91,12 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
 
     pub fn transformed(mut self, transform:Transform) -> Self{
         self.transform = transform;
+        self
+    }
+
+
+    pub fn with_rotation(mut self, angle:f64) -> Self{
+        self.rotation_angle = angle;
         self
     }
 

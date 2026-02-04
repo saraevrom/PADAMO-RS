@@ -1,6 +1,5 @@
 use abi_stable::std_types::ROption::{RNone, RSome};
 use abi_stable::std_types::{ROption, RString, RVec, Tuple2, Tuple3};
-use padamo_arraynd::ArrayND;
 use serde::{Serialize,Deserialize};
 use plotters::prelude::*;
 use crate::{parser::parse_detector, scripted::parse_scripted};
@@ -432,13 +431,7 @@ impl Detector{
         format!("{}\n{}",header ,lines)
     }
 
-    pub fn pixels_values<'a>(&'a self, alive_pixels:&'a ArrayND<bool>, pixels:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->RectIterator<'a>{
-        RectIterator::new(self, alive_pixels, pixels, scale)
-    }
 
-    pub fn pixels_colors<'a>(&'a self, alive_pixels:&'a ArrayND<bool>)->ColorIterator<'a>{
-        ColorIterator::new(self, alive_pixels)
-    }
 
     pub fn pixels_outlines<'a>(&'a self, color_source:&'a dyn ColorValueSource) -> PixelPathIterator<'a>{
         PixelPathIterator::new(self, color_source)
@@ -479,120 +472,10 @@ impl Default for Detector{
     }
 }
 
-/// Iterator for signal display value
-pub struct RectIterator<'a>{
-    pub detector:&'a Detector,
-    pub alive_pixels:&'a ArrayND<bool>,
-    current_index:usize,
-    source:&'a Option<(&'a ArrayND<f64>,f64)>,
-    scale:super::Scaling,
-}
 
-impl<'a> RectIterator<'a>{
-    pub fn new(detector:&'a Detector, alive_pixels: &'a ArrayND<bool>,source:&'a Option<(&'a ArrayND<f64>,f64)>, scale:super::Scaling)->Self{
-        Self{detector, current_index:0, source, scale, alive_pixels}
-    }
-
-
-    fn get_current_result(&self)->Polygon<(f64,f64)>{
-        // let coords = self.detector.remap_coords((self.i,self.j));
-        // let coords = (coords.0-self.size.0/2.0,coords.1-self.size.1/2.0);
-        let poly = &self.detector.content[self.current_index];
-
-        let alive = self.alive_pixels.try_get(&poly.index).map(|x| *x).unwrap_or(true);
-
-        let color = if !alive{
-            plotters::style::colors::BLACK.filled()
-        }
-        else if let Some((arr,_)) = self.source{
-            let (min_, mut max_) = self.scale.get_bounds(arr,self.alive_pixels);
-            max_ = if max_>min_ {max_} else {min_+0.1};
-            //println!("COORDS {},{}",self.i,self.j);
-            if let Some(v) = arr.try_get(&poly.index){
-                if !(v.is_nan() || min_.is_nan() || max_.is_nan()){
-                    //println!("GET CMAP {}, [{}, {}]",*v,min_,max_);
-                    plotters::style::colors::colormaps::ViridisRGB::get_color_normalized(*v,min_,max_).filled()
-                }
-                else{
-                    plotters::style::colors::RED.filled()
-                }
-            }
-            else{
-                plotters::style::colors::RED.filled()
-            }
-        }
-        else{
-            plotters::style::colors::BLUE.filled()
-        };
-
-        poly.make_polygon(color)
-    }
-}
-
-impl<'a> Iterator for RectIterator<'a>{
-    type Item = Polygon<(f64,f64)>;
-
-    fn next(&mut self) -> Option<Polygon<(f64,f64)>> {
-        if self.current_index<self.detector.content.len(){
-            let res = self.get_current_result();
-            self.current_index += 1;
-            Some(res)
-        }
-        else{
-            None
-        }
-    }
-}
 
 //pub type StableColorMatrix = ArrayND<abi_stable::std_types::Tuple3<u8,u8,u8>>;
 
-/// Iterator for colored pixelmaps
-pub struct ColorIterator<'a>{
-    pub detector:&'a Detector,
-    current_index:usize,
-    pixel_map:&'a ArrayND<bool>,
-}
-
-impl<'a> ColorIterator<'a>{
-    pub fn new(detector:&'a Detector, pixel_map:&'a ArrayND<bool>)->Self{
-        Self{detector, current_index:0, pixel_map}
-    }
-
-
-    fn get_current_result(&self)->(Polygon<(f64,f64)>,PathElement<(f64,f64)>){
-        // let coords = self.detector.remap_coords((self.i,self.j));
-        // let coords = (coords.0-self.size.0/2.0,coords.1-self.size.1/2.0);
-        let pixel = &self.detector.content[self.current_index];
-
-        let color = if self.pixel_map.try_get(&pixel.index).map(|x| *x).unwrap_or(false){
-            let rgb = pixel.get_color();
-            let r = (rgb.0*256.0) as u8;
-            let g = (rgb.1*256.0) as u8;
-            let b = (rgb.2*256.0) as u8;
-            RGBColor(r,g,b).filled()
-        }
-        else{
-            plotters::style::colors::WHITE.filled()
-        };
-        (pixel.make_polygon(color),pixel.make_outline())
-    }
-}
-
-
-impl<'a> Iterator for ColorIterator<'a>{
-    type Item = (Polygon<(f64,f64)>,PathElement<(f64,f64)>);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.current_index<self.detector.content.len(){
-            let res = self.get_current_result();
-            self.current_index += 1;
-            Some(res)
-        }
-        else{
-            None
-        }
-    }
-}
 
 pub struct PixelPathIterator<'a>{
     pub detector:&'a Detector,
