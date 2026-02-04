@@ -1,6 +1,5 @@
 use abi_stable::std_types::RVec;
 use padamo_detectors::Detector;
-use padamo_detectors::DetectorAndMask;
 pub use padamo_detectors::loaded_detectors_storage::{DetectorEntry, LoadedDetectorsMessage, ProvidedDetectorInfoBuffer};
 use padamo_iced_forms::ActionOrUpdate;
 use padamo_iced_forms::IcedFormBuffer;

@@ -7,7 +7,7 @@ use self::sparse_intervals::{IntervalStorage, Interval};
 use super::PadamoTool;
 use iced::{widget, Font};
 use padamo_api::{lazy_array_operations::ArrayND, trigger_operations::{sparse_event_storage::SparseTag, SparseTagArray}};
-use padamo_detectors::{DetectorAndMask, diagrams::PadamoDetectorDiagram, loaded_detectors_storage::DetectorEntry};
+use padamo_detectors::{diagrams::PadamoDetectorDiagram, loaded_detectors_storage::DetectorEntry};
 pub mod messages;
 use messages::TriggerMessage;
 //use padamo_iced_forms::IcedForm;

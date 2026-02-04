@@ -1,9 +1,9 @@
 use std::{sync::mpsc, thread};
 
 use super::{AnimationParameters, Worker};
-use padamo_detectors::diagrams::{ContourMask, PadamoDetectorDiagram, traits::ColorValueSource};
+use padamo_detectors::diagrams::{ContourMask, PadamoDetectorDiagram};
 use padamo_detectors::loaded_detectors_storage::DetectorEntry;
-use padamo_detectors::{DetectorAndMask, Scaling};
+use padamo_detectors::Scaling;
 use plotters::coord::Shift;
 use plotters::prelude::*;
 

@@ -1,4 +1,3 @@
-use std::ops::Deref;
 
 use iced::widget::{column, row};
 use padamo_api::{lazy_array_operations::{ArrayND, LazyTriSignal}, prelude::{Content, make_lao_box}};

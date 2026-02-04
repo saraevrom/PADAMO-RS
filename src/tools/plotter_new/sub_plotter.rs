@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 
-use padamo_api::lazy_array_operations::ArrayND;
 use padamo_detectors::{diagrams::{ColoredMaskSource, PadamoDetectorDiagram}, loaded_detectors_storage::DetectorEntry};
 use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate, Shift}, prelude::Cartesian2d};
 use plotters_iced::{
