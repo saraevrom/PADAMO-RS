@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
 use padamo_api::lazy_array_operations::ArrayND;
+use padamo_detectors::diagrams::{ColoredMaskSource, PadamoDetectorDiagram};
 use plotters::{coord::{types::RangedCoordf64, ReverseCoordTranslate, Shift}, prelude::Cartesian2d};
 use plotters_iced::{
     Chart, ChartBuilder, ChartWidget, DrawingArea, DrawingBackend, Renderer
@@ -74,7 +75,7 @@ pub struct Subplotter{
     displaying_signal:Option<super::loader::StoredSignal>,
     // y_range: Option<(f64,f64)>,
     last_detector:Option<padamo_detectors::DetectorAndMask>,
-    plotter: padamo_detectors::DetectorPlotter<SubplotterMessage>,
+    // plotter: padamo_detectors::DetectorPlotter<SubplotterMessage>,
     transform: crate::transform_widget::TransformState,
     pointer: Option<usize>,
     plot_spec:RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
@@ -91,7 +92,7 @@ impl Subplotter{
             settings:Default::default(),
             // display_mode:DisplayMode::Seconds,
             last_detector:None,
-            plotter: padamo_detectors::DetectorPlotter::new(),
+            // plotter: padamo_detectors::DetectorPlotter::new(),
             transform: Default::default(),
             pointer:None,
             plot_spec:RefCell::new(None)
@@ -230,12 +231,17 @@ impl Subplotter{
 
     pub fn view_mask(&self)->iced::Element<'_, SubplotterMessage>{
         if let Some(pix) = &self.pixels{
-            let action:Option<fn(Vec<usize>)->SubplotterMessage> = None;
             let det = if let Some(det) = &self.last_detector {Some(det)} else {None};
 
             let transformer:iced::Element<'_,_> = self.transform.view().into();
+            let color_source = ColoredMaskSource::new(pix);
+            let plotter = PadamoDetectorDiagram::from_detector_and_source(det.map(|x| &x.cells), color_source)
+                .transformed(self.transform.transform())
+                .on_left_click(SubplotterMessage::TogglePixel);
+
             iced::widget::column![
-                self.plotter.view_map_simple(det, pix, Some(self.transform.transform()), Some(SubplotterMessage::TogglePixel), action),
+                plotter.view(),
+                // self.plotter.view_map_simple(det, pix, Some(self.transform.transform()), Some(SubplotterMessage::TogglePixel), action),
                 iced::widget::container(
                     iced::widget::row![
                         iced::widget::button("Clear").on_press(SubplotterMessage::Clear),

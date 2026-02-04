@@ -15,7 +15,7 @@ pub fn display_pixel_id<DB:DrawingBackend>(
             format!("{:?} {:.3}",index,val)
         }
         else{
-            format!("{:?} MAPPING INVALID",index)
+            format!("{:?}",index)
         };
         root.draw_text(&txt, &(("sans-serif", 15).into()), unmapped_pos).unwrap();
     }

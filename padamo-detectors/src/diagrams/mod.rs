@@ -9,6 +9,9 @@ pub mod colorbar;
 
 use plotters::prelude::Polygon;
 
+pub use modular_diagram::PadamoDetectorDiagram;
+pub use color_sources::{ColoredMaskSource, MatrixSource, DualColoredMaskSource, autoselect_source};
+
 pub struct PolyIterator<'a>
 {
     source:&'a dyn traits::ColorValueSource,

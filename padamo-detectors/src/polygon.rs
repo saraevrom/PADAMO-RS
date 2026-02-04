@@ -276,7 +276,11 @@ impl DetectorPixel{
     }
 
     pub fn make_outline(&self)->PathElement<(f64,f64)>{
-        PathElement::new(self.vertices.iter().map(|x| x.into_tuple()).collect::<Vec<(f64,f64)>>(), BLACK)
+        let mut verts = self.vertices.iter().map(|x| x.into_tuple()).collect::<Vec<(f64,f64)>>();
+        if let Some(x) = verts.get(0){
+            verts.push(*x); // To make a closed loop
+        }
+        PathElement::new(verts, BLACK)
     }
 
     pub fn into_src(&self, round:Option<usize>)->String{
@@ -605,7 +609,8 @@ impl<'a> Iterator for PixelPathIterator<'a>{
     type Item = PathElement<(f64,f64)>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current_index<self.detector.content.len(){
+        let len = self.detector.content.len();
+        if self.current_index<len{
             let pixel = &self.detector.content[self.current_index];
             let res = pixel.make_outline();
             self.current_index += 1;

@@ -1,5 +1,7 @@
 use padamo_arraynd::ArrayND;
 
+use crate::{DetectorAndMask};
+
 use super::traits::ColorValueSource;
 use plotters::prelude::*;
 use super::scaling::Scaling;
@@ -51,6 +53,12 @@ impl<'a> MatrixSource<'a>
         self.masked_color = color;
         self
     }
+
+    fn get_norm(&self) -> (f64, f64) {
+        let (min_, mut max_) = self.scale.get_bounds(self.data,self.mask);
+        max_ = if max_>min_ {max_} else {min_+0.1};
+        (min_, max_)
+    }
 }
 
 
@@ -59,7 +67,7 @@ impl<'a> ColorValueSource for MatrixSource<'a>
 {
     fn get_color(&self, pixel:&[usize]) -> ShapeStyle {
         if self.mask.try_get(pixel).map(|x| *x).unwrap_or(false){
-            let (min_, max_) = self.get_norm().unwrap();
+            let (min_, max_) = self.get_norm();
             //println!("COORDS {},{}",self.i,self.j);
             if let Some(v) = self.data.try_get(&pixel){
                 if !(v.is_nan() || min_.is_nan() || max_.is_nan()){
@@ -79,10 +87,9 @@ impl<'a> ColorValueSource for MatrixSource<'a>
         }
     }
 
-    fn get_norm(&self) -> Option<(f64, f64)> {
-        let (min_, mut max_) = self.scale.get_bounds(self.data,self.mask);
-        max_ = if max_>min_ {max_} else {min_+0.1};
-        Some((min_, max_))
+    fn get_bar<'b>(&'b self) -> Option<((f64, f64),&'b dyn ColorMap<RGBColor, f64>)> {
+        let edges = self.get_norm();
+        Some((edges, self.colormap))
     }
 
     fn get_value(&self, pixel:&[usize]) -> Option<f64> {
@@ -93,6 +100,12 @@ impl<'a> ColorValueSource for MatrixSource<'a>
 pub struct ColoredMaskSource<'a>
 {
     mask:&'a ArrayND<bool>,
+}
+
+impl<'a> ColoredMaskSource<'a> {
+    pub fn new(mask: &'a ArrayND<bool>) -> Self {
+        Self { mask }
+    }
 }
 
 impl<'a> ColorValueSource for ColoredMaskSource<'a>{
@@ -114,3 +127,79 @@ impl<'a> ColorValueSource for ColoredMaskSource<'a>{
     }
 }
 
+pub struct DualColoredMaskSource<'a>
+{
+    mask:&'a ArrayND<bool>,
+    active_color: RGBColor,
+    inactive_color: RGBColor
+}
+
+impl<'a> DualColoredMaskSource<'a> {
+    pub fn new(mask: &'a ArrayND<bool>, active_color: RGBColor, inactive_color: RGBColor) -> Self {
+        Self { mask, active_color, inactive_color }
+    }
+}
+
+impl<'a> ColorValueSource for DualColoredMaskSource<'a>{
+    fn get_color(&self, pixel:&[usize]) -> ShapeStyle {
+        if self.mask.try_get(pixel).map(|x| *x).unwrap_or(false){
+            self.active_color.filled()
+        }
+        else{
+            self.inactive_color.filled()
+        }
+    }
+
+}
+
+pub fn autoselect_source<'a>(detector:Option<&'a DetectorAndMask>, buffer:Option<&'a ArrayND<f64>>)->Box<dyn ColorValueSource+'a>{
+    if let Some(det) = detector{
+        if let Some(buf) = buffer{
+            Box::new(MatrixSource::new(&buf, &det.alive_pixels))
+        }
+        else{
+            Box::new(DualColoredMaskSource::new(&det.alive_pixels, plotters::prelude::BLUE, plotters::prelude::BLACK))
+        }
+    }
+    else{
+        Box::new(plotters::prelude::BLUE)
+    }
+}
+
+pub struct Contoured<T:ColorValueSource>{
+    pub source:T
+}
+
+impl<T: ColorValueSource> Contoured<T> {
+    pub fn new(source: T) -> Self {
+        Self { source }
+    }
+}
+
+impl<T:ColorValueSource> ColorValueSource for Contoured<T>{
+    fn get_color(&self, pixel:&[usize]) -> ShapeStyle {
+        self.source.get_color(pixel)
+    }
+
+    fn get_value(&self, pixel:&[usize]) -> Option<f64> {
+        self.source.get_value(pixel)
+    }
+
+    fn get_bar<'a>(&'a self) -> Option<((f64, f64),&'a dyn ColorMap<RGBColor, f64>)> {
+        self.source.get_bar()
+    }
+
+    fn has_outline(&self)->bool{
+        true
+    }
+}
+
+pub trait Contourable: ColorValueSource+Sized{
+    fn contoured(self)->Contoured<Self>{
+        Contoured::new(self)
+    }
+}
+
+impl<T:ColorValueSource> Contourable for T{
+
+}

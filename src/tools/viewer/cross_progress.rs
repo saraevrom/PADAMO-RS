@@ -3,7 +3,7 @@ use iced::widget::{row, column};
 use padamo_api::lazy_array_operations::LazyTriSignal;
 
 use crate::{application::PadamoState, messages::PadamoAppMessage};
-use crate::custom_widgets::timeline::TimeLine;
+use crate::custom_widgets::timeline::{TimeLine, TimeLineState, TimeLineEvent};
 use crate::detector_muxer::get_signal_var;
 
 use iced::widget::text::Catalog;
@@ -30,6 +30,12 @@ pub struct CrossProgress{
     end_str:String,
     length:usize,
     playstate:PlayState,
+    timeline_state:TimeLineState,
+}
+
+#[derive(Clone, Debug)]
+pub struct TimelineUpdateMessage{
+    pub position:usize,
 }
 
 #[derive(Clone, Debug)]
@@ -49,7 +55,8 @@ pub enum CrossProgressMessage{
     SetViewEndText(String),
     EditDatetime(String),
     SetViewPositionUnixTime(f64),
-    SetViewPosition(usize),
+    // SetViewPosition(usize),
+    TimelineEvent(TimeLineEvent<TimelineUpdateMessage>),
     SubmitTimeline,
     SubmitDatetime,
     FocusOn(usize,usize),
@@ -90,6 +97,7 @@ impl CrossProgress{
             end_str:"100".into(),
             datetime_entry:"".into(),
             playstate: PlayState::Stop,
+            timeline_state:Default::default()
         }
     }
 
@@ -100,7 +108,8 @@ impl CrossProgress{
 
         let res = row![
             iced::widget::Container::new(
-                iced::Element::new(TimeLine::new(self.length,self.pointer, self.start, self.end,Some(CrossProgressMessage::SetViewPosition))),
+                iced::Element::new(TimeLine::new(&self.timeline_state,self.length,self.pointer, self.start, self.end,Some(|position| TimelineUpdateMessage{position})))
+                    .map(CrossProgressMessage::TimelineEvent),
             ).center_x(iced::Length::Fill).center_y(iced::Length::Shrink).width(iced::Length::Fill).height(iced::Length::Fill),
 
             iced::widget::container(column![
@@ -344,15 +353,26 @@ impl CrossProgress{
                     }
                 }
             },
-            CrossProgressMessage::SetViewPosition(pos)=>{
-                self.pointer = pos;
-                if self.pointer<self.start{
-                    self.start = self.pointer;
-                }
-                if self.pointer>self.end{
-                    self.end = self.pointer;
+            CrossProgressMessage::TimelineEvent(evt)=>{
+                if let Some(sub_evt) = self.timeline_state.update(evt){
+                    self.pointer = sub_evt.position;
+                    if self.pointer<self.start{
+                        self.start = self.pointer;
+                    }
+                    if self.pointer>self.end{
+                        self.end = self.pointer;
+                    }
                 }
             }
+            // CrossProgressMessage::SetViewPosition(pos)=>{
+            //     self.pointer = pos;
+            //     if self.pointer<self.start{
+            //         self.start = self.pointer;
+            //     }
+            //     if self.pointer>self.end{
+            //         self.end = self.pointer;
+            //     }
+            // }
             CrossProgressMessage::FocusOn(start, end)=>{
                 if self.detector_id==0{
                     self.pointer = start;

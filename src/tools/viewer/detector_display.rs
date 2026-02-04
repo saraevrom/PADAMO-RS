@@ -1,6 +1,6 @@
 use iced::widget::{column, row};
 use padamo_api::{lazy_array_operations::LazyTriSignal, prelude::{make_lao_box, Content}};
-use padamo_detectors::{mesh::Mesh, DetectorPlotter};
+use padamo_detectors::mesh::Mesh;
 use plotters::style::Color;
 
 use crate::{application::PadamoState, detector_muxer::get_signal_var, transform_widget::{TransformMessage, TransformState}};
@@ -18,7 +18,7 @@ pub enum SingleDetectorDisplayMessage{
     ResetMask,
 }
 
-pub struct SingleDetectorDisplay<T:Clone>
+pub struct SingleDetectorDisplay
 {
     detector_id: usize,
     // is_autoscale:bool,
@@ -28,15 +28,13 @@ pub struct SingleDetectorDisplay<T:Clone>
     scale_state:MultiEntry,
 
     buffer:Option<(padamo_api::lazy_array_operations::ndim_array::ArrayND<f64>,f64)>,
-    plotter:DetectorPlotter<T>,
     view_transform: TransformState,
 }
 
-impl<T:Clone> SingleDetectorDisplay<T>{
+impl SingleDetectorDisplay{
     pub fn new(detector_id:usize)->Self{
         Self {
             detector_id,
-            plotter: DetectorPlotter::new(),
             buffer:None,
             scale_state: MultiEntry::new(),
             view_transform: TransformState::new()
@@ -105,29 +103,33 @@ impl<T:Clone> SingleDetectorDisplay<T>{
         false
     }
 
-    pub fn view<'a, F,F1>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>, mesh_data:Option<(&'a Mesh, nalgebra::Matrix4<f64>)>)->iced::Element<'a, T>
+    pub fn view<'a, T:Clone+'a, F,F1>(&'a self, padamo:&'a PadamoState, wrapper:F, a1:Option<F1>, mesh_data:Option<(&'a Mesh, nalgebra::Matrix4<f64>)>)->iced::Element<'a, T>
     where
         F: 'static+Copy+Fn(SingleDetectorDisplayMessage)->T,
         F1:'static+Fn(Vec<usize>)->T,
     {
         let detector = padamo.detectors.get(self.detector_id).map(|x| &x.detector);
 
-        let frame = if let Some(buf) = &self.buffer{
-            Some((&buf.0, buf.1))
+        let a2 = move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x));
+
+        let color_source = padamo_detectors::diagrams::autoselect_source(detector, self.buffer.as_ref().map(|x| &x.0));
+        let mut detector_frame = padamo_detectors::diagrams::PadamoDetectorDiagram::new(detector.map(|x| &x.cells), color_source)
+            .transformed(self.view_transform.transform())
+            .on_right_click(a2);
+
+        if let Some(a) = a1{
+            detector_frame = detector_frame.on_left_click(a);
         }
-        else{
-            None
-        };
 
-        let a2 = Some(move |x| wrapper(SingleDetectorDisplayMessage::TogglePixel(x)));
+        if let Some(m) = mesh_data{
+            detector_frame = detector_frame.with_mesh(m.0, m.1, plotters::prelude::RED.filled());
+        }
 
-        let md = mesh_data.map(|x| (x.0,x.1, plotters::prelude::RED.filled()));
+        if let Some(time) = self.buffer.as_ref().map(|x| &x.1){
+            detector_frame = detector_frame.with_title_unixtime(*time);
+        }
 
-        let detector_frame = self.plotter.view(detector,frame,self.view_transform.transform(),self.get_scale(),
-                        a1,
-                        a2,
-                        md
-        );
+        let detector_frame = detector_frame.view();
 
         let transform:iced::Element<'_, _> = self.view_transform.view().into();
         let footer:iced::Element<'_, _> = row![

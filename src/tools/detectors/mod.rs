@@ -5,7 +5,8 @@ use crate::application::PadamoState;
 use crate::messages::PadamoAppMessage;
 use iced::widget;
 pub mod messages;
-use padamo_detectors::{DetectorPlotter, DetectorAndMask};
+use padamo_detectors::diagrams::color_sources::Contourable;
+use padamo_detectors::{DetectorAndMask};
 use padamo_detectors::polygon::DetectorContent;
 use iced::widget::pane_grid;
 
@@ -18,7 +19,7 @@ pub enum Pane{
 }
 
 pub struct PadamoDetectorManager{
-    chart:DetectorPlotter<DetectorManagerMessage>,
+    // chart:DetectorPlotter<DetectorManagerMessage>,
     detector:DetectorAndMask,
     source:widget::text_editor::Content,
     is_dirty:bool,
@@ -35,7 +36,7 @@ impl PadamoDetectorManager {
         panes.split(pane_grid::Axis::Vertical, start, Pane::SourceCode);
         Self {
             source,
-            chart:DetectorPlotter::new(),
+            // chart:DetectorPlotter::new(),
             detector:DetectorAndMask::default_vtl(),
             is_dirty:false,
             //split_pos:None,
@@ -51,7 +52,6 @@ impl PadamoTool for PadamoDetectorManager{
     }
 
     fn view<'a>(&'a self, _padamo:&PadamoState)->iced::Element<'a, crate::messages::PadamoAppMessage> {
-        let action:Option<fn(Vec<usize>)->DetectorManagerMessage> = None;
         // let frame:iced::Element<DetectorManagerMessage> = widget::row![
         //         Split::new(
         //             widget::container(self.chart.view(None,padamo_detectors::Scaling::Autoscale,action,action)).width(iced::Length::Fill),
@@ -67,12 +67,16 @@ impl PadamoTool for PadamoDetectorManager{
         //
         // ].into();
         //todo!()
+
         let subframe = iced::widget::PaneGrid::new(&self.panes,|_id, pane, _is_maximized| {
+
             match pane{
                 Pane::DetectorView=>{
                     let controls:iced::Element<'_,_> = self.viewer_transform.view().into();
+                    let chart = padamo_detectors::diagrams::PadamoDetectorDiagram::from_detector_and_source(Some(&self.detector.cells), plotters::prelude::BLUE.contoured());
                     widget::container(iced::widget::column![
-                        self.chart.view(Some(&self.detector),None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action,None),
+                        chart.view(),
+                        //self.chart.view(Some(&self.detector),None, self.viewer_transform.transform(),padamo_detectors::Scaling::Autoscale,action,action,None),
                         controls.map(DetectorManagerMessage::PlotZoomMessage),
                     ]).width(iced::Length::Fill).into()
                 }

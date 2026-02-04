@@ -5,20 +5,21 @@ pub const COLORBAR_SEGMENTS:usize = 256;
 pub const COLORBAR_WIDTH:f64 = 1.0;
 
 
-pub struct ColorbarRects{
+pub struct ColorbarRects<'a>{
     pub min:f64,
     pub max:f64,
+    pub colormap:&'a dyn ColorMap<RGBColor,f64>,
     index:usize,
 }
 
-impl ColorbarRects{
-    pub fn new(min:f64, max:f64)->Self{
+impl<'a> ColorbarRects<'a>{
+    pub fn new(min:f64, max:f64, colormap:&'a dyn ColorMap<RGBColor,f64>)->Self{
         let max = if max>min {max} else {min+0.1};
-        Self { min, max, index: 0 }
+        Self { min, max, colormap, index: 0 }
     }
 }
 
-impl Iterator for ColorbarRects{
+impl<'a> Iterator for ColorbarRects<'a>{
     type Item = Rectangle<(f64,f64)>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -35,7 +36,7 @@ impl Iterator for ColorbarRects{
         let e_coords = (COLORBAR_WIDTH,end_y);
 
 
-        let color = plotters::style::colors::colormaps::ViridisRGB::get_color_normalized(mid_y,self.min, self.max).filled();
+        let color = self.colormap.get_color_normalized(mid_y,self.min, self.max).filled();
 
         self.index += 1;
         Some(Rectangle::new(

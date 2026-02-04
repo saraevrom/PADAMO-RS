@@ -17,7 +17,6 @@ use super::PadamoTool;
 use abi_stable::traits::IntoOwned;
 use iced::{Element, Length};
 use iced::widget::scrollable::{self, Scrollbar};
-use once_cell::sync::Lazy;
 use iced::widget::pane_grid;
 use padamo_workspace::PadamoWorkspace;
 pub mod messages;

@@ -102,7 +102,7 @@ pub struct PadamoViewer{
     file_changed:bool,
     // view_transform: crate::transform_widget::TransformState,
 
-    window_view:detector_display::SingleDetectorDisplay<PadamoAppMessage>,
+    window_view:detector_display::SingleDetectorDisplay,
     playbar_state: cross_progress::CrossProgress,
 }
 

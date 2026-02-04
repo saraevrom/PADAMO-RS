@@ -1,18 +1,18 @@
 use iced::advanced::Widget;
 use iced::advanced::renderer::Quad;
 
-pub struct TimeLine <Message>{
+pub struct TimeLine <'a, Message:Clone+std::fmt::Debug>{
     length: usize,
     pointer: usize,
     start:usize,
     end:usize,
     click_message:Option<fn(usize)->Message>,
-    state:TimeLineState
+    state:&'a TimeLineState
 }
 
-impl<Message> TimeLine<Message>{
-    pub fn new(length:usize, pointer:usize, start:usize, end:usize, click_message:Option<fn(usize)->Message>)->Self{
-        Self{length, pointer, start, end, click_message, state:Default::default()}
+impl<'a, Message:Clone+std::fmt::Debug> TimeLine<'a, Message>{
+    pub fn new(state:&'a TimeLineState,length:usize, pointer:usize, start:usize, end:usize, click_message:Option<fn(usize)->Message>)->Self{
+        Self{length, pointer, start, end, click_message, state}
     }
 
     pub fn x_position(&self, pos:usize, bounds:iced::Rectangle)->f32{
@@ -20,7 +20,7 @@ impl<Message> TimeLine<Message>{
     }
 }
 
-impl<Message,Theme, Renderer> Widget<Message,Theme, Renderer> for TimeLine<Message>
+impl<'a, Message:Clone+std::fmt::Debug,Theme, Renderer> Widget<TimeLineEvent<Message>,Theme, Renderer> for TimeLine<'a, Message>
 where
     Renderer: iced::advanced::Renderer,
 {
@@ -134,30 +134,43 @@ where
         cursor: iced::advanced::mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn iced::advanced::Clipboard,
-        shell: &mut iced::advanced::Shell<'_, Message>,
+        shell: &mut iced::advanced::Shell<'_, TimeLineEvent<Message>>,
         _viewport: &iced::Rectangle,
     ) {
             let bounds = layout.bounds();
-            let tl_state = &mut self.state;
+
+            // let tl_state = &mut self.state;
+            // println!("{:?}", tl_state);
             if let Some(pos) = cursor.position(){
                 if bounds.contains(pos){
                     let pos = pos - bounds.position();
                     match event {
-                        iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{ tl_state.is_dragging = true;}
-                        iced::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{ tl_state.is_dragging = false;}
-                        iced::Event::Mouse(iced::mouse::Event::CursorLeft)=>{tl_state.is_dragging = false;}
+                        iced::Event::Mouse(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left))=>{
+                            // tl_state.is_dragging = true;
+                            shell.publish(TimeLineEvent::StartDragging);
+                        }
+                        iced::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))=>{
+                            // tl_state.is_dragging = false;
+
+                            shell.publish(TimeLineEvent::EndDragging);
+                        }
+                        iced::Event::Mouse(iced::mouse::Event::CursorLeft)=>{
+                            // tl_state.is_dragging = false;
+                            shell.publish(TimeLineEvent::EndDragging);
+                        }
                         iced::Event::Mouse(iced::mouse::Event::CursorMoved { position:_ })=>(),
                         _=>{},
                     }
-                    if tl_state.is_dragging{
+                    if self.state.is_dragging{
+                        // println!("DRAG");
                         let new_x:usize = (pos.x/bounds.width*(self.length as f32)).round() as usize;
                         if let Some(creator) = self.click_message{
-                            shell.publish(creator(new_x));
+                            shell.publish(TimeLineEvent::Event(creator(new_x)));
                         }
                     }
                 }
-                else{
-                    tl_state.is_dragging = false;
+                else if self.state.is_dragging{
+                    shell.publish(TimeLineEvent::EndDragging);
                 }
             }
             // if let Some(pos) = cursor.position(){
@@ -176,7 +189,32 @@ where
 
 }
 
-#[derive(Default)]
-struct TimeLineState{
+#[derive(Default, Debug, Clone)]
+pub struct TimeLineState{
     is_dragging:bool
+}
+
+#[derive(Debug, Clone)]
+pub enum TimeLineEvent<Message:Clone+std::fmt::Debug>{
+    StartDragging,
+    EndDragging,
+    Event(Message)
+}
+
+impl TimeLineState{
+    pub fn update<Message:Clone+std::fmt::Debug>(&mut self, event:TimeLineEvent<Message>)->Option<Message>{
+        match event{
+            TimeLineEvent::StartDragging=>{
+                self.is_dragging = true;
+                None
+            }
+            TimeLineEvent::EndDragging=>{
+                self.is_dragging = false;
+                None
+            }
+            TimeLineEvent::Event(e)=>{
+                Some(e)
+            }
+        }
+    }
 }

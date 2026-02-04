@@ -3,11 +3,13 @@ use std::cell::RefCell;
 use crate::polygon::DetectorContent;
 use super::traits::ColorValueSource;
 use crate::transformer::Transform;
+use iced::Length;
 use plotters::{coord::{ReverseCoordTranslate, types::RangedCoordf64}, prelude::*};
+use plotters_iced::ChartWidget;
 use plotters_layout::{ChartLayout, centering_ranges};
 
-struct TransformedMesh{
-    mesh: crate::Mesh,
+struct TransformedMesh<'a>{
+    mesh: &'a crate::Mesh,
     transformation_matrix:nalgebra::Matrix4<f64>,
     style:plotters::prelude::ShapeStyle,
 }
@@ -20,27 +22,27 @@ pub struct PadamoDetectorDiagramState{
     pub spec: RefCell<Option<Cartesian2d<RangedCoordf64, RangedCoordf64>>>,
 }
 
-pub struct PadamoDetectorDiagram<'a, Msg>
+pub struct PadamoDetectorDiagram<'a, Msg:'a>
 where
     // F1:'static + Fn(Vec<usize>)->Msg,
     // F2:'static + Fn(Vec<usize>)->Msg,
 {
-    detector: &'a DetectorContent,
-    color_source: Box<dyn ColorValueSource>,
+    detector: Option<&'a DetectorContent>,
+    color_source: Box<dyn ColorValueSource+'a>,
     title:Option<String>,
     lmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
     rmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
     multiselect_action:Option<Box<dyn 'static + Fn(Vec<&'a [usize]>, iced::mouse::Button)->Msg>>,
     transform: Transform,
-    mesh:Option<TransformedMesh>,
+    mesh:Option<TransformedMesh<'a>>,
 }
 
-impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
+impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
 {
-    pub fn new<C:ColorValueSource+'static>(detector: &'a DetectorContent, color_source: C) -> Self {
+    pub fn new(detector: Option<&'a DetectorContent>, color_source: Box<dyn ColorValueSource+'a>) -> Self {
         Self {
             detector,
-            color_source: Box::new(color_source),
+            color_source: color_source,
             lmb_action: None,
             rmb_action: None,
             multiselect_action: None,
@@ -48,6 +50,10 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
             transform: Transform::new(1.0, 0.0, 0.0),
             mesh:None,
         }
+    }
+
+    pub fn from_detector_and_source<C:ColorValueSource+'a>(detector: Option<&'a DetectorContent>, color_source: C) -> Self {
+        Self::new(detector, Box::new(color_source))
     }
 
     pub fn on_left_click<F:'static + Fn(Vec<usize>)->Msg>(mut self, action:F) -> Self{
@@ -106,63 +112,72 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
         self.with_title(title)
     }
 
+    pub fn with_mesh(mut self, mesh:&'a crate::mesh::Mesh, transformation_matrix:nalgebra::Matrix4<f64>, style:ShapeStyle)->Self{
+        self.mesh = Some(TransformedMesh{mesh, transformation_matrix, style});
+        self
+    }
+
     pub fn draw_main<DB: DrawingBackend>(&self, root: &DrawingArea<DB, plotters::coord::Shift>,state:Option<&PadamoDetectorDiagramState>){
-        let ((min_x, min_y), (max_x, max_y)) = self.detector.size();
-        let min_range = (min_x..max_x, min_y..max_y);
+        if let Some(det) = self.detector{
+            let ((min_x, min_y), (max_x, max_y)) = det.size();
+            let min_range = (min_x..max_x, min_y..max_y);
 
-        let mut layout = ChartLayout::new();
-        if let Some(title) = &self.title{
-            layout.caption(title, ("sans-serif", 20)).unwrap();
-        }
-        let main_builder = layout
-        .margin(4)
-        //.margin_top(10)
-        .x_label_area_size(28)
-        .y_label_area_size(40)
-        .bind(root).unwrap();
+            let mut layout = ChartLayout::new();
+            if let Some(title) = &self.title{
+                layout.caption(title, ("sans-serif", 20)).unwrap();
+            }
+            let main_builder = layout
+            .margin(4)
+            //.margin_top(10)
+            .x_label_area_size(28)
+            .y_label_area_size(40)
+            .bind(root).unwrap();
 
-        let (width, height) = main_builder.estimate_plot_area_size();
-        let (x_range, y_range) = centering_ranges(&min_range, &(width as f64, height as f64));
-        let x_range = self.transform.transform_x_range(x_range);
-        let y_range = self.transform.transform_y_range(y_range);
+            let (width, height) = main_builder.estimate_plot_area_size();
+            let (x_range, y_range) = centering_ranges(&min_range, &(width as f64, height as f64));
+            let x_range = self.transform.transform_x_range(x_range);
+            let y_range = self.transform.transform_y_range(y_range);
 
-        // let (min,max) =  if let Some(pix) = pixels{
-        //     scale.get_bounds(pix.0,&detector.alive_pixels)
-        // }
-        // else{
-        //     (0.0,1.0)
-        // };
+            // let (min,max) =  if let Some(pix) = pixels{
+            //     scale.get_bounds(pix.0,&detector.alive_pixels)
+            // }
+            // else{
+            //     (0.0,1.0)
+            // };
 
-        let mut chart = main_builder.build_cartesian_2d(x_range, y_range).unwrap();
-        chart.configure_mesh()
-        .disable_mesh()
-        .draw().unwrap();
+            let mut chart = main_builder.build_cartesian_2d(x_range, y_range).unwrap();
+            chart.configure_mesh()
+            .disable_mesh()
+            .draw().unwrap();
 
-        let rects = super::PolyIterator::new(self.color_source.as_ref(), self.detector);
-        chart.draw_series(rects).unwrap();
+            let rects = super::PolyIterator::new(self.color_source.as_ref(), det);
+            chart.draw_series(rects).unwrap();
 
-        if self.color_source.has_outline(){
-            let polys = self.detector.pixels_outlines();
-            chart.draw_series(polys).unwrap();
-        }
+            if self.color_source.has_outline(){
+                let polys = det.pixels_outlines();
+                chart.draw_series(polys).unwrap();
+            }
 
-        if let Some(m) = &self.mesh{
-            m.mesh.draw(m.transformation_matrix, m.style, &mut chart);
-        }
+            if let Some(m) = &self.mesh{
+                m.mesh.draw(m.transformation_matrix, m.style, &mut chart);
+            }
 
-        //TODO: display pixel
+            //TODO: display pixel
 
-        if let Some(s) = state{
-            *s.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
-            super::auxiliary::display_pixel_id(self.detector, root, self.color_source.as_ref(), s);
+            if let Some(s) = state{
+                *s.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
+                super::auxiliary::display_pixel_id(det, root, self.color_source.as_ref(), s);
 
-            if let Some((btn,p1)) = s.click_state.get_state(){
-                let p2 = s.pos;
-                let coords = [p1,p2];
-                let rect = plotters::prelude::Rectangle::new(coords, self.get_selection_color(btn));
-                chart.draw_series(std::iter::once(rect)).unwrap();
+                if let Some((btn,p1)) = s.click_state.get_state(){
+                    let p2 = s.pos;
+                    let coords = [p1,p2];
+                    let rect = plotters::prelude::Rectangle::new(coords, self.get_selection_color(btn));
+                    chart.draw_series(std::iter::once(rect)).unwrap();
+                }
             }
         }
+
+
 
     }
 
@@ -174,7 +189,7 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
 
         let pixel_width = root.dim_in_pixel().0;
 
-        if let Some((min,max)) = self.color_source.get_norm(){
+        if let Some(((min,max), colormap)) = self.color_source.get_bar(){
             let (main_part, colorbar_part) = root.split_horizontally(pixel_width-80);
             self.draw_main(&main_part, state);
 
@@ -194,7 +209,7 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
                 .label_style("sans-serif".into_font())
                 .draw()
                 .unwrap();
-            let color_rects = super::colorbar::ColorbarRects::new(min, max);
+            let color_rects = super::colorbar::ColorbarRects::new(min, max, colormap);
             cmap_chart.draw_series(color_rects).unwrap();
         }
         else{
@@ -202,9 +217,27 @@ impl<'a, Msg> PadamoDetectorDiagram<'a, Msg>
         }
 
     }
+
+    pub fn view(self)->iced::Element<'a,Msg>{
+        if self.detector.is_some(){
+            // if let Some(src) = source{
+            //     if !src.0.form_compatible(dm.shape()){
+            //         let warning = iced::widget::text(format!("Incompatible shapes:\nSignal: {:?}\nDetector: {:?}",src.0.shape, dm.shape()));
+            //         let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+            //         return container.into();
+            //     }
+            // }
+            ChartWidget::new(self).into()
+        }
+        else{
+            let warning = iced::widget::text("No detector");
+            let container = iced::widget::container(warning).center_x(Length::Fill).center_y(Length::Fill);
+            container.into()
+        }
+    }
 }
 
-impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Message>{
+impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Message>{
     type State = PadamoDetectorDiagramState;
 
     fn build_chart<DB: DrawingBackend>(&self, _state: &Self::State, _builder: ChartBuilder<DB>) {}
@@ -221,6 +254,7 @@ impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Mess
         bounds: iced::Rectangle,
         cursor: iced::mouse::Cursor,
     ) -> (iced::event::Status, Option<Message>) {
+        let detector = if let Some(d) = self.detector {d} else {return (iced::event::Status::Ignored, None);};
         if let iced::mouse::Cursor::Available(point) = cursor {
             if bounds.contains(point){
                 if let iced::widget::canvas::Event::Mouse(evt) = event{
@@ -232,7 +266,7 @@ impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Mess
                             state.pos = inpoint;
                             state.unmapped = (p.x as i32,p.y as i32);
 
-                            if let Some(index) = self.detector.position_index(inpoint){
+                            if let Some(index) = detector.position_index(inpoint){
                                 match evt{
                                     iced::mouse::Event::ButtonPressed(btn)=>{
                                         if let iced::mouse::Button::Left | iced::mouse::Button::Right = btn {
@@ -251,7 +285,7 @@ impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Mess
                                                 if let Some(caller) = &self.multiselect_action{
                                                     let (left, top) = pos1;
                                                     let (right, bottom) = inpoint;
-                                                    let indices = self.detector.select_indices_in_rectangle(left, right, top, bottom);
+                                                    let indices = detector.select_indices_in_rectangle(left, right, top, bottom);
                                                     let msg = Some(caller(indices, *btn));
                                                     return (iced::event::Status::Captured, msg);
                                                 }
@@ -269,40 +303,6 @@ impl<'a,Message> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,Mess
                     }
                 }
             }
-            // match event {
-            //     iced::widget::canvas::Event::Mouse(evt) if bounds.contains(point) => {
-            //         let p_origin = bounds.position();
-            //         let p = point - p_origin;
-            //         if let Some(spec) = self.detector_plotter.spec.borrow().as_ref(){
-            //             if let Some(inpoint) = spec.reverse_translate((p.x as i32,p.y as i32)){
-            //                 //println!("{:?}",inpoint);
-            //                 *state = Some((inpoint,(p.x as i32,p.y as i32)));
-            //                 let mut msg = None;
-            //                 if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Right) = evt{
-            //                     if let Some(caller) = &self.rclick_event{
-            //                         if let Some(index) = self.detector.cells.position_index(inpoint){
-            //                             msg = Some(caller(index.into()));
-            //                         }
-            //                     }
-            //                 }
-            //                 else if let iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left) = evt{
-            //                     if let Some(caller) = &self.lclick_event{
-            //                         if let Some(index) = self.detector.cells.position_index(inpoint){
-            //                             msg = Some(caller(index.into()));
-            //                         }
-            //                     }
-            //                 }
-            //
-            //                 return (
-            //                     iced::event::Status::Captured,
-            //                     msg,
-            //                 );
-            //             }
-            //         }
-            //
-            //     }
-            //     _ => {}
-            // }
         }
         // *state = None;
         (iced::event::Status::Ignored, None)
