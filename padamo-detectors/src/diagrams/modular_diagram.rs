@@ -32,7 +32,7 @@ where
     title:Option<String>,
     lmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
     rmb_action:Option<Box<dyn 'static + Fn(Vec<usize>)->Msg>>,
-    multiselect_action:Option<Box<dyn 'static + Fn(Vec<&'a [usize]>, iced::mouse::Button)->Msg>>,
+    multiselect_action:Option<Box<dyn 'static + Fn(Vec<Vec<usize>>, iced::mouse::Button)->Msg>>,
     transform: Transform,
     mesh:Option<TransformedMesh<'a>>,
 }
@@ -82,7 +82,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
         }.filled()
     }
 
-    pub fn on_multiselect<F:'static + Fn(Vec<&'a[usize]>, iced::mouse::Button)->Msg>(mut self, action:F) -> Self{
+    pub fn on_multiselect<F:'static + Fn(Vec<Vec<usize>>, iced::mouse::Button)->Msg>(mut self, action:F) -> Self{
         self.multiselect_action = Some(Box::new(action));
         self
     }

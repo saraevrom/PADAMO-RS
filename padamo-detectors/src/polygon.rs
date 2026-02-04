@@ -398,11 +398,11 @@ impl Detector{
         None
     }
 
-    pub fn select_indices_in_rectangle(&self, left:f64, right:f64, top:f64, bottom:f64) -> Vec<&[usize]>{
+    pub fn select_indices_in_rectangle(&self, left:f64, right:f64, top:f64, bottom:f64) -> Vec<Vec<usize>>{
         let mut res = Vec::new();
         for pix in self.content.iter(){
             if pix.intersects_or_inside_rectangle(left,right,top,bottom){
-                res.push(pix.index.as_ref());
+                res.push(pix.index.to_vec());
             }
         }
         res
