@@ -60,7 +60,8 @@ fn find_unixtime(haystack: &[f64],unixtime:f64)->Option<usize>{
 
 #[derive(Clone, Debug)]
 pub enum SubplotterMessage{
-    TogglePixel(Vec<usize>),
+    // TogglePixel(Vec<usize>),
+    MultiSelect(Vec<Vec<usize>>, iced::mouse::Button),
     Transform(crate::transform_widget::TransformMessage),
     PlotXClicked(f64),
     Clear
@@ -248,7 +249,7 @@ impl Subplotter{
             let color_source = ColoredMaskSource::new(pix);
             let plotter = PadamoDetectorDiagram::from_detector_and_source(detector_entry.map(|x| &x.detector), color_source)
                 .transformed(self.transform.transform())
-                .on_left_click(SubplotterMessage::TogglePixel);
+                .on_multiselect(SubplotterMessage::MultiSelect);
 
             iced::widget::column![
                 plotter.view(),
@@ -278,22 +279,41 @@ impl Subplotter{
 
     pub fn update(&mut self, msg: SubplotterMessage, padamo:&mut PadamoState){
         match msg{
-            SubplotterMessage::TogglePixel(id)=>{
-                        // if let Some(pixels) = &mut self.pixels{
-                        //     if pixels.index_compatible(&id){
-                        //         pixels[&id] = !pixels[&id];
-                        //         self.cache.clear();
-                        //     }
-                        // }
-                        if let Some(det_id) = self.last_detector_id{
-                            if let Some(entry) = padamo.detectors.get_mut(det_id){
-                                if let Some(v) = entry.selection.try_get(&id){
-                                    entry.selection.set(&id, !v);
-                                }
-                            }
-                        }
+            // SubplotterMessage::TogglePixel(id)=>{
+            //             // if let Some(pixels) = &mut self.pixels{
+            //             //     if pixels.index_compatible(&id){
+            //             //         pixels[&id] = !pixels[&id];
+            //             //         self.cache.clear();
+            //             //     }
+            //             // }
+            //             if let Some(det_id) = self.last_detector_id{
+            //                 if let Some(entry) = padamo.detectors.get_mut(det_id){
+            //                     if let Some(v) = entry.selection.try_get(&id){
+            //                         entry.selection.set(&id, !v);
+            //                     }
+            //                 }
+            //             }
+            //
+            //         },
+            SubplotterMessage::MultiSelect(ids, btn)=>{
+                let value = if let iced::mouse::Button::Left = btn{
+                    true
+                }
+                else{
+                    false
+                };
 
-                    },
+                if let Some(det_id) = self.last_detector_id{
+                    if let Some(entry) = padamo.detectors.get_mut(det_id){
+                        // if let Some(v) = entry.selection.try_get(&id){
+                        //     entry.selection.set(&id, !v);
+                        // }
+                        for id in ids.iter(){
+                            entry.selection.set(&id, value);
+                        }
+                    }
+                }
+            }
             SubplotterMessage::Clear=>{
                         if let Some(det_id) = self.last_detector_id{
                             if let Some(entry) = padamo.detectors.get_mut(det_id){
