@@ -6,9 +6,10 @@ pub fn display_pixel_id<DB:DrawingBackend>(
     detector: &Detector,
     root: &DrawingArea<DB, plotters::coord::Shift>,
     value_source:&dyn super::traits::ColorValueSource,
-    state: &super::modular_diagram::PadamoDetectorDiagramState
+    state: &super::modular_diagram::PadamoDetectorDiagramState,
+    rotation_angle:f64,
 ) {
-    if let Some(index) = detector.position_index(state.pos){
+    if let Some(index) = detector.position_index(crate::rotate(state.pos,-rotation_angle)){
         let mut unmapped_pos = state.unmapped;
         unmapped_pos.1 -= 20;
         let txt = if let Some(val) = value_source.get_value(index){

@@ -81,3 +81,11 @@ impl DetectorAndMask {
         Self::from_cells(polygon::Detector::default_vtl())
     }
 }
+
+fn rotate(xy:(f64,f64), angle:f64)->(f64,f64){
+    let angle = angle*std::f64::consts::PI/180.0;
+    (
+        xy.0*angle.cos()-xy.1*angle.sin(),
+        xy.0*angle.sin()+xy.1*angle.cos(),
+    )
+}

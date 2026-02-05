@@ -120,13 +120,7 @@ fn convert_array<'a,T:serde::Deserialize<'a>>(arr_in:&'a rhai::Array)->Result<RV
     Ok(arr_out)
 }
 
-fn rotate(xy:(f64,f64), angle:f64)->(f64,f64){
-    let angle = angle*std::f64::consts::PI/180.0;
-    (
-        xy.0*angle.cos()-xy.1*angle.sin(),
-        xy.0*angle.sin()+xy.1*angle.cos(),
-    )
-}
+use crate::rotate;
 
 impl DetectorPixel{
     pub fn new(index:RVec<usize>, vertices:RVec<Tuple2<f64,f64>>)->Self{

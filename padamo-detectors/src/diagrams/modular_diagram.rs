@@ -174,7 +174,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
 
             if let Some(s) = state{
                 *s.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
-                super::auxiliary::display_pixel_id(det, root, self.color_source.as_ref(), s);
+                super::auxiliary::display_pixel_id(det, root, self.color_source.as_ref(), s, self.rotation_angle);
 
                 if let Some((btn,p1)) = s.click_state.get_state(){
                     let p2 = s.pos;
@@ -285,7 +285,8 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
                                             state.click_state.click(*btn, inpoint);
                                         }
                                         if let Some(caller) = self.get_click_event(*btn){
-                                            if let Some(index) = detector.position_index(inpoint){
+                                            let inpoint_rotated = crate::rotate(inpoint, -self.rotation_angle);
+                                            if let Some(index) = detector.position_index(inpoint_rotated){
                                                 let msg = Some(caller(index.into()));
                                                 return (iced::event::Status::Captured, msg);
                                             }
