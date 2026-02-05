@@ -33,14 +33,24 @@ impl ClickTracker{
     }
 
     pub fn click(&mut self, mouse_button:iced::mouse::Button, position:(f64,f64)){
-        if self.state.is_none(){
+        let matching = if let Some(s) = self.state{
+            s.0==mouse_button
+        }
+        else{
+            true
+        };
+
+        if matching{
             self.state = Some((mouse_button, position));
+            println!("CLICK {:?}", mouse_button);
         }
     }
 
     pub fn release(&mut self, mouse_button:iced::mouse::Button)->Option<(f64,f64)>{
         if let Some((btn, pos)) = self.state.take(){
             if btn==mouse_button{
+
+                println!("CLICK END {:?}", mouse_button);
                 Some(pos)
             }
             else{
@@ -62,6 +72,7 @@ impl ClickTracker{
     }
 
     pub fn reset(&mut self){
+        println!("CLICK RESET");
         self.state = None;
     }
 }

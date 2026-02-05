@@ -170,8 +170,6 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
                 m.mesh.draw(m.transformation_matrix, m.style, &mut chart);
             }
 
-            //TODO: display pixel
-
             if let Some(s) = state{
                 *s.spec.borrow_mut() = Some(chart.as_coord_spec().clone());
                 super::auxiliary::display_pixel_id(det, root, self.color_source.as_ref(), s, self.rotation_angle);
@@ -264,7 +262,6 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
     ) -> (iced::event::Status, Option<Message>) {
         let detector = if let Some(d) = self.detector {d} else {return (iced::event::Status::Ignored, None);};
 
-        let mut oob = true;
         if let iced::widget::canvas::Event::Mouse(evt) = event{
             if let iced::mouse::Cursor::Available(point) = cursor {
                 if bounds.contains(point){
@@ -275,7 +272,6 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
                         if let Some(inpoint) = spec.reverse_translate((p.x as i32,p.y as i32)){
                             state.pos = inpoint;
                             state.unmapped = (p.x as i32,p.y as i32);
-                            oob = false;
 
 
                             match evt{
@@ -317,11 +313,6 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
 
         }
         // *state = None;
-
-        if oob && state.click_state.is_active(){
-            // println!("Cursor left diagram");
-            state.click_state.reset();
-        }
         (iced::event::Status::Ignored, None)
     }
 }
