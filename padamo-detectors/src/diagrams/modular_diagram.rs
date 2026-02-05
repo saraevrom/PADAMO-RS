@@ -127,7 +127,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
 
     pub fn draw_main<DB: DrawingBackend>(&self, root: &DrawingArea<DB, plotters::coord::Shift>,state:Option<&PadamoDetectorDiagramState>){
         if let Some(det) = self.detector{
-            let ((min_x, min_y), (max_x, max_y)) = det.size();
+            let ((min_x, min_y), (max_x, max_y)) = det.size(self.rotation_angle);
             let min_range = (min_x..max_x, min_y..max_y);
 
             let mut layout = ChartLayout::new();

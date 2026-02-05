@@ -291,13 +291,13 @@ impl DetectorPixel{
     }
 
     /// Get boundaries min(x,y), max(x,y)
-    pub fn boundaries(&self)->((f64,f64),(f64,f64)){
+    pub fn boundaries(&self, angle:f64)->((f64,f64),(f64,f64)){
         let mut verts = self.vertices.iter();
         let first = verts.next().unwrap();
-        let (mut min_x, mut min_y) = (*first).into_tuple();
-        let (mut max_x, mut max_y) = (*first).into_tuple();
+        let (mut min_x, mut min_y) = rotate((*first).into_tuple(), angle);
+        let (mut max_x, mut max_y) = rotate((*first).into_tuple(), angle);
         for vert in verts{
-            let (x,y) = (*vert).into_tuple();
+            let (x,y) = rotate((*vert).into_tuple(), angle);
             if x>max_x{
                 max_x = x;
             }
@@ -364,14 +364,14 @@ impl Detector{
         &self.compat_shape
     }
 
-    pub fn size(&self)->((f64,f64),(f64,f64)){
+    pub fn size(&self, angle:f64)->((f64,f64),(f64,f64)){
         if self.content.is_empty(){
             return ((0.0,0.0),(0.0,0.0));
         }
         let mut cells = self.content.iter();
-        let ((mut min_x, mut min_y), (mut  max_x, mut max_y)) = cells.next().unwrap().boundaries();
+        let ((mut min_x, mut min_y), (mut  max_x, mut max_y)) = cells.next().unwrap().boundaries(angle);
         for pix in cells{
-            let ((p_min_x, p_min_y), (p_max_x, p_max_y)) = pix.boundaries();
+            let ((p_min_x, p_min_y), (p_max_x, p_max_y)) = pix.boundaries(angle);
             if p_min_x<min_x{
                 min_x = p_min_x;
             }
