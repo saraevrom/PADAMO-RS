@@ -55,7 +55,7 @@ pub enum CrossProgressMessage{
     SetViewEndText(String),
     EditDatetime(String),
     SetViewPositionUnixTime(f64),
-    // SetViewPosition(usize),
+    SetViewPosition(usize, usize), // frame, detector_id
     TimelineEvent(TimeLineEvent<TimelineUpdateMessage>),
     SubmitTimeline,
     SubmitDatetime,
@@ -360,6 +360,17 @@ impl CrossProgress{
                     }
                 }
             },
+            CrossProgressMessage::SetViewPosition(pos, det)=>{
+                if det==0{
+                    self.pointer = pos;
+                    if self.pointer<self.start{
+                        self.start = self.pointer;
+                    }
+                    if self.pointer>self.end{
+                        self.end = self.pointer;
+                    }
+                }
+            }
             CrossProgressMessage::TimelineEvent(evt)=>{
                 if let Some(sub_evt) = self.timeline_state.update(evt){
                     self.pointer = sub_evt.position;

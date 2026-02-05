@@ -368,18 +368,20 @@ impl Subplotter{
 
     pub fn get_late_update_message(&self, msg:&SubplotterMessage)->Option<PadamoAppMessage>{
         if let SubplotterMessage::PlotXClicked(plot_x) = msg{
-            let unixtime = if self.settings.display_mode.is_temporal(){
-                *plot_x
+            if self.settings.display_mode.is_temporal(){
+                let ut = *plot_x;
+                Some(PadamoAppMessage::ViewerMessage(ViewerMessage::TimeLine(CrossProgressMessage::SetViewPositionUnixTime(ut))))
             }
             else{
-                let signal = if let Some(v) = &self.displaying_signal {v} else {return None;};
                 let frame_number = plot_x.round() as usize;
-                if frame_number<signal.start_frame{return None;}
-                let i = frame_number - signal.start_frame;
-                if i>=signal.time.len(){return None;}
-                signal.time[i]
-            };
-            Some(PadamoAppMessage::ViewerMessage(ViewerMessage::TimeLine(CrossProgressMessage::SetViewPositionUnixTime(unixtime))))
+                let det_id = self.last_detector_id?;
+                // if frame_number<signal.start_frame{return None;}
+                // let i = frame_number - signal.start_frame;
+                // if i>=signal.time.len(){return None;}
+                // signal.time[i];
+                Some(PadamoAppMessage::ViewerMessage(ViewerMessage::TimeLine(CrossProgressMessage::SetViewPosition(frame_number, det_id))))
+            }
+            //Some(PadamoAppMessage::ViewerMessage(ViewerMessage::TimeLine(CrossProgressMessage::SetViewPositionUnixTime(unixtime))))
         }
         else{
             None
