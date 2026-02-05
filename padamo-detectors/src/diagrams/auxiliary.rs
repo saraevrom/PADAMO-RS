@@ -42,7 +42,7 @@ impl ClickTracker{
 
         if matching{
             self.state = Some((mouse_button, position));
-            println!("CLICK {:?}", mouse_button);
+            // println!("CLICK {:?}", mouse_button);
         }
     }
 
@@ -50,7 +50,7 @@ impl ClickTracker{
         if let Some((btn, pos)) = self.state.take(){
             if btn==mouse_button{
 
-                println!("CLICK END {:?}", mouse_button);
+                // println!("CLICK END {:?}", mouse_button);
                 Some(pos)
             }
             else{
@@ -72,7 +72,7 @@ impl ClickTracker{
     }
 
     pub fn reset(&mut self){
-        println!("CLICK RESET");
+        // println!("CLICK RESET");
         self.state = None;
     }
 }

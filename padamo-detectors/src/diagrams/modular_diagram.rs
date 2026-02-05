@@ -295,7 +295,7 @@ impl<'a,Message:'a> plotters_iced::Chart<Message> for PadamoDetectorDiagram<'a,M
                                             if let Some(caller) = &self.multiselect_action{
                                                 let (left, top) = pos1;
                                                 let (right, bottom) = inpoint;
-                                                let indices = detector.select_indices_in_rectangle(left, right, top, bottom);
+                                                let indices = detector.select_indices_in_rectangle(left, right, top, bottom, self.rotation_angle);
                                                 let msg = Some(caller(indices, *btn));
                                                 return (iced::event::Status::Captured, msg);
                                             }

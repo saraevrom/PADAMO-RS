@@ -207,7 +207,7 @@ impl DetectorPixel{
         true
     }
 
-    pub fn intersects_or_inside_rectangle(&self, mut left:f64, mut right:f64, mut top:f64, mut bottom:f64)->bool{
+    pub fn intersects_or_inside_rectangle(&self, mut left:f64, mut right:f64, mut top:f64, mut bottom:f64, rotation_angle:f64)->bool{
         if left>right{
             (left, right) = (right, left);
         }
@@ -215,8 +215,9 @@ impl DetectorPixel{
             (bottom, top) = (top, bottom);
         }
 
-        for (start, end) in self.vertices.iter().zip(self.vertices.iter().skip(1).cycle()){
-            if segment_intestects_rect(start.into_tuple(), end.into_tuple(), left, right, top, bottom){
+        for (start, end) in self.vertices.iter().map(|x| rotate(x.into_tuple(),rotation_angle)).zip(
+            self.vertices.iter().map(|x| rotate(x.into_tuple(),rotation_angle)).skip(1).cycle()){
+            if segment_intestects_rect(start, end, left, right, top, bottom){
                 return true;
             }
         }
@@ -398,10 +399,10 @@ impl Detector{
         None
     }
 
-    pub fn select_indices_in_rectangle(&self, left:f64, right:f64, top:f64, bottom:f64) -> Vec<Vec<usize>>{
+    pub fn select_indices_in_rectangle(&self, left:f64, right:f64, top:f64, bottom:f64, rotation_angle:f64) -> Vec<Vec<usize>>{
         let mut res = Vec::new();
         for pix in self.content.iter(){
-            if pix.intersects_or_inside_rectangle(left,right,top,bottom){
+            if pix.intersects_or_inside_rectangle(left,right,top,bottom, rotation_angle){
                 res.push(pix.index.to_vec());
             }
         }
