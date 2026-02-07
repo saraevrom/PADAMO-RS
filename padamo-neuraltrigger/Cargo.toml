@@ -1,6 +1,6 @@
 [package]
 name = "padamo-neuraltrigger"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [lib]
@@ -17,8 +17,18 @@ ndarray = "0.17.1"
 thiserror = "1.0.61"
 #openblas-src = { version = "0.10.9", features = ["static"] }
 
-ort = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic"], rev = "ea968ff" }
-ort-sys = { git = "https://github.com/pykeio/ort", features = ["cuda"], rev = "ea968ff" }
+ort = { git = "https://github.com/pykeio/ort", features = ["cuda", "load-dynamic", "download-binaries"], rev = "0377159" }
+# ort-sys = { git = "https://github.com/pykeio/ort", features = ["cuda", "download-binaries"], rev = "0377159" }
 libloading = "0.8.3"
 toml = "0.9.8"
 serde = "1.0.228"
+cfg-match = "0.2.1"
+indicatif = "0.18.3"
+reqwest = { version="0.13.2", features = ["stream"] }
+futures-util = "0.3.31"
+sha2 = "0.10.9"
+hex-literal = "1.1.0"
+hex = "0.4.3"
+arkiv = { version = "0.7.0", features = ["zip", "tar", "gzip", "xz", "bzip", "zstd"] }
+pathdiff = "0.2.3"
+tokio = "1.49.0"

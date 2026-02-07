@@ -6,6 +6,8 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize)]
 pub struct PadamoANNConfig{
     pub enabled:bool,
+    pub force_onnx_setup:bool,
+    pub onnx_dir:Option<String>,
     pub use_cuda_provider:bool,
     pub use_cpu_provider:bool,
     pub networks: Vec<PadamoModelConfig>,
@@ -15,6 +17,8 @@ impl Default for PadamoANNConfig{
     fn default() -> Self {
         Self {
             enabled: true,
+            onnx_dir:None,
+            force_onnx_setup:false,
             use_cuda_provider: true,
             use_cpu_provider: true,
             networks: vec![
@@ -22,6 +26,18 @@ impl Default for PadamoANNConfig{
                 PadamoModelConfig::new("ANN trigger Model L2 (multiconv)", "model_L2.onnx", (128,8,8), "flatten_1", "model_l2", None),
                 PadamoModelConfig::new("ANN trigger Model TE1", "model_te1.onnx", (256,8,8), "Identity:0", "model_te1", None),
             ]
+        }
+    }
+}
+
+impl PadamoANNConfig{
+    pub fn attempt_save(&self, config_path:&str){
+        let s = toml::to_string(self).unwrap();
+        if let Err(e) = std::fs::write(config_path, s){
+            eprintln!("Could not write new config file for ANN plugin: {}", e);
+        }
+        else{
+            eprintln!("Created new ANN plugin configuration file");
         }
     }
 }

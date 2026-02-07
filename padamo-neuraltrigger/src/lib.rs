@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use abi_stable::std_types::RString;
 use ort::execution_providers::{CPUExecutionProvider, CUDAExecutionProvider};
 use padamo_api::prelude::*;
@@ -5,9 +7,13 @@ use abi_stable::{std_types::RVec, export_root_module, prefix_type::PrefixTypeTra
 use padamo_api::nodes_vec;
 use abi_stable::sabi_extern_fn;
 
+use crate::setup_onnx::PadamoONNXOutcome;
+
 pub mod nodes;
 pub mod ops;
-mod ort_check;
+// mod ort_check;
+mod setup_onnx;
+mod downloader;
 pub mod config;
 
 #[export_root_module]
@@ -20,7 +26,7 @@ pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
     let mut res = nodes_vec!();
     let config_path = format!("{}/config.toml", library_dir);
 
-    let config:config::PadamoANNConfig = if let Ok(f) = std::fs::read_to_string(&config_path){
+    let mut config:config::PadamoANNConfig = if let Ok(f) = std::fs::read_to_string(&config_path){
         let subconf = toml::from_str(&f);
         match subconf {
             Ok(v)=>v,
@@ -31,23 +37,59 @@ pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
         }
     }
     else{
-        let res = Default::default();
-        let s = toml::to_string(&res).unwrap();
-        if let Err(e) = std::fs::write(&config_path, s){
-            eprintln!("Could not write new config file for ANN plugin: {}", e);
-        }
-        else{
-            eprintln!("Created new ANN plugin configuration file");
-        }
+        let res = config::PadamoANNConfig::default();
+        res.attempt_save(&config_path);
         res
     };
     if !config.enabled{
         return res;
     }
 
-    if !ort_check::check_dylib(){
-        return res;
+    // if !ort_check::check_dylib(){
+    //     return res;
+    // }
+    // let onnx_path = if let Some(s) = config.onnx_dir{
+    //     s
+    // }
+    // else{
+    //     let new_onnx = if let Some(s1) = setup_onnx::get_onnx(){
+    //         s1
+    //     }
+    //     else{
+    //
+    //     };
+    //
+    //     new_onnx
+    // };
+    if config.force_onnx_setup || config.onnx_dir.is_none(){
+        match setup_onnx::get_onnx(PathBuf::from(library_dir.as_str())){
+            PadamoONNXOutcome::Ok(v)=>{
+                config.onnx_dir = v.to_str().map(|x| x.to_string());
+            }
+            PadamoONNXOutcome::Failure=>{},
+            PadamoONNXOutcome::Disable=>{
+                config.enabled=false;
+                config.onnx_dir=None;
+                config.attempt_save(&config_path);
+                return res;
+            }
+        }
     }
+
+    let mut onnx_dir:PathBuf = if let Some(v) = &config.onnx_dir{
+        PathBuf::from(v)
+    }
+    else{
+        println!("No ONNX runtime is set up. Skipping.");
+        return res;
+    };
+
+    if onnx_dir.is_relative(){
+        onnx_dir = PathBuf::from(library_dir.as_str()).join(onnx_dir);
+    }
+
+    config.force_onnx_setup=true;
+    config.attempt_save(&config_path);
 
     let mut providers = vec![];
     if config.use_cuda_provider{
@@ -58,28 +100,24 @@ pub fn nodes(library_dir:RString)->RVec<CalculationNodeBox>{
         providers.push(CPUExecutionProvider::default().build());
     }
 
-    if ort::init()
+    let ort_init = match ort::init_from(onnx_dir){
+        Ok(v)=>v,
+        Err(e)=>{
+            println!("{}",e);
+            return res;
+        }
+    };
+
+    if ort_init
         .with_execution_providers(providers)
+        .with_telemetry(false)
         .commit()
     {
-        for ann in config.networks{
+        for ann in &config.networks{
             ann.insert_node(&library_dir, &mut res);
         }
-        // match nodes::ANN3DNode::new("ANN trigger Model A", &format!("{}/model_A.onnx",library_dir), (128,16,16), "concatenate".into(),
-        //                             "model_a","ANN trigger Model A"){
-        //     Ok(v)=>res.push(make_node_box(v)),
-        //     Err(e)=>println!("{}",e),
-        // }
-        // match nodes::ANN3DNode::new("ANN trigger Model L2 (multiconv)", &format!("{}/model_L2.onnx",library_dir), (128,8,8), "flatten_1".into(),
-        //                             "model_l2","ANN trigger Model L2 (multiconv)"){
-        //     Ok(v)=>res.push(make_node_box(v)),
-        //     Err(e)=>println!("{}",e),
-        // }
-        // match nodes::ANN3DNode::new("ANN trigger Model TE1", &format!("{}/model_te1.onnx",library_dir), (256,8,8), "Identity:0".into(),
-        //                             "model_te1","ANN trigger Model TE1"){
-        //     Ok(v)=>res.push(make_node_box(v)),
-        //     Err(e)=>println!("{}",e),
-        // }
     }
+    config.force_onnx_setup=false;
+    config.attempt_save(&config_path);
     res
 }
