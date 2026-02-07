@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::tools::editor::nodes::constants::NodeConstantContent;
 
-#[derive(serde::Serialize, serde::Deserialize, Clone,Copy)]
+#[derive(serde::Serialize, serde::Deserialize, Clone,Copy, Debug)]
 pub struct SerdePoint{
     x:f32,
     y:f32
@@ -27,7 +27,7 @@ pub struct SerdeConnection{
     pub port:String                    //output port
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct SerializationEntry{
     pub position:SerdePoint,
     pub identifier:String,
@@ -36,5 +36,5 @@ pub struct SerializationEntry{
     pub constants_external_flags:HashMap<String,bool>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct SerializedNodes(pub Vec<SerializationEntry>);

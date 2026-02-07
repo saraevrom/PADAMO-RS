@@ -337,7 +337,7 @@ impl PadamoTool for PadamoEditor{
                 self.state.copy_buffer();
             }
             crate::messages::PadamoAppMessage::Paste=>{
-                self.state.request_paste();
+                self.state.request_paste(&padamo.nodes);
             }
             crate::messages::PadamoAppMessage::SelectAll=>{
                 self.state.nodes.select_all();

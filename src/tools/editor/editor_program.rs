@@ -1,10 +1,13 @@
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use iced::{Event, mouse};
 // use iced::widget::canvas::event::{self, Event};
 use iced::widget::canvas::{self, Geometry, Path};
 use iced::{Length, Point, Rectangle, Renderer, Theme};
 use iced::widget::scrollable;
+
+use crate::nodes_interconnect::NodesRegistry;
 
 pub use super::messages::EditorCanvasMessage;
 
@@ -14,7 +17,8 @@ use super::nodes::constants::{NodeConstantBuffer, NodeConstantMessage};
 
 pub struct EditorState{
     pub nodes: super::nodes::GraphNodeStorage,
-    pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
+    //pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
+    pub copied_data: Option<super::nodes::GraphNodeCloneBufferSerializable>,
     pub pending_paste:RefCell<Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>>,
     pub scroll_offset: scrollable::AbsoluteOffset
 }
@@ -26,13 +30,14 @@ impl EditorState{
         Self { nodes, copied_data:None, pending_paste:RefCell::new(None), scroll_offset:scrollable::AbsoluteOffset{x:0.0, y:0.}}
     }
 
-    pub fn request_paste(&mut self){
-        *self.pending_paste.borrow_mut() = self.copied_data.clone();
+    pub fn request_paste(&mut self, registry:&NodesRegistry){
+        let dat = self.copied_data.clone().map(|x| x.instantiate(registry).ok()).flatten().map(Rc::new);
+        *self.pending_paste.borrow_mut() = dat;//self.copied_data.clone();
     }
 
     pub fn copy_buffer(&mut self){
         if let Some(cop) = self.nodes.clone_selection(){
-            self.copied_data = Some(std::rc::Rc::new(cop));
+            self.copied_data = Some(cop.into());
         }
         else{
             self.copied_data = None;
@@ -41,8 +46,8 @@ impl EditorState{
     }
 
     #[allow(dead_code)]
-    pub fn paste_buffer(&mut self, position:iced::Point){
-        if let Some(buf) = &self.copied_data{
+    pub fn paste_buffer(&mut self, position:iced::Point, registry:&NodesRegistry){
+        if let Some(buf) = &self.copied_data.clone().map(|x| x.instantiate(registry).ok()).flatten().map(Rc::new){
             self.nodes.instantiate(&buf, position);
         }
     }
