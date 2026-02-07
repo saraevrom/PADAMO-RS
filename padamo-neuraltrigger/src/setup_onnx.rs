@@ -78,10 +78,8 @@ cfg_match::cfg_match! {
 
     #[cfg(target_os = "windows")]
     fn is_onnxruntime(path:&Path)->bool{
-        if let Some(".dll") = path.extension().map(|x| x.to_str()).flatten(){
-            if let Some(p) = path.file_name().map(|x| x.to_str()).flatten(){
-                return p.starts_with("onnxruntime");
-            }
+        if let Some(p) = path.file_name().map(|x| x.to_str()).flatten(){
+            return p.starts_with("onnxruntime.dll"); // On GNU/Linux file can be named as libonnxruntime.so.1 or whatever. therefore
         }
         false
     }
