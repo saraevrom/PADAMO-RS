@@ -7,6 +7,7 @@ xcopy /y /e assets\* target\release\assets\*
 cd target/release
 
 if exist "plugins/padamo-neuraltrigger/config.toml" move plugins/padamo-neuraltrigger/config.toml config-ann.toml
+if exist "plugins/padamo-neuraltrigger/onnx_runtime" move plugins/padamo-neuraltrigger/onnx_runtime onnx_runtime_bak
 
 echo Preparing ANN triggers
 if exist "padamo-neuraltrigger/" rmdir /Q /S "padamo-neuraltrigger/"
@@ -17,6 +18,7 @@ echo Shipping ANNs
 copy ..\..\padamo-neuraltrigger\*.onnx padamo-neuraltrigger
 
 if exist "config-ann.toml" move config-ann.toml padamo-neuraltrigger/config.toml
+if exist "onnx_runtime_bak" move onnx_runtime_bak padamo-neuraltrigger/onnx_runtime
 
 echo Preparing plugins
 if exist "plugins/" rmdir /Q /S "plugins/"

@@ -40,8 +40,9 @@ cp  -rv "./assets" "./target/${BUILD_TARGET}/"
 cd "./target/${BUILD_TARGET}/"
 
 
-#Preserving config
+#Preserving config and ONNX runtime
 [ -f "plugins/padamo-neuraltrigger/config.toml" ] && mv -v plugins/padamo-neuraltrigger/config.toml ann_config.toml
+[ -d "plugins/padamo-neuraltrigger/onnx_runtime" ] && mv -v plugins/padamo-neuraltrigger/onnx_runtime onnx_runtime_bak
 
 mkdir -pv plugins
 rm -rvf plugins/*
@@ -54,6 +55,7 @@ mkdir -pv padamo-neuraltrigger
 mv libpadamoneuraltrigger.so padamo-neuraltrigger/
 cp -fv ../../padamo-neuraltrigger/*.onnx padamo-neuraltrigger/
 [ -f "ann_config.toml" ] && mv -v ann_config.toml padamo-neuraltrigger/config.toml
+[ -d "onnx_runtime_bak" ] && mv onnx_runtime_bak padamo-neuraltrigger/onnx_runtime
 
 mv padamo-neuraltrigger/ plugins/
 
