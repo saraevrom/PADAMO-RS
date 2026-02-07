@@ -1,12 +1,12 @@
 pub mod constants;
 pub mod errors;
 pub mod node_proxy;
+pub mod serialization;
 
 use std::{cell::RefCell, collections::HashMap, error::Error, fmt::Display, rc::{Rc, Weak}};
 
 use iced::widget::canvas::{Frame, Path, self,Text};
 use padamo_api::calculation_nodes::node::CalculationNodeBox;
-use serde_json::Map;
 
 use crate::nodes_interconnect::NodesRegistry;
 
@@ -20,6 +20,8 @@ use node_proxy::NodeProxy;
 
 const PORT_SIZE:f32 = 20.0;
 const PORT_INTERVAL:f32 = 5.0;
+
+use serialization::{SerdePoint,SerdeConnection};
 
 pub const PORT_CENTER_OFFSET: iced::Vector = iced::Vector::new(PORT_SIZE*0.5,PORT_SIZE*0.5);
 
@@ -63,23 +65,7 @@ fn coordinated_y(y1:f32,h1:f32,y2:f32,h2:f32, y_start:f32,y_end:f32)->(f32,bool)
     },true)
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone,Copy)]
-struct SerdePoint{
-    x:f32,
-    y:f32
-}
 
-impl Into<SerdePoint> for iced::Point{
-    fn into(self) -> SerdePoint {
-        SerdePoint { x: self.x, y: self.y }
-    }
-}
-
-impl Into<iced::Point> for SerdePoint{
-    fn into(self)->iced::Point{
-        iced::Point { x: self.x, y: self.y }
-    }
-}
 
 pub type PortType = padamo_api::calculation_nodes::content::ContentType;
 
@@ -110,11 +96,7 @@ impl Connection{
 
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct SerdeConnection{
-    pub node_index:usize,              //source node
-    pub port:String                    //output port
-}
+
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -565,20 +547,12 @@ impl GraphNodeCloneBuffer{
 #[derive(Debug)]
 pub enum GraphDeserializationError{
     NodeNotFound(String),
-    JsonError(serde_json::Error),
-    NotArray,
-    NotFound(String),
-    WrongFormat(String),
 }
 
 impl Display for GraphDeserializationError{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self{
             GraphDeserializationError::NodeNotFound(v) => write!(f,"Node {} is not found", v),
-            GraphDeserializationError::JsonError(e)=>write!(f, "JSON deserialization error: {}", e),
-            GraphDeserializationError::NotArray=>write!(f, "JSON data is not array"),
-            GraphDeserializationError::WrongFormat(v)=>write!(f, "Identifier {} has wrong format", v),
-            GraphDeserializationError::NotFound(v)=>write!(f, "Identifier {} is not found", v),
         }
     }
 }
@@ -1011,17 +985,20 @@ impl GraphNodeStorage{
         iced::Size { width: max_x, height: max_y }
     }
 
-    pub fn serialize(&self)->serde_json::Value{
-        let mut values:Vec<serde_json::Value> = Vec::with_capacity(self.nodes.len());
+    pub fn serialize_to_value(&self)->serialization::SerializedNodes{
+        // let mut values:Vec<serde_json::Value> = Vec::with_capacity(self.nodes.len());
+        let mut values = Vec::with_capacity(self.nodes.len());
         for node in self.nodes.iter(){
             let node_ref = node.borrow();
-            let mut entry = Map::new();
             let pos:SerdePoint = node_ref.position.into();
 
-            entry.insert("position".into(), serde_json::to_value(pos).unwrap());
-            entry.insert("identifier".into(), node_ref.represented_node.identifier().clone().into());
+            // entry.insert("position".into(), serde_json::to_value(pos).unwrap());
+            // entry.insert("identifier".into(), node_ref.represented_node.identifier().clone().into());
+            let position = pos;
+            let identifier = node_ref.represented_node.identifier().clone().into();
 
-            let mut conns = serde_json::Map::new();
+            // let mut conns = serde_json::Map::new();
+            let mut connections = HashMap::new();
             for (inp_port,_inp_type) in node_ref.inputs.iter(){
                 let value = if let Some(conn) =node_ref.connections.get(inp_port){ // &inp_def.connection{
                     if let Some(conn_rc) = conn.node.upgrade(){
@@ -1029,76 +1006,7 @@ impl GraphNodeStorage{
 
                             let out_port = conn.port.clone();
                             let val = SerdeConnection{node_index, port:out_port};
-                            serde_json::to_value(val).unwrap()
-                        }
-                        else{
-                            serde_json::Value::Null
-                        }
-                    }
-                    else{
-                        serde_json::Value::Null
-                    }
-                }
-                else{
-                    serde_json::Value::Null
-                };
-                conns.insert(inp_port.clone(), value);
-            }
-            let mut mapped= serde_json::Map::new();
-            for (k,v) in node_ref.constants.constants.iter(){
-                mapped.insert(k.clone(), serde_json::to_value(v.content.clone()).unwrap());
-            }
-
-            let consts = serde_json::Value::Object(mapped);
-
-            entry.insert("connections".into(), conns.into());
-            entry.insert("constants".into(), consts);
-
-            let mut external_constants_flags = serde_json::Map::new();
-            for (k,v) in node_ref.constants.constants.iter(){
-                external_constants_flags.insert(k.clone(), serde_json::to_value(v.use_external.clone()).unwrap());
-            }
-
-            entry.insert("constants_external_flags".into(), serde_json::Value::Object(external_constants_flags));
-
-            values.push(serde_json::Value::Object(entry));
-        }
-        serde_json::Value::Array(values)
-    }
-
-
-    pub fn deserialize(&mut self, registry:&NodesRegistry, value:serde_json::Value)->Result<(),GraphDeserializationError>{
-        if let serde_json::Value::Array(arr) = value{
-            self.clear();
-            for value in arr.iter(){
-                if let serde_json::Value::Object(obj) = value{
-
-                    //let identifier = if let Some(serde_json::Value::String(identifier) )= obj.get("identifier"){identifier}
-                    //else { break 'stop; };
-                    let identifier = obj.get("identifier").ok_or(GraphDeserializationError::NotFound("identifier".into()))?;
-                    let identifier = if let serde_json::Value::String(v) = identifier {v} else {return Err(GraphDeserializationError::WrongFormat("identifier".into()));};
-
-                    // let position = if let Some(position ) = obj.get("position"){
-                    //     position
-                    // }
-                    // else { break 'stop; };
-                    let position = obj.get("position").ok_or(GraphDeserializationError::NodeNotFound("position".into()))?;
-
-
-                    //let pos:SerdePoint = if let Ok(pos) = serde_json::from_value(position.clone()) {pos}
-                    //else { break 'stop; };
-                    let pos:SerdePoint = serde_json::from_value(position.clone()).map_err(GraphDeserializationError::JsonError)?;
-
-                    // let consts = if let Some(serde_json::Value::Object(c)) = obj.get("constants") {c}
-                    // else { break 'stop; };
-
-                    let consts = obj.get("constants").ok_or(GraphDeserializationError::NodeNotFound("constants".into()))?;
-                    let consts = if let serde_json::Value::Object(c) = consts {c} else {return Err(GraphDeserializationError::WrongFormat("constants".into()));};
-
-                    let consts_externals = obj.get("constants_external_flags");
-                    let consts_externals = if let Some(v) = consts_externals{
-                        if let serde_json::Value::Object(v1) = v{
-                            Some(v1)
+                            Some(val)
                         }
                         else{
                             None
@@ -1106,74 +1014,134 @@ impl GraphNodeStorage{
                     }
                     else{
                         None
-                    };
-
-
-                    let mut node = if let Some(v) = registry.create_calculation_node(identifier.clone()) {v}
-                    else{
-                        return Err(GraphDeserializationError::NodeNotFound(identifier.clone()));
-                    };
-
-                    for (key,con) in consts.iter(){
-                        let deserialized_con = serde_json::from_value(con.clone());
-                        if let Ok(con_val) = &deserialized_con {
-                            println!("Constant deserialize success");
-
-                            if let Some(entry) = node.constants.constants.get_mut(key){
-                                println!("Entry found");
-                                if entry.content.is_compatible(con_val){
-                                    println!("Entry compatible");
-                                    (*entry).content = con_val.clone();
-                                    (*entry).use_external = if let Some(ext) = consts_externals{
-                                        if let Some(v) = ext.get(key){
-                                            if let serde_json::Value::Bool(b) = v{
-                                                *b
-                                            }
-                                            else{
-                                                false
-                                            }
-                                        }
-                                        else{
-                                            false
-                                        }
-                                    }
-                                    else{
-                                        false
-                                    };
-
-                                    entry.update_buffer();
-                                }
-                            }
-                        }
-                    }
-                    node.position = pos.into();
-                    node.reestimate_size();
-
-                    self.insert_node(node);
-
-                }
-            }
-
-            for (target_node,value) in arr.iter().enumerate(){
-                let obj = if let serde_json::Value::Object(obj) = value{obj} else{panic!("Why cannot I look through value again?")};
-                'stop: {
-                    let conns = if let Some(serde_json::Value::Object(c)) = obj.get("connections") {c} else {break 'stop;};
-                    println!("{:?}",conns);
-                    for (input_port, conn) in conns.iter(){
-                        'conn_test: {
-                            println!("Trying connect to ->{}",input_port);
-                            let connection:SerdeConnection = if let Ok(c) = serde_json::from_value(conn.clone()) {c} else {break 'conn_test;};
-                            let output_port = connection.port;
-                            let start_node = connection.node_index;
-                            self.nodes[target_node].borrow_mut().link_from(input_port, &self.nodes[start_node], &output_port).unwrap();
-                        }
                     }
                 }
+                else{
+                    None
+                };
+                connections.insert(inp_port.clone(), value);
             }
-            Ok(())
+            let mut constants = HashMap::new();
+            for (k,v) in node_ref.constants.constants.iter(){
+                constants.insert(k.clone(), v.content.clone());
+            }
+
+            // entry.insert("connections".into(), conns.into());
+            // entry.insert("constants".into(), consts);
+
+            let mut constants_external_flags = HashMap::new();
+            for (k,v) in node_ref.constants.constants.iter(){
+                constants_external_flags.insert(k.clone(), v.use_external.clone());
+            }
+
+            // entry.insert("constants_external_flags".into(), serde_json::Value::Object(external_constants_flags));
+
+            values.push(serialization::SerializationEntry {
+                position,
+                identifier,
+                connections,
+                constants,
+                constants_external_flags
+
+            });
         }
-        else{
-            Err(GraphDeserializationError::NotArray)
+        serialization::SerializedNodes(values)
+    }
+
+
+    pub fn deserialize_from_value(&mut self, registry:&NodesRegistry, value:serialization::SerializedNodes)->Result<(),GraphDeserializationError>{
+        // if let serde_json::Value::Array(arr) = value{
+        self.clear();
+        for obj in value.0.iter(){
+            // if let serde_json::Value::Object(obj) = value{
+
+            //let identifier = if let Some(serde_json::Value::String(identifier) )= obj.get("identifier"){identifier}
+            //else { break 'stop; };
+            // let identifier = obj.identifier;
+            // let identifier = if let serde_json::Value::String(v) = identifier {v} else {return Err(GraphDeserializationError::WrongFormat("identifier".into()));};
+
+            // let position = if let Some(position ) = obj.get("position"){
+            //     position
+            // }
+            // else { break 'stop; };
+            // let position = obj.position;
+
+
+            //let pos:SerdePoint = if let Ok(pos) = serde_json::from_value(position.clone()) {pos}
+            //else { break 'stop; };
+            // let pos:SerdePoint = serde_json::from_value(position.clone()).map_err(GraphDeserializationError::JsonError)?;
+
+            // let consts = if let Some(serde_json::Value::Object(c)) = obj.get("constants") {c}
+            // else { break 'stop; };
+
+            // let consts = obj.get("constants").ok_or(GraphDeserializationError::NodeNotFound("constants".into()))?;
+            // let consts = if let serde_json::Value::Object(c) = consts {c} else {return Err(GraphDeserializationError::WrongFormat("constants".into()));};
+
+            // let consts_externals = obj.get("constants_external_flags");
+            // let consts_externals = if let Some(v) = consts_externals{
+            //     if let serde_json::Value::Object(v1) = v{
+            //         Some(v1)
+            //     }
+            //     else{
+            //         None
+            //     }
+            // }
+            // else{
+            //     None
+            // };
+
+
+            let mut node = if let Some(v) = registry.create_calculation_node(obj.identifier.clone()) {v}
+            else{
+                return Err(GraphDeserializationError::NodeNotFound(obj.identifier.clone()));
+            };
+
+            for (key,con) in obj.constants.iter(){
+                // let deserialized_con = serde_json::from_value(con.clone());
+                // if let Ok(con_val) = &deserialized_con {
+                println!("Constant deserialize success");
+
+                if let Some(entry) = node.constants.constants.get_mut(key){
+                    println!("Entry found");
+                    if entry.content.is_compatible(con){
+                        println!("Entry compatible");
+                        (*entry).content = con.clone();
+                        (*entry).use_external = obj.constants_external_flags.get(key).map(|x|*x).unwrap_or(false);
+
+                        entry.update_buffer();
+                    }
+                }
+                // }
+            }
+            node.position = obj.position.into();
+            node.reestimate_size();
+
+            self.insert_node(node);
+
+            // }
         }
+
+        for (target_node,obj) in value.0.iter().enumerate(){
+            // let obj = if let serde_json::Value::Object(obj) = value{obj} else{panic!("Why cannot I look through value again?")};
+            // let conns = if let Some(serde_json::Value::Object(c)) = obj.get("connections") {c} else {break 'stop;};
+            let conns = &obj.connections;
+            println!("{:?}",conns);
+            for (input_port, conn) in conns.iter(){
+                println!("Trying connect to ->{}",input_port);
+                let connection = conn;
+                // let connection:SerdeConnection = if let Ok(c) = serde_json::from_value(conn.clone()) {c} else {break 'conn_test;};
+                if let Some(connection) = connection{
+                    let output_port = &connection.port;
+                    let start_node = connection.node_index;
+                    self.nodes[target_node].borrow_mut().link_from(input_port, &self.nodes[start_node], output_port).unwrap();
+                }
+
+            }
+        }
+        Ok(())
+        // }
+        // else{
+        //     Err(GraphDeserializationError::NotArray)
+        // }
     }
 }

@@ -3,7 +3,6 @@ pub mod nodes;
 use std::collections::HashMap;
 use std::io::Read;
 use std::rc::Rc;
-use std::str::FromStr;
 use crate::application::{PadamoState, PadamoStateRef};
 //use crate::custom_widgets::treeview::TreeView;
 use crate::messages::PadamoAppMessage;
@@ -124,8 +123,8 @@ impl PadamoEditor{
     }
 
     fn try_load_from_string(&mut self, buf:&str, padamo: PadamoStateRef){
-        if let Ok(jsd) = serde_json::Value::from_str(&buf){
-            if let Err(e) = self.state.nodes.deserialize(&padamo.nodes, jsd){
+        if let Ok(jsd) = serde_json::from_str(&buf){
+            if let Err(e) = self.state.nodes.deserialize_from_value(&padamo.nodes, jsd){
                 padamo.show_error(format!("{}",e));
                 self.state.nodes.clear();
             }
@@ -133,7 +132,7 @@ impl PadamoEditor{
     }
 
     fn try_save_to_string(&self) ->Option<String>{
-        let jsd = self.state.nodes.serialize();
+        let jsd = self.state.nodes.serialize_to_value();
         if let Ok(s) = serde_json::to_string_pretty(&jsd){
             Some(s)
         }
