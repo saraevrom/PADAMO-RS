@@ -26,7 +26,8 @@ pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a D
     let mut color_source = padamo_detectors::diagrams::autoselect_source(Some(&detector_entry.mask), Some(&frame),plot_scale);
     color_source = Box::new(ContourMask::new(color_source,&detector_entry.selection));
     let chart:PadamoDetectorDiagram<()> = padamo_detectors::diagrams::PadamoDetectorDiagram::new(Some(&detector_entry.detector),color_source)
-        .with_title_unixtime(tim);
+        .with_title_unixtime(tim)
+        .with_rotation(detector_entry.detector_info.rotation);
     chart.build_chart_generic(root, None);
 }
 
