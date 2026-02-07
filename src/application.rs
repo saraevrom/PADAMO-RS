@@ -4,12 +4,15 @@ use std::rc::Rc;
 
 use iced::widget::{button, container};
 use iced::Length;
+use padamo_detectors::loaded_detectors_storage::DetectorLoadError;
 use padamo_detectors::polygon::Detector;
-use crate::loaded_detectors_storage::LoadedDetectors;
 use crate::messages::PadamoAppMessage;
 use crate::nodes_interconnect::NodesRegistry;
 use crate::tools::{self as ctools};
-use crate::{builtin_nodes, loaded_detectors_storage};
+use crate::{builtin_nodes};
+
+use padamo_detectors::loaded_detectors_storage::LoadedDetectors;
+
 
 use iced_aw::Tabs;
 use iced_aw::menu::{primary, Item, Menu, MenuBar};
@@ -46,7 +49,7 @@ pub struct PadamoState{
     pub current_seed:EntryState<u64>,
     pub persistent_state:padamo_state_persistence::PersistentState,
     popup_messages:MessageList,
-    pub detectors:crate::loaded_detectors_storage::LoadedDetectors,
+    pub detectors:LoadedDetectors,
     pub is_editing_detectors: bool,
 }
 
@@ -293,7 +296,7 @@ impl Padamo{
             current_seed: EntryState::new(0),
             popup_messages:MessageList::new(),
             persistent_state: Default::default(),
-            detectors: loaded_detectors_storage::LoadedDetectors::new(),
+            detectors: LoadedDetectors::new(),
             is_editing_detectors: false,
         };
 
@@ -333,12 +336,35 @@ impl Padamo{
                 self.state.current_seed.set_string(seed);
             },
             PadamoAppMessage::LoadedDetectorsMessage(msg)=>{
-                if let Err(e) = self.state.detectors.process_message(&self.state.workspace, msg){
-                    self.state.show_error(format!("{}",e));
+                let getter = ||{
+                    if let Some(path) = &self.state.workspace.workspace("detectors").open_dialog(vec![("Detector",vec!["json"])]){
+                        let s = std::fs::read_to_string(path).map_err(DetectorLoadError::from_err)?;
+                        let det = serde_json::from_str(&s).map_err(DetectorLoadError::from_err)?;
+                        Ok(det)
+                    }
+                    else{
+                        Err(DetectorLoadError::None)
+                    }
+                };
+
+                match self.state.detectors.process_message(msg, getter){
+                    Ok(())=>{self.state.save_detectors();}
+                    Err(en)=>{
+                        match en{
+                            DetectorLoadError::None=>(),
+                            DetectorLoadError::Error(err)=>{
+                                self.state.show_error(format!("{}",err));
+                            }
+                        }
+                    }
                 }
-                else{
-                    self.state.save_detectors();
-                }
+                // self.state.detectors.process_message(&self.state.workspace, msg)
+                // if let Err(e) = {
+                //     self.state.show_error(format!("{}",e));
+                // }
+                // else{
+                //     self.state.save_detectors();
+                // }
             },
             PadamoAppMessage::SetEditLoadedDetectors(v)=>self.state.is_editing_detectors = v,
             PadamoAppMessage::ClearState=>{

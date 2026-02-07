@@ -5,7 +5,7 @@ use crate::tools::viewer::ViewerMessage;
 use crate::tools::plotter_new::messages::NewPlotterMessage;
 use crate::tools::trigger::messages::TriggerMessage;
 use crate::tools::detectors::messages::DetectorManagerMessage;
-use crate::loaded_detectors_storage::LoadedDetectorsMessage;
+use padamo_detectors::loaded_detectors_storage::LoadedDetectorsMessage;
 
 #[derive(Clone,Debug)]
 pub enum PadamoAppMessage{

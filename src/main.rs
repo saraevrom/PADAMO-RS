@@ -11,7 +11,6 @@ mod time_search;
 mod popup_message;
 mod assets;
 mod transform_widget;
-mod loaded_detectors_storage;
 mod detector_muxer;
 
 fn main() -> iced::Result{
