@@ -153,5 +153,5 @@ jobs:
       - name: Upload Release
         uses: ncipollo/release-action@v1.12.0
         with:
-          tag: v7.0.1
+          tag: v7.0.2
           artifacts: 'release-linux.zip,release-windows.zip, release-linux-lite.zip, release-windows-lite.zip'
