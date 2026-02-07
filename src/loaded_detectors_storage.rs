@@ -44,8 +44,8 @@ impl LoadedDetectors{
 
     pub fn set_primary_detector_by_index(&mut self, index:usize){
         if index<self.detectors.len() && index>0{
-            self.detectors[..=index].rotate_right(index);
-            self.buffers[..=index].rotate_right(index);
+            self.detectors[..=index].rotate_left(index);
+            self.buffers[..=index].rotate_left(index);
         }
     }
 
