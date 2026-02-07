@@ -19,7 +19,7 @@ impl Default for PadamoANNConfig{
             enabled: true,
             onnx_dir:None,
             force_onnx_setup:false,
-            use_cuda_provider: true,
+            use_cuda_provider: false,
             use_cpu_provider: true,
             networks: vec![
                 PadamoModelConfig::new("ANN trigger Model A", "model_A.onnx", (128,16,16), "concatenate", "model_a", Some("ANN trigger Model A")),
