@@ -41,6 +41,10 @@ datetime-parser = { path = "./datetime-parser"}
 iced_font_awesome = "0.4"
 nalgebra = "0.34.1"
 rust-fuzzy-search = "0.1.1"
+hex = "0.4.3"
+# flate2 = "1.1.9"
+serde_cbor = "0.11.2"
+clipboard-rs = "0.3.2"
 
 [features]
 default = ["all_tools", "all_controls", "all_features"]

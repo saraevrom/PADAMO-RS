@@ -19,6 +19,7 @@ use iced::widget::scrollable::{self, Scrollbar};
 use iced::widget::pane_grid;
 use padamo_workspace::PadamoWorkspace;
 pub mod messages;
+pub mod clipboard;
 use crate::detector_muxer::{get_mask_var, get_mask_var_by_name, get_signal_var, get_signal_var_by_name, get_transform_var, get_transform_var_by_name, VIEWER_TEST_OBJECT_KEY};
 
 // static SCROLLABLE_ID: Lazy<scrollable::Id> = Lazy::new(scrollable::Id::unique);

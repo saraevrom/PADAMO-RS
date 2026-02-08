@@ -17,8 +17,7 @@ use super::nodes::constants::{NodeConstantBuffer, NodeConstantMessage};
 
 pub struct EditorState{
     pub nodes: super::nodes::GraphNodeStorage,
-    //pub copied_data: Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>,
-    pub copied_data: Option<super::nodes::GraphNodeCloneBufferSerializable>,
+    //pub copied_data: Option<super::nodes::GraphNodeCloneBufferSerializable>,
     pub pending_paste:RefCell<Option<std::rc::Rc<super::nodes::GraphNodeCloneBuffer>>>,
     pub scroll_offset: scrollable::AbsoluteOffset
 }
@@ -27,29 +26,43 @@ pub struct EditorState{
 impl EditorState{
     pub fn new()->Self{
         let nodes = super::nodes::GraphNodeStorage::new();
-        Self { nodes, copied_data:None, pending_paste:RefCell::new(None), scroll_offset:scrollable::AbsoluteOffset{x:0.0, y:0.}}
+        Self { nodes, pending_paste:RefCell::new(None), scroll_offset:scrollable::AbsoluteOffset{x:0.0, y:0.}}
     }
 
     pub fn request_paste(&mut self, registry:&NodesRegistry){
-        let dat = self.copied_data.clone().map(|x| x.instantiate(registry).ok()).flatten().map(Rc::new);
-        *self.pending_paste.borrow_mut() = dat;//self.copied_data.clone();
+        match super::clipboard::paste_from_clipboard(){
+            Ok(copied_data) =>{
+                let dat = copied_data.clone().instantiate(registry).ok().map(Rc::new);
+                *self.pending_paste.borrow_mut() = dat;//self.copied_data.clone();
+            },
+            Err(e)=>{
+                println!("{}", e);
+            }
+        }
     }
 
     pub fn copy_buffer(&mut self){
         if let Some(cop) = self.nodes.clone_selection(){
-            self.copied_data = Some(cop.into());
-        }
-        else{
-            self.copied_data = None;
+            if let Err(e) = super::clipboard::copy_to_clipboard(&cop.into()){
+                println!("{}", e);
+            }
         }
 
     }
 
     #[allow(dead_code)]
     pub fn paste_buffer(&mut self, position:iced::Point, registry:&NodesRegistry){
-        if let Some(buf) = &self.copied_data.clone().map(|x| x.instantiate(registry).ok()).flatten().map(Rc::new){
-            self.nodes.instantiate(&buf, position);
+        match super::clipboard::paste_from_clipboard(){
+            Ok(copied_data)=>{
+                if let Some(buf) = copied_data.clone().instantiate(registry).ok().map(Rc::new){
+                    self.nodes.instantiate(&buf, position);
+                }
+            }
+            Err(e) => {
+                println!("{}", e);
+            }
         }
+
     }
 
     pub fn view(&self)->(iced::Element<'_, EditorCanvasMessage>,iced::Element<'_, EditorCanvasMessage>) {
