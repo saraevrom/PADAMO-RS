@@ -21,6 +21,7 @@ pub struct VideoFrameByFrameWriter{
     keyframe_interval: u64,
     writer_stream_index: usize,
     encoder_time_base:Rational,
+    fps:i32
 }
 
 pub fn codec_context_as(codec: &playa_ffmpeg::codec::codec::Codec) -> Option<Context> {
@@ -39,7 +40,7 @@ pub fn get_encoder_time_base(encoder: &encoder::video::Encoder) -> Rational {
 }
 
 impl VideoFrameByFrameWriter {
-    pub fn new<T:AsRef<Path>+?Sized>(destination:&T, width:u32, height:u32) -> Result<Self,crate::VideoBackendError> {
+    pub fn new<T:AsRef<Path>+?Sized>(destination:&T, width:u32, height:u32, fps:i32) -> Result<Self,crate::VideoBackendError> {
 
         playa_ffmpeg::init()?;
         println!("Init - OK");
@@ -67,7 +68,7 @@ impl VideoFrameByFrameWriter {
         encoder.set_width(width);
         encoder.set_height(height);
         encoder.set_format(playa_ffmpeg::format::Pixel::YUV420P);
-        encoder.set_frame_rate(Some((30, 1))); //30 FPS. Will be changed
+        encoder.set_frame_rate(Some((fps, 1))); //30 FPS. Will be changed
 
         println!("Encoder - OK");
         encoder.set_time_base(TIME_BASE);
@@ -111,6 +112,7 @@ impl VideoFrameByFrameWriter {
             height:scaler_height,
             encoder_time_base,
             buffer, //width, height,
+            fps,
         };
         res.clear_buffer();
 
@@ -182,7 +184,9 @@ impl VideoFrameByFrameWriter {
     pub fn flush_frame(&mut self)->Result<(),crate::VideoBackendError>{
         let mut frame_scaled = frame::Video::empty();
         self.scaler.run(&self.buffer, &mut frame_scaled)?;
-        frame_scaled.set_pts(Some(self.frame_count as i64));
+
+        let timestamp = crate::time::Time::from_units(self.frame_count as usize,self.fps as usize);
+        frame_scaled.set_pts(timestamp.aligned_with_rational(self.encoder_time_base).into_value());
 
         if self.frame_count%self.keyframe_interval==0{
             frame_scaled.set_kind(playa_ffmpeg::picture::Type::I);

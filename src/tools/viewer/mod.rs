@@ -345,7 +345,7 @@ impl PadamoViewer{
                                 }
                             }
                             "mp4"=>{
-                                let backend = VideoFrameByFrameWriter::new(&filename, animation_parameters.width+80, height);
+                                let backend = VideoFrameByFrameWriter::new(&filename, animation_parameters.width+80, height, (1000/animation_parameters.framedelay) as i32);
                                                                // plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
                                     Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector_entry.clone(), plot_scale))}
