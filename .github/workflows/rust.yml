@@ -18,7 +18,7 @@ jobs:
       with:
         rustflags: ""
     - name: Install fontconfig
-      run: sudo apt update && sudo apt upgrade -y && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang -y
+      run: sudo apt update && sudo apt upgrade -y && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm -y
     - name: Build
       run: bash universal_build.sh release
     - name: Prepare release
@@ -48,7 +48,7 @@ jobs:
       with:
         rustflags: ""
     - name: Install fontconfig
-      run: sudo apt update && sudo apt upgrade && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang -y
+      run: sudo apt update && sudo apt upgrade && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm -y
     - name: Build
       run: bash builder-lite.sh
     - name: Prepare release
@@ -153,5 +153,5 @@ jobs:
       - name: Upload Release
         uses: ncipollo/release-action@v1.12.0
         with:
-          tag: v7.1.0
+          tag: v7.2.0
           artifacts: 'release-linux.zip,release-windows.zip, release-linux-lite.zip, release-windows-lite.zip'
