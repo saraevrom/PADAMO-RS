@@ -7,7 +7,8 @@ pub mod test_objects;
 mod norm_entry;
 
 use super::PadamoTool;
-use plotters_video::VideoBackend;
+// use plotters_video::VideoBackend;
+use plotters_video_ffmpeg::VideoFrameByFrameWriter;
 use crate::application::PadamoState;
 use crate::detector_muxer::get_signal_var;
 use crate::detector_muxer::get_transform_var;
@@ -344,8 +345,8 @@ impl PadamoViewer{
                                 }
                             }
                             "mp4"=>{
-                                let backend = VideoBackend::new(filename, animation_parameters.width+80, height,
-                                                                plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
+                                let backend = VideoFrameByFrameWriter::new(&filename, animation_parameters.width+80, height);
+                                                               // plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
                                     Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector_entry.clone(), plot_scale))}
                                     Err(e)=>{

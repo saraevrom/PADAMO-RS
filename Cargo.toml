@@ -23,7 +23,8 @@ padamo-iced-forms = { path = "./padamo-iced-forms", features = ["serde"] }
 # padamo-iced-forms-derive = { path = "./padamo-iced-forms-derive" }
 abi_stable = "0.11.3"
 plotters-layout = "0.1.0"
-plotters_video = { path = "./plotters_video" }
+# plotters_video = { path = "./plotters_video" }
+plotters_video_ffmpeg = { path = "./plotters_video_ffmpeg" }
 # nfd = { git = "https://github.com/saurvs/nfd-rs.git" }
 chrono = "0.4"
 regex = "1.10.3"
@@ -69,5 +70,5 @@ all_features = ["feature_workspace"]
 feature_workspace = []
 
 [workspace]
-members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime", "padamo-iced-forms", "index_remapper", "padamo-transforms", "padamo-arraynd", "standalone_quantiles"]
+members = ["padamo-core", "padamo-api", "padamo-base-processing", "padamo-basic-triggers", "padamo-detectors", "padamo-hdf5", "padamo-signal-manipulation", "padamo-workspace", "padamo-trackgen", "padamo-mat", "padamo-flatfielding", "padamo-functions", "padamo-neuraltrigger", "padamo-randoms", "padamo-stft", "padamo-state-persistence", "plotters_video", "padamo-jemeuso-root", "datetime-parser", "padamo-plaintext", "pseudotime", "padamo-iced-forms", "index_remapper", "padamo-transforms", "padamo-arraynd", "standalone_quantiles", "plotters_video_ffmpeg"]
 resolver = "2"
