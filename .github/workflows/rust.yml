@@ -77,20 +77,11 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
-    - name: Set up vcpkg
-      shell: cmd
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-        cd C:\vcpkg
-        .\bootstrap-vcpkg.bat
-        setx VCPKG_ROOT "C:\vcpkg"
-    - name: Add ffmpeg via vcpkg
-      shell: cmd
-      run: |
-        vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
     - name: Build
       shell: cmd
-      run: builder-release.bat
+      run: |
+        setx CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG true
+        builder-release.bat
     - name: Prepare release
       shell: bash
       run: |
@@ -118,21 +109,11 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
-    - name: Set up vcpkg
-      shell: cmd
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
-        cd C:\vcpkg
-        .\bootstrap-vcpkg.bat
-        setx VCPKG_ROOT "C:\vcpkg"
-    - name: Add ffmpeg via vcpkg
-      shell: cmd
-      run: |
-        vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
-
     - name: Build
       shell: cmd
-      run: builder-lite.bat
+      run: |
+        setx CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG true
+        builder-lite.bat
     - name: Prepare release
       shell: bash
       run: |
