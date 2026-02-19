@@ -78,15 +78,11 @@ jobs:
       with:
         rustflags: ""
     - name: Set up vcpkg
-      shell: cmd
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        ./vcpkg/bootstrap-vcpkg.sh
-        echo "::add-path::./vcpkg" # Add vcpkg to PATH
+      uses: lukka/run-vcpkg@v11
     - name: Add ffmpeg via vcpkg
       shell: cmd
       run: |
-        ./vcpkg/vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
+        vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: builder-release.bat
@@ -118,15 +114,11 @@ jobs:
       with:
         rustflags: ""
     - name: Set up vcpkg
-      shell: cmd
-      run: |
-        git clone https://github.com/microsoft/vcpkg.git
-        ./vcpkg/bootstrap-vcpkg.sh
-        echo "::add-path::./vcpkg" # Add vcpkg to PATH
+      uses: lukka/run-vcpkg@v11
     - name: Add ffmpeg via vcpkg
       shell: cmd
       run: |
-        ./vcpkg/vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
+        vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
 
     - name: Build
       shell: cmd
