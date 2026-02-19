@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-playa-ffmpeg = { version = "8.0.3", features = ["static", "codec", "device", "format", "software-scaling", "build"], default-features = false }
+playa-ffmpeg = { version = "8.0.3", features = ["static", "codec", "device", "format", "software-scaling"], default-features = false }
 plotters = "0.3.7"
 plotters-backend = "0.3.7"
 thiserror = "2.0.18"
+
+
+[features]
+build-ffmpeg = ["playa-ffmpeg/build"]

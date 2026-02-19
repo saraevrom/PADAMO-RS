@@ -50,6 +50,8 @@ clipboard-rs = "0.3.2"
 [features]
 default = ["all_tools", "all_controls", "all_features"]
 
+build-ffmpeg = ["plotters_video_ffmpeg/build-ffmpeg"]
+
 # Application parts
 all_tools = ["viewer", "editor", "trigger", "plotter", "detector_manager"]
 viewer = []
