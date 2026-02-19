@@ -20,7 +20,7 @@ jobs:
     - name: Install fontconfig
       run: sudo apt update && sudo apt upgrade -y && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm -y
     - name: Build
-      run: bash universal_build.sh release
+      run: bash builder-release.sh
     - name: Prepare release
       run: |
        mkdir -pv release-linux
@@ -77,6 +77,28 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
+    - name: Cache vcpkg
+        uses: actions/cache@v4
+        id: cache-vcpkg-windows
+        with:
+          path: |
+            C:\vcpkg\installed
+            C:\vcpkg\buildtrees
+            C:\vcpkg\downloads
+            C:\vcpkg\packages
+            ~\AppData\Local\vcpkg\archives
+          key: ${{ runner.os }}-vcpkg-ffmpeg-nvcodec-release-only-v3    
+    - name: Cache vcpkg
+        uses: actions/cache@v4
+        id: cache-vcpkg-windows
+        with:
+          path: |
+            C:\vcpkg\installed
+            C:\vcpkg\buildtrees
+            C:\vcpkg\downloads
+            C:\vcpkg\packages
+            ~\AppData\Local\vcpkg\archives
+          key: ${{ runner.os }}-vcpkg-ffmpeg-nvcodec-release-only-v3
     - name: Get ffmpeg
       shell: cmd
       run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
