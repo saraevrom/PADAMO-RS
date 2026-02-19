@@ -78,7 +78,12 @@ jobs:
       with:
         rustflags: ""
     - name: Set up vcpkg
-      uses: lukka/run-vcpkg@v11
+      shell: cmd
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+        cd C:\vcpkg
+        .\bootstrap-vcpkg.bat
+        setx VCPKG_ROOT "C:\vcpkg"
     - name: Add ffmpeg via vcpkg
       shell: cmd
       run: |
@@ -114,7 +119,12 @@ jobs:
       with:
         rustflags: ""
     - name: Set up vcpkg
-      uses: lukka/run-vcpkg@v11
+      shell: cmd
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+        cd C:\vcpkg
+        .\bootstrap-vcpkg.bat
+        setx VCPKG_ROOT "C:\vcpkg"
     - name: Add ffmpeg via vcpkg
       shell: cmd
       run: |
