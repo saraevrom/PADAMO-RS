@@ -77,6 +77,16 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
+    - name: Set up vcpkg
+      shell: cmd
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.sh
+        echo "::add-path::./vcpkg" # Add vcpkg to PATH
+    - name: Add ffmpeg via vcpkg
+      shell: cmd
+      run: |
+        ./vcpkg/vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: builder-release.bat
@@ -107,6 +117,17 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
+    - name: Set up vcpkg
+      shell: cmd
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.sh
+        echo "::add-path::./vcpkg" # Add vcpkg to PATH
+    - name: Add ffmpeg via vcpkg
+      shell: cmd
+      run: |
+        ./vcpkg/vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
+
     - name: Build
       shell: cmd
       run: builder-lite.bat
