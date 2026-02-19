@@ -77,12 +77,9 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
-    - uses: ilammy/msvc-dev-cmd@v1
-    - uses: msys2/setup-msys2@v2
-    - name: Get YASM
-      uses: crazy-max/ghaction-chocolatey@v4
-      with:
-        args: install yasm
+    - name: Get ffmpeg
+      shell: cmd
+      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: |
@@ -115,13 +112,9 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
-    
-    - uses: ilammy/msvc-dev-cmd@v1
-    - uses: msys2/setup-msys2@v2
-    - name: Get YASM
-      uses: crazy-max/ghaction-chocolatey@v4
-      with:
-        args: install yasm
+    - name: Get ffmpeg
+      shell: cmd
+      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: |
