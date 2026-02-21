@@ -81,7 +81,7 @@ jobs:
         rustflags: ""
     - name: Get ffmpeg
       shell: cmd
-      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
+      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec,x264]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: |
@@ -118,7 +118,7 @@ jobs:
         rustflags: ""
     - name: Get ffmpeg
       shell: cmd
-      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec]:x64-windows-static-md
+      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec,x264]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: |
