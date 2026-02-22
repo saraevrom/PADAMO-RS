@@ -1,5 +1,4 @@
 use clipboard_rs::{Clipboard, ClipboardContext};
-use hex::{FromHex, ToHex};
 
 // use std::io::prelude::*;
 // use flate2::Compression;
@@ -7,6 +6,8 @@ use hex::{FromHex, ToHex};
 // use flate2::write::ZlibDecoder;
 
 use super::nodes::GraphNodeCloneBufferSerializable;
+
+use base64::prelude::*;
 
 
 pub fn copy_to_clipboard(start:&GraphNodeCloneBufferSerializable)->anyhow::Result<()>{
@@ -16,7 +17,8 @@ pub fn copy_to_clipboard(start:&GraphNodeCloneBufferSerializable)->anyhow::Resul
     // e.write_all(&serialized)?;
     // let serialized = e.finish()?;
 
-    let txt = serialized.encode_hex();
+    // let txt = serialized.encode_hex();
+    let txt = BASE64_STANDARD.encode(serialized);
 
     let ctx = ClipboardContext::new().map_err(|x| anyhow::format_err!("{}",x))?;
     // let mut clipboard = clippers::Clipboard::get();
@@ -30,7 +32,8 @@ pub fn paste_from_clipboard()->anyhow::Result<GraphNodeCloneBufferSerializable>{
     let ctx = ClipboardContext::new().map_err(|x| anyhow::format_err!("{}",x))?;
     match ctx.get_text(){
         Ok(text)=>{
-            let serialized:Vec<u8> = FromHex::from_hex(text)?;
+            // let serialized:Vec<u8> = FromHex::from_hex(text)?;
+            let serialized = BASE64_STANDARD.decode(text)?;
 
             // let mut d = ZlibDecoder::new(Vec::new());
             // d.write_all(&serialized)?;

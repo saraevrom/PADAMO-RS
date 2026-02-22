@@ -46,6 +46,7 @@ hex = "0.4.3"
 # flate2 = "1.1.9"
 serde_cbor = "0.11.2"
 clipboard-rs = "0.3.2"
+base64 = "0.22.1"
 
 [features]
 default = ["all_tools", "all_controls", "all_features"]
