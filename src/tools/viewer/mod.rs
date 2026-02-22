@@ -336,7 +336,7 @@ impl PadamoViewer{
                             "gif"=>{
                                 let backend = BitMapBackend::gif(filename,(animation_parameters.width+80, height), animation_parameters.framedelay);
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector_entry.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, !self.window_view.is_primary_selected(), start, end, animation_parameters, detector_entry.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -348,7 +348,7 @@ impl PadamoViewer{
                                 let backend = VideoFrameByFrameWriter::new(&filename, animation_parameters.width+80, height, (1000/animation_parameters.framedelay) as i32);
                                                                // plotters_video::FrameDelay::DelayMS(animation_parameters.framedelay as usize));
                                 match backend{
-                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, start, end, animation_parameters, detector_entry.clone(), plot_scale))}
+                                    Ok(back)=>{Some(animator::animate(back, spatial, temporal, time_primary, !self.window_view.is_primary_selected(), start, end, animation_parameters, detector_entry.clone(), plot_scale))}
                                     Err(e)=>{
                                         eprintln!("{}",e);
                                         padamo.show_error(format!("{}",e));
@@ -436,12 +436,12 @@ impl PadamoViewer{
                             "png" | "jpg" => {
                                 let backend = BitMapBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector_entry, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, !self.window_view.is_primary_selected(), pointer, &detector_entry, plot_scale);
                             },
                             "svg" => {
                                 let backend = SVGBackend::new(&path, (width+80,height));
                                 let root = backend.into_drawing_area();
-                                animator::make_frame(&root, &spatial, &temporal, &time_primary, pointer, &detector_entry, plot_scale);
+                                animator::make_frame(&root, &spatial, &temporal, &time_primary, !self.window_view.is_primary_selected(), pointer, &detector_entry, plot_scale);
                             },
                             ue=>{
                                 padamo.show_error(format!("Unsupported extension {}",ue));

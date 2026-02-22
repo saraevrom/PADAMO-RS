@@ -51,6 +51,10 @@ impl SingleDetectorDisplay{
         }
     }
 
+    pub fn is_primary_selected(&self)->bool{
+        self.detector_id==0
+    }
+
     pub fn set_frame(&mut self, frame:usize, padamo: &PadamoState){
         if let Some(signal_tri) = self.try_get_signal(padamo){
             let mut signal = signal_tri.0.request_range(frame, frame+1);

@@ -10,10 +10,18 @@ use plotters::prelude::*;
 
 pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a DrawingArea<T,Shift>,spatial:&'a padamo_api::lazy_array_operations::LazyDetectorSignal,
                temporal:&'a padamo_api::lazy_array_operations::LazyTimeSignal,
-               temporal_primary:&'a padamo_api::lazy_array_operations::LazyTimeSignal, current_frame:usize, detector_entry:&DetectorEntry,plot_scale:Scaling){
+               temporal_primary:&'a padamo_api::lazy_array_operations::LazyTimeSignal,
+               remap_frame:bool,
+               current_frame:usize, detector_entry:&DetectorEntry,plot_scale:Scaling){
 
-    let unixtime = temporal_primary.request_range(current_frame,current_frame+1)[0];
-    let remapped_frame = temporal.find_unixtime(unixtime);
+    let remapped_frame = if remap_frame{
+        let unixtime = temporal_primary.request_range(current_frame,current_frame+1)[0];
+        temporal.find_unixtime(unixtime)
+    }
+    else{
+        current_frame
+    };
+
 
     let mut frame = spatial.request_range(remapped_frame,remapped_frame+1);
     frame.shape.drain(0..1);
@@ -34,6 +42,7 @@ pub fn make_frame<'a,T:plotters_backend::DrawingBackend+Send+Sync+'a>(root:&'a D
 pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spatial:padamo_api::lazy_array_operations::LazyDetectorSignal,
                temporal:padamo_api::lazy_array_operations::LazyTimeSignal,
                temporal_main:padamo_api::lazy_array_operations::LazyTimeSignal,
+               remap_frames:bool,
                start:usize,
                end:usize,
                animation_parameters:AnimationParameters, detector_entry:DetectorEntry, plot_scale:Scaling)->Worker<String>{
@@ -43,6 +52,12 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
 
     let (tx_status,rx_status) = mpsc::channel::<String>();
     //let status = self.animation_status.clone();
+    if remap_frames{
+        println!("Detector is not primary: remapping frames.");
+    }
+    else{
+        println!("Detector IS primary: remapping frames is not needed");
+    }
 
     let handle = thread::spawn( move || {
         //80 pixels for colormap
@@ -113,7 +128,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
                 let (a,b) = root.split_vertically(animation_parameters.height);
                 //a.fill(&WHITE).unwrap();
                 // chart.build_chart_generic(&a,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                make_frame(&a, &spatial, &temporal, &temporal_main, i, &detector_entry, plot_scale);
+                make_frame(&a, &spatial, &temporal, &temporal_main, remap_frames, i, &detector_entry, plot_scale);
 
                 //b.fill(&WHITE).unwrap();
                 let mut chart = ChartBuilder::on(&b)
@@ -130,7 +145,7 @@ pub fn animate<T:plotters_backend::DrawingBackend+Send+Sync+'static>(root:T,spat
             }
             else{
                 //chart.build_chart_generic(&root,&Some((&frame,tim)),plot_scale,Default::default(),&None);
-                make_frame(&root, &spatial, &temporal, &temporal_main, i, &detector_entry, plot_scale);
+                make_frame(&root, &spatial, &temporal, &temporal_main, remap_frames, i, &detector_entry, plot_scale);
             }
 
 
