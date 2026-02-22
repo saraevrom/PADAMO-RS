@@ -18,7 +18,7 @@ jobs:
       with:
         rustflags: ""
     - name: Install fontconfig
-      run: sudo apt update && sudo apt upgrade -y && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm -y
+      run: sudo apt update && sudo apt upgrade -y && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm libx264-dev -y
     - name: Build
       run: bash universal_build.sh release --features build-ffmpeg
     - name: Prepare release
@@ -48,7 +48,7 @@ jobs:
       with:
         rustflags: ""
     - name: Install fontconfig
-      run: sudo apt update && sudo apt upgrade && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm -y
+      run: sudo apt update && sudo apt upgrade && sudo apt install libfontconfig-dev libgtk-3-dev cmake clang nasm libx264-dev -y
     - name: Build
       run: bash builder-lite.sh
     - name: Prepare release
