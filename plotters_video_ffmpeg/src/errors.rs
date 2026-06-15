@@ -3,7 +3,7 @@ use thiserror::Error;
 #[derive(Error,Debug)]
 pub enum VideoBackendError{
     #[error("{0}")]
-    ErrorFFMPEG(#[from] playa_ffmpeg::Error),
+    ErrorFFMPEG(#[from] ffmpeg_next::Error),
     #[error("{0}")]
     ErrorIO(#[from] std::io::Error)
 }

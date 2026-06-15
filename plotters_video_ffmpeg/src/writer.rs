@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use playa_ffmpeg::{Packet, Rational, codec::Context, encoder, error::EAGAIN, format::context, rescale::TIME_BASE, util::frame};
+use ffmpeg_next::{Packet, Rational, codec::Context, encoder, error::EAGAIN, format::context, rescale::TIME_BASE, util::frame};
 
 
 // There is a lot of code from video-rs crate. Giving them credit.
@@ -17,16 +17,16 @@ pub struct VideoFrameByFrameWriter{
     height:u32,
     output: context::Output,
     encoder: encoder::video::Encoder,
-    scaler: playa_ffmpeg::software::scaling::context::Context,
+    scaler: ffmpeg_next::software::scaling::context::Context,
     keyframe_interval: u64,
     writer_stream_index: usize,
     encoder_time_base:Rational,
     fps:i32
 }
 
-pub fn codec_context_as(codec: &playa_ffmpeg::codec::codec::Codec) -> Option<Context> {
+pub fn codec_context_as(codec: &ffmpeg_next::codec::codec::Codec) -> Option<Context> {
     unsafe {
-        let context_ptr = playa_ffmpeg::ffi::avcodec_alloc_context3(codec.as_ptr());
+        let context_ptr = ffmpeg_next::ffi::avcodec_alloc_context3(codec.as_ptr());
         if !context_ptr.is_null() {
             Some(Context::wrap(context_ptr, None))
         } else {
@@ -42,38 +42,38 @@ pub fn get_encoder_time_base(encoder: &encoder::video::Encoder) -> Rational {
 impl VideoFrameByFrameWriter {
     pub fn new<T:AsRef<Path>+?Sized>(destination:&T, width:u32, height:u32, fps:i32) -> Result<Self,crate::VideoBackendError> {
 
-        playa_ffmpeg::init()?;
+        ffmpeg_next::init()?;
         println!("Init - OK");
-        let mut output = playa_ffmpeg::format::output(destination)?;
+        let mut output = ffmpeg_next::format::output(destination)?;
 
         println!("Output - OK");
         let global_header = output
             .format()
             .flags()
-            .contains(playa_ffmpeg::format::Flags::GLOBAL_HEADER);
+            .contains(ffmpeg_next::format::Flags::GLOBAL_HEADER);
 
         let mut writer_stream = output.add_stream(None)?;
         let writer_stream_index = writer_stream.index();
 
         println!("Stream - OK");
-        let codec = playa_ffmpeg::encoder::find_by_name("libx264").unwrap_or_else(|| playa_ffmpeg::encoder::find(playa_ffmpeg::codec::Id::H264).unwrap());
-        let mut encoder_context = codec_context_as(&codec).unwrap_or_else(playa_ffmpeg::codec::Context::new);
+        let codec = ffmpeg_next::encoder::find_by_name("libx264").unwrap_or_else(|| ffmpeg_next::encoder::find(ffmpeg_next::codec::Id::H264).unwrap());
+        let mut encoder_context = codec_context_as(&codec).unwrap_or_else(ffmpeg_next::codec::Context::new);
         println!("Encoder context - OK");
 
         if global_header{
-            encoder_context.set_flags(playa_ffmpeg::codec::Flags::GLOBAL_HEADER);
+            encoder_context.set_flags(ffmpeg_next::codec::Flags::GLOBAL_HEADER);
         }
 
         let mut encoder = encoder_context.encoder().video()?;
         encoder.set_width(width);
         encoder.set_height(height);
-        encoder.set_format(playa_ffmpeg::format::Pixel::YUV420P);
+        encoder.set_format(ffmpeg_next::format::Pixel::YUV420P);
         encoder.set_frame_rate(Some((fps, 1))); //30 FPS. Will be changed
 
         println!("Encoder - OK");
         encoder.set_time_base(TIME_BASE);
 
-        let mut options = playa_ffmpeg::Dictionary::new();
+        let mut options = ffmpeg_next::Dictionary::new();
         options.set("preset", "medium");
 
         let encoder = encoder.open_with(options)?;
@@ -84,16 +84,16 @@ impl VideoFrameByFrameWriter {
 
         let scaler_width = encoder.width();
         let scaler_height = encoder.height();
-        let scaler = playa_ffmpeg::software::scaling::context::Context::get(
-            playa_ffmpeg::format::Pixel::RGB24,
+        let scaler = ffmpeg_next::software::scaling::context::Context::get(
+            ffmpeg_next::format::Pixel::RGB24,
             scaler_width,
             scaler_height,
             encoder.format(),
             scaler_width,
             scaler_height,
-            playa_ffmpeg::software::scaling::flag::Flags::empty(),
+            ffmpeg_next::software::scaling::flag::Flags::empty(),
         )?;
-        let buffer = frame::Video::new(playa_ffmpeg::format::Pixel::RGB24, scaler_width, scaler_height);
+        let buffer = frame::Video::new(ffmpeg_next::format::Pixel::RGB24, scaler_width, scaler_height);
 
         let true_width = (buffer.data(0).len() as u32)/3/scaler_height;
         println!("Widths: Passed={} Scaler={} True={}", width, scaler_width, true_width);
@@ -189,7 +189,7 @@ impl VideoFrameByFrameWriter {
         frame_scaled.set_pts(timestamp.aligned_with_rational(self.encoder_time_base).into_value());
 
         if self.frame_count%self.keyframe_interval==0{
-            frame_scaled.set_kind(playa_ffmpeg::picture::Type::I);
+            frame_scaled.set_kind(ffmpeg_next::picture::Type::I);
         }
         if !self.begun{
             self.output.write_header()?;
@@ -221,7 +221,7 @@ impl VideoFrameByFrameWriter {
         let encode_result = self.encoder.receive_packet(&mut packet);
         match encode_result {
             Ok(()) => Ok(Some(packet)),
-            Err(playa_ffmpeg::Error::Other { errno }) if errno == EAGAIN => Ok(None),
+            Err(ffmpeg_next::Error::Other { errno }) if errno == EAGAIN => Ok(None),
             Err(err) => Err(err.into()),
         }
     }
