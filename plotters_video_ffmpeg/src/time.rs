@@ -1,4 +1,4 @@
-extern crate playa_ffmpeg as ffmpeg;
+extern crate ffmpeg_next as ffmpeg;
 
 // **WHOLE CREDITS GO TO `video-rs` CRATE**
 // https://github.com/oddity-ai/video-rs/blob/main/src/time.rs
