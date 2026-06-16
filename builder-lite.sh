@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./universal_build.sh release $@ --no-default-features --features viewer --features plotter --features build-ffmpeg
+./universal_build.sh release $@ --no-default-features --features viewer --features plotter
