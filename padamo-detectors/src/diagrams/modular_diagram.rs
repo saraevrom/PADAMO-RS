@@ -156,6 +156,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
             let mut chart = main_builder.build_cartesian_2d(x_range, y_range).unwrap();
             chart.configure_mesh()
             .disable_mesh()
+            .label_style(("sans-serif", 15))
             .draw().unwrap();
 
             let rects = super::PolyIterator::new(self.color_source.as_ref(), det, self.rotation_angle);
@@ -212,7 +213,7 @@ impl<'a, Msg:'a> PadamoDetectorDiagram<'a, Msg>
                 .set_all_tick_mark_size(5)
                 .disable_x_axis()
                 .disable_mesh()
-                .label_style("sans-serif".into_font())
+                .label_style(("sans-serif", 15))
                 .draw()
                 .unwrap();
             let color_rects = super::colorbar::ColorbarRects::new(min, max, colormap);
