@@ -72,16 +72,16 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    env:
-      VCPKG_ROOT: C:\vcpkg
+    # env:
+    #   VCPKG_ROOT: C:\vcpkg
     steps:
     - uses: actions/checkout@v4
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
-    - name: Get ffmpeg
-      shell: cmd
-      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec,x264]:x64-windows-static-md
+    # - name: Get ffmpeg
+    #   shell: cmd
+    #   run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec,x264]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: |
@@ -109,16 +109,16 @@ jobs:
 
   build-windows-lite:
     runs-on: windows-latest
-    env:
-      VCPKG_ROOT: C:\vcpkg
+    # env:
+    #   VCPKG_ROOT: C:\vcpkg
     steps:
     - uses: actions/checkout@v4
     - uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
         rustflags: ""
-    - name: Get ffmpeg
-      shell: cmd
-      run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec,x264]:x64-windows-static-md
+    # - name: Get ffmpeg
+    #   shell: cmd
+    #   run: vcpkg install ffmpeg[core,avcodec,avdevice,avfilter,avformat,swresample,swscale,nvcodec,x264]:x64-windows-static-md
     - name: Build
       shell: cmd
       run: |
